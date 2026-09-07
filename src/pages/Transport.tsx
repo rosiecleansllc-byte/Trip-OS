@@ -1,4 +1,4 @@
-import { Car, Plane, Train } from 'lucide-react'
+import { BookOpen, Car, ExternalLink, Plane, Train } from 'lucide-react'
 import type { Transport as TransportLeg, TransportMode, Trip } from '../types/trip'
 import { ActionRow } from '../components/ui/ActionRow'
 import { Card } from '../components/ui/Card'
@@ -48,8 +48,9 @@ function TransportRow({ leg, shareMode }: { leg: TransportLeg; shareMode: boolea
         phone={t.phone}
         privateTicketUrl={t.privateTicketUrl}
         modifyUrl={t.modifyUrl}
-        privateDocumentUrl={t.privateDocumentUrl}
+        privateDocumentKey={t.privateDocumentKey}
         privateDocumentLabel={t.privateDocumentLabel}
+        privateDocumentType={t.privateDocumentType}
         shareMode={shareMode}
         className="mt-3"
       />
@@ -66,6 +67,11 @@ export function Transport({ trip }: { trip: Trip }) {
       items: trip.transport.filter((t) => t.mode === mode).sort((a, b) => a.date.localeCompare(b.date)),
     }))
     .filter((g) => g.items.length > 0)
+
+  // Public reference links (an official transit map, etc.) — not a booking,
+  // so kept visually separate below the booked legs. Safe in Share mode
+  // too unless a resource explicitly opts out with isPrivate.
+  const resources = (trip.resources ?? []).filter((r) => !r.isPrivate || !shareMode)
 
   return (
     <div className="animate-fade-in space-y-7">
@@ -91,6 +97,32 @@ export function Transport({ trip }: { trip: Trip }) {
           </div>
         )
       })}
+
+      {resources.length > 0 && (
+        <div>
+          <SectionHeader title="Travel resources" action={<BookOpen size={16} className="text-blue" />} />
+          <p className="mb-2 text-xs text-ink-soft">Public reference links — not part of any booking.</p>
+          <div className="space-y-2.5">
+            {resources.map((r) => (
+              <a
+                key={r.id}
+                href={r.resourceUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="block"
+              >
+                <Card className="flex items-start justify-between gap-3 p-4">
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium text-ink">{r.title}</p>
+                    {r.description && <p className="mt-0.5 text-xs text-ink-soft">{r.description}</p>}
+                  </div>
+                  <ExternalLink size={15} className="mt-0.5 shrink-0 text-blue" />
+                </Card>
+              </a>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   )
 }

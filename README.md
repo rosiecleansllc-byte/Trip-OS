@@ -21,11 +21,14 @@ src/
     tripsIndex.ts         registry of all trips
     trips/france-2026.ts  the seeded France trip
   store/useAppStore.ts    share mode + active trip
-  lib/                    date, money, and share-mode redaction helpers
+  lib/                    date, money, share-mode redaction, and
+                           privateDocs.ts (device-local IndexedDB store)
   components/
     layout/               TopBar, BottomNav, AppShell
     ui/                    Card, StatusTag, SectionHeader, ImagePlaceholder,
                            ActionRow (Directions/Ticket/Website/Call/…),
+                           PrivateDocumentAction (Add/View a device-local
+                           ticket/reservation/confirmation, image or PDF),
                            Lightbox (full-screen image viewer, portal-rendered)
   pages/                  Today, Trip, Bookings, Transport, Pack, Wallet
 ```
@@ -95,19 +98,60 @@ so read this before adding a link:
   render in Share mode rather than falling back to it.
 - **`modifyUrl`** — private, same treatment as `privateTicketUrl` (a
   personal manage/cancel link for the booking).
-- **`privateDocumentUrl`** (+ optional `privateDocumentLabel`) — private,
-  same treatment again, but for a **photo** rather than a link: a
-  screenshot of a reservation confirmation, order receipt, or QR-code
-  ticket (see `public/images/private-documents/<trip-id>/`). ActionRow
-  renders it as a button using `privateDocumentLabel` as the text
-  ("View ticket" / "View reservation" / "View confirmation", default
-  "View document") and opens it in the full-screen `Lightbox` component
-  in-app, rather than linking out. **Never** put a personal document
-  image anywhere but `privateDocumentUrl` — it's the only field ActionRow
-  gates on Share mode for that image.
+- **`privateDocumentKey`** (+ optional `privateDocumentLabel` /
+  `privateDocumentType`) — private, same treatment again, but for a
+  **file the traveler adds themselves on their own device**, not
+  anything shipped with the app. See "Private documents" below — this is
+  the one field here that is never a URL and never seed data.
 
 This is enforced once, centrally, in `ActionRow` — not per-page — so
 there's a single place to audit if a new private field is ever added.
+
+### Private documents (reservation confirmations, QR tickets)
+
+Trip OS has no backend and no login, by design (see Stack, above) — which
+means there is no server that could authenticate a request for a
+"private" file. Anything committed to `public/` or bundled into the JS is
+downloadable by anyone with the deployed URL, Share mode or not. So a
+traveler's actual reservation confirmations, order receipts, and
+QR-code tickets are **never** part of the repo or the seed data. Instead:
+
+- `LinkActions.privateDocumentKey` names a slot (e.g.
+  `'le-procope-ticket'`) — set it on a `Booking`, `Transport`, and/or the
+  matching day's `ScheduleItem` that represent the same real-world
+  document; using the same key across all of them means adding the file
+  once makes it show up everywhere that item appears (Today, Bookings,
+  Transport).
+- `PrivateDocumentAction` (`components/ui/PrivateDocumentAction.tsx`)
+  renders an **"Add {ticket/reservation/confirmation/receipt}"** button
+  until the traveler picks a file (image or PDF) from their own phone —
+  it's written straight into this browser's IndexedDB via
+  `lib/privateDocs.ts` and never sent anywhere. Once stored, the same spot
+  shows **"View {…}"** instead, opening images in the existing `Lightbox`
+  (full quality, no compression, `touch-pinch-zoom` for mobile) and PDFs
+  in a new tab via the browser's native viewer.
+- `privateDocumentType` (`'ticket' | 'reservation' | 'confirmation' |
+  'receipt'`) picks the button wording automatically; set
+  `privateDocumentLabel` only to override it.
+- The document lives only in that one browser's IndexedDB — a different
+  device, or Share mode on the same device, shows the "Add" button again
+  rather than exposing anything, and there's nothing for Share mode to
+  redact because ActionRow never even renders `PrivateDocumentAction`
+  when `shareMode` is true.
+
+If this app ever gets real backend/auth infrastructure, a hosted private
+document would need its own reviewed field — don't repurpose
+`privateDocumentKey` to point at a URL.
+
+### Public travel resources
+
+`TravelResource` (`src/types/trip.ts`) is for the opposite case: a
+reference link that's genuinely fine to share — an official transit map,
+a visa-requirements page, and so on. Add entries to `Trip.resources`;
+Transport renders them in their own "Travel resources" section, visually
+separate from booked legs. `isPrivate` exists only to exclude one from
+Share mode without deleting it — leave it unset for the normal, fully
+public case.
 
 ## Commands
 
