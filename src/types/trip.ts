@@ -52,9 +52,9 @@ export interface Deadline {
 // they point at a venue's official site, general info/purchase page, or
 // contact info, safe to show anyone. They always render, in Share mode too.
 //
-// privateTicketUrl and modifyUrl are PRIVATE and must NEVER render in
-// Share mode — see components/ui/ActionRow.tsx, which enforces this
-// centrally so no page can accidentally leak one:
+// privateTicketUrl, modifyUrl, and privateDocumentUrl are PRIVATE and must
+// NEVER render in Share mode — see components/ui/ActionRow.tsx, which
+// enforces this centrally so no page can accidentally leak one:
 //   - modifyUrl carries a personal manage/cancel token for the booking.
 //   - privateTicketUrl is the traveler's own purchased ticket: the actual
 //     e-ticket/PDF/QR-code link from the confirmation email. NEVER put a
@@ -64,13 +64,25 @@ export interface Deadline {
 //     buys a ticket" and `privateTicketUrl` for "this trip's actual
 //     ticket" — the two are rendered differently by ActionRow (see below)
 //     specifically so the private one can never leak into Share mode.
+//   - privateDocumentUrl is a photo/screenshot of the traveler's own
+//     reservation confirmation, order receipt, or QR-code ticket — a
+//     personal document image, not a link. It's a different shape of
+//     private asset than privateTicketUrl (which is a URL to an external
+//     ticket page/PDF): this one renders in-app via a full-screen
+//     Lightbox rather than opening a new tab. Use privateDocumentLabel to
+//     set the button text ("View ticket" / "View reservation" / "View
+//     confirmation") — it defaults to "View document" if omitted. NEVER
+//     put a personal document image in a public field; it must only ever
+//     reach the DOM through privateDocumentUrl so ActionRow's Share-mode
+//     check is the single gate on it.
 //
 // ActionRow's Ticket button: outside Share mode it prefers
 // privateTicketUrl (opens the traveler's actual ticket) and falls back to
 // ticketUrl. In Share mode it only ever considers ticketUrl — if a
 // privateTicketUrl exists but no public ticketUrl, the Ticket button is
 // hidden entirely in Share mode rather than falling back to the private
-// link.
+// link. The privateDocumentUrl button follows the same rule as modifyUrl:
+// rendered only outside Share mode, with no public fallback.
 export interface LinkActions {
   websiteUrl?: string
   ticketUrl?: string // public — the info/purchase page anyone can use
@@ -79,6 +91,8 @@ export interface LinkActions {
   phone?: string
   privateTicketUrl?: string // private — this traveler's actual e-ticket/PDF/QR
   modifyUrl?: string // private — manage/cancel link
+  privateDocumentUrl?: string // private — photo of a reservation confirmation, receipt, or QR ticket
+  privateDocumentLabel?: string // button text for privateDocumentUrl, e.g. "View ticket"
 }
 
 export interface ScheduleItem extends LinkActions {

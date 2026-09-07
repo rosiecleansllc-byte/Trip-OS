@@ -1,6 +1,8 @@
-import { CalendarCheck, Globe, Navigation, Phone, SquarePen, Ticket, UtensilsCrossed } from 'lucide-react'
+import { useState } from 'react'
+import { CalendarCheck, Eye, Globe, Navigation, Phone, SquarePen, Ticket, UtensilsCrossed } from 'lucide-react'
 import type { LinkActions } from '../../types/trip'
 import { directionsUrl, telUrl } from '../../lib/links'
+import { Lightbox } from './Lightbox'
 
 interface ActionRowProps extends LinkActions {
   location?: string
@@ -17,9 +19,13 @@ export function ActionRow({
   phone,
   privateTicketUrl,
   modifyUrl,
+  privateDocumentUrl,
+  privateDocumentLabel,
   shareMode = false,
   className = '',
 }: ActionRowProps) {
+  const [showDocument, setShowDocument] = useState(false)
+
   // Outside Share mode, prefer the traveler's actual purchased ticket over
   // the generic info/purchase page. In Share mode, privateTicketUrl is
   // never used — if that's the only ticket link available, the Ticket
@@ -36,7 +42,13 @@ export function ActionRow({
     !shareMode && modifyUrl && { label: 'Modify', href: modifyUrl, icon: SquarePen, external: true },
   ].filter((a): a is { label: string; href: string; icon: typeof Navigation; external: boolean } => Boolean(a))
 
-  if (actions.length === 0) return null
+  // privateDocumentUrl is a photo (reservation confirmation, receipt, QR
+  // ticket), not a link — it opens in-app via Lightbox rather than a new
+  // tab, and like modifyUrl it never renders in Share mode.
+  const documentLabel = privateDocumentLabel ?? 'View document'
+  const showDocumentButton = !shareMode && Boolean(privateDocumentUrl)
+
+  if (actions.length === 0 && !showDocumentButton) return null
 
   return (
     <div className={`flex flex-wrap gap-1.5 ${className}`}>
@@ -52,6 +64,19 @@ export function ActionRow({
           {a.label}
         </a>
       ))}
+      {showDocumentButton && (
+        <button
+          type="button"
+          onClick={() => setShowDocument(true)}
+          className="inline-flex items-center gap-1 rounded-full border border-line px-2.5 py-1 text-xs font-medium text-blue transition-colors hover:border-blue/40"
+        >
+          <Eye size={12} />
+          {documentLabel}
+        </button>
+      )}
+      {showDocument && privateDocumentUrl && (
+        <Lightbox src={privateDocumentUrl} alt={documentLabel} onClose={() => setShowDocument(false)} />
+      )}
     </div>
   )
 }

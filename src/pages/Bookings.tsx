@@ -57,6 +57,8 @@ function BookingRow({ booking, shareMode }: { booking: Booking; shareMode: boole
         phone={b.phone}
         privateTicketUrl={b.privateTicketUrl}
         modifyUrl={b.modifyUrl}
+        privateDocumentUrl={b.privateDocumentUrl}
+        privateDocumentLabel={b.privateDocumentLabel}
         shareMode={shareMode}
         className="mt-3"
       />

@@ -48,6 +48,8 @@ function TransportRow({ leg, shareMode }: { leg: TransportLeg; shareMode: boolea
         phone={t.phone}
         privateTicketUrl={t.privateTicketUrl}
         modifyUrl={t.modifyUrl}
+        privateDocumentUrl={t.privateDocumentUrl}
+        privateDocumentLabel={t.privateDocumentLabel}
         shareMode={shareMode}
         className="mt-3"
       />

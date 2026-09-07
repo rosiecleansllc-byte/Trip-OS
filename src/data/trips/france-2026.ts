@@ -69,9 +69,9 @@ export const franceTrip: Trip = {
         { id: 'd2-1', label: 'Leisurely breakfast', type: 'meal' },
         { id: 'd2-2', label: 'Luxembourg Gardens → Saint-Germain-des-Prés → Rue de Buci → boutiques → Le Bon Marché', type: 'activity', tip: 'An intentionally slower first full day — keep lunch casual and light. Maison Le Roux for chocolate if you want a stop.' },
         { id: 'd2-3', label: 'Back to the hotel to freshen up', type: 'free', notes: 'Around 4:00–5:00 PM if you want a break.' },
-        { id: 'd2-4', time: '18:00', label: 'Dinner: Les Deux Palais', type: 'meal', location: 'Les Deux Palais, 3 Boulevard du Palais, Paris', phone: '+33 1 43 54 20 86', tip: 'Directly across from Sainte-Chapelle — that’s why the timing works so well.' },
+        { id: 'd2-4', time: '18:00', label: 'Dinner: Les Deux Palais', type: 'meal', location: 'Les Deux Palais, 3 Boulevard du Palais, Paris', phone: '+33 1 43 54 20 86', tip: 'Directly across from Sainte-Chapelle — that’s why the timing works so well.', privateDocumentUrl: '/images/private-documents/france-2026/les-deux-palais-reservation-confirmation.webp', privateDocumentLabel: 'View reservation' },
         { id: 'd2-5', time: '19:10', label: 'Head across for security', type: 'transport' },
-        { id: 'd2-6', time: '20:00', label: 'Sainte-Chapelle classical concert', type: 'activity', location: 'Sainte-Chapelle, Paris', ticketUrl: 'https://www.classictic.com/en/city/paris-t7/concerts-at-la-sainte-chapelle/10055/', tip: 'One of your most elegant, least stressful days.' },
+        { id: 'd2-6', time: '20:00', label: 'Sainte-Chapelle classical concert', type: 'activity', location: 'Sainte-Chapelle, Paris', ticketUrl: 'https://www.classictic.com/en/city/paris-t7/concerts-at-la-sainte-chapelle/10055/', tip: 'One of your most elegant, least stressful days.', privateDocumentUrl: '/images/private-documents/france-2026/sainte-chapelle-classictic-confirmation.webp', privateDocumentLabel: 'View ticket' },
       ],
       outfitBoardId: 'ob2',
     },
@@ -123,7 +123,7 @@ export const franceTrip: Trip = {
         { id: 'd5-5', time: '15:30', label: 'Bolt/taxi toward the Eiffel area', type: 'transport' },
         { id: 'd5-6', time: '16:30', label: 'Dinner: Le Campanella', type: 'meal', location: 'Le Campanella, 18 Avenue Bosquet, Paris', notes: 'Chosen over Le Suffren for the atmosphere.' },
         { id: 'd5-7', label: 'Eiffel area, Champ de Mars, river views, photos', type: 'activity' },
-        { id: 'd5-8', time: '19:30', label: 'Seine cruise — Bateaux Parisiens', type: 'activity', location: 'Bateaux Parisiens, Port de la Bourdonnais, Paris', websiteUrl: 'https://www.bateauxparisiens.com/english.html', tip: 'Standard one-hour sightseeing cruise (not the dinner cruise) — indoor panoramic seating plus outdoor viewing. Timing depends on that evening’s departures, roughly 7:30–8:00 PM.' },
+        { id: 'd5-8', time: '19:30', label: 'Seine cruise — Bateaux Parisiens', type: 'activity', location: 'Bateaux Parisiens, Port de la Bourdonnais, Paris', websiteUrl: 'https://www.bateauxparisiens.com/english.html', tip: 'Standard one-hour sightseeing cruise (not the dinner cruise) — indoor panoramic seating plus outdoor viewing. Timing depends on that evening’s departures, roughly 7:30–8:00 PM.', privateDocumentUrl: '/images/private-documents/france-2026/bateaux-parisiens-seine-cruise-confirmation.webp', privateDocumentLabel: 'View confirmation' },
       ],
       outfitBoardId: 'ob5',
     },
@@ -136,7 +136,7 @@ export const franceTrip: Trip = {
       outfitNote: 'White button-down + black pants + light rain shell + white sneakers + black crossbody.',
       weatherNote: 'Expect the coolest, most exposed day — wind, damp air, and showers are possible. Pack layers.',
       scheduleItems: [
-        { id: 'd6-1', time: '08:00', label: 'Pick up rental car near Gare Montparnasse', type: 'transport', tip: 'Blake is driving — VW Polo or similar automatic, roomy enough packing light, cheaper than the SUV.' },
+        { id: 'd6-1', time: '08:00', label: 'Pick up rental car near Gare Montparnasse', type: 'transport', tip: 'Blake is driving — VW Polo or similar automatic, roomy enough packing light, cheaper than the SUV.', privateDocumentUrl: '/images/private-documents/france-2026/sixt-rental-car-confirmation.webp', privateDocumentLabel: 'View confirmation' },
         { id: 'd6-2', label: 'Drive to Mont-Saint-Michel', type: 'transport', notes: 'Allow roughly 4–4½ hours including a break; estimated arrival 12:30–1:00 PM.' },
         { id: 'd6-3', label: 'Check in at Hôtel Vert, leave luggage', type: 'lodging', location: 'Hôtel Vert, Le Mont-Saint-Michel', websiteUrl: 'https://vert.hotelmontsaintmichel.org/en/', phone: '+33 2 33 60 09 33', tip: 'Right by the free Mont-Saint-Michel shuttle zone.' },
         { id: 'd6-4', label: 'Shuttle to the Mont — village, Grande Rue, bay views', type: 'activity', location: 'Le Mont-Saint-Michel', websiteUrl: 'https://www.abbaye-mont-saint-michel.fr/en/', notes: 'Abbey interior only if same-day tickets are available and Mom feels up to the stairs — otherwise just enjoy the village. The Mont is still worth it either way. Stay long enough for the quieter late-afternoon/evening atmosphere since you’re sleeping nearby.' },
@@ -153,7 +153,7 @@ export const franceTrip: Trip = {
       scheduleItems: [
         { id: 'd7-1', label: 'Breakfast, optional return to the Mont for more time', type: 'free' },
         { id: 'd7-2', time: '12:00', label: 'Depart for Paris', type: 'transport', tip: 'Blake is driving, so you control departure time — normal traffic and one short break puts you back around 4:30–5:00 PM.' },
-        { id: 'd7-3', time: '18:00', label: 'Return the rental car', type: 'transport' },
+        { id: 'd7-3', time: '18:00', label: 'Return the rental car', type: 'transport', privateDocumentUrl: '/images/private-documents/france-2026/sixt-rental-car-confirmation.webp', privateDocumentLabel: 'View confirmation' },
         { id: 'd7-4', label: 'Check in at Hôtel Léopold', type: 'lodging', location: 'Hôtel Léopold, Paris', websiteUrl: 'https://www.leopoldhotelparis.com/en/', tip: 'Moving Léopold to Oct. 2 means an evening and breakfast here instead of leaving before sunrise.' },
         { id: 'd7-5', label: 'Dinner near Montparnasse / Saint-Germain', type: 'meal', notes: 'Keep it casual — no hard reservation tonight.' },
       ],
@@ -170,7 +170,7 @@ export const franceTrip: Trip = {
       scheduleItems: [
         { id: 'd8-1', label: 'Breakfast at Léopold', type: 'meal' },
         { id: 'd8-2', label: 'Taxi/Bolt to Gare de Lyon', type: 'transport', location: 'Gare de Lyon, Paris' },
-        { id: 'd8-3', time: '09:10', label: 'TGV INOUI to Nice-Ville', type: 'transport', websiteUrl: 'https://www.sncf-connect.com/en-en', tip: 'Direct, 5 hr 54 min, arriving 3:04 PM.' },
+        { id: 'd8-3', time: '09:10', label: 'TGV INOUI to Nice-Ville', type: 'transport', websiteUrl: 'https://www.sncf-connect.com/en-en', tip: 'Direct, 5 hr 54 min, arriving 3:04 PM.', privateDocumentUrl: '/images/private-documents/france-2026/sncf-paris-nice-round-trip-confirmation.webp', privateDocumentLabel: 'View ticket' },
         { id: 'd8-4', label: 'Check in at Le Balcon du Vieux Nice', type: 'lodging', location: 'Le Balcon du Vieux Nice, Nice' },
         { id: 'd8-5', label: 'Vieux Nice, Cours Saleya, Promenade des Anglais, dinner', type: 'activity', tip: 'Le Panier is a nice option if you decide to reserve; otherwise keep arrival dinner flexible.' },
       ],
@@ -217,7 +217,7 @@ export const franceTrip: Trip = {
       title: 'Nice → Paris → CDG',
       outfitNote: 'Breton striped top + black pants + navy trench + white sneakers + black crossbody.',
       scheduleItems: [
-        { id: 'd11-1', time: '07:55', label: 'TGV INOUI Nice-Ville → Paris Gare de Lyon', type: 'transport', websiteUrl: 'https://www.sncf-connect.com/en-en', tip: 'Early start — direct, 5 hr 55 min, arriving 1:50 PM.' },
+        { id: 'd11-1', time: '07:55', label: 'TGV INOUI Nice-Ville → Paris Gare de Lyon', type: 'transport', websiteUrl: 'https://www.sncf-connect.com/en-en', tip: 'Early start — direct, 5 hr 55 min, arriving 1:50 PM.', privateDocumentUrl: '/images/private-documents/france-2026/sncf-paris-nice-round-trip-confirmation.webp', privateDocumentLabel: 'View ticket' },
         { id: 'd11-2', label: 'Continue toward CDG', type: 'transport' },
         { id: 'd11-3', label: 'Check in at Moxy Paris CDG Airport', type: 'lodging', location: 'Moxy Paris Charles de Gaulle Airport', websiteUrl: 'https://www.marriott.com/en-us/hotels/parox-moxy-paris-charles-de-gaulle-airport/overview/', notes: 'Decompression night — early dinner, shower, reorganize luggage, early bed. No sightseeing.' },
       ],
@@ -334,6 +334,8 @@ export const franceTrip: Trip = {
       address: 'Les Deux Palais, 3 Boulevard du Palais, Paris',
       phone: '+33 1 43 54 20 86',
       tip: 'Directly across from Sainte-Chapelle.',
+      privateDocumentUrl: '/images/private-documents/france-2026/les-deux-palais-reservation-confirmation.webp',
+      privateDocumentLabel: 'View reservation',
     },
     {
       id: 'bk-ticket-sainte-chapelle',
@@ -346,6 +348,8 @@ export const franceTrip: Trip = {
       cost: { amount: 204, currency: 'USD' },
       address: 'Sainte-Chapelle, Paris',
       ticketUrl: 'https://www.classictic.com/en/city/paris-t7/concerts-at-la-sainte-chapelle/10055/',
+      privateDocumentUrl: '/images/private-documents/france-2026/sainte-chapelle-classictic-confirmation.webp',
+      privateDocumentLabel: 'View ticket',
     },
     {
       id: 'bk-ticket-dior',
@@ -427,6 +431,8 @@ export const franceTrip: Trip = {
       address: 'Bateaux Parisiens, Port de la Bourdonnais, Paris',
       websiteUrl: 'https://www.bateauxparisiens.com/english.html',
       tip: 'Standard one-hour sightseeing cruise, not the dinner cruise.',
+      privateDocumentUrl: '/images/private-documents/france-2026/bateaux-parisiens-seine-cruise-confirmation.webp',
+      privateDocumentLabel: 'View confirmation',
     },
     {
       id: 'bk-ticket-msm-abbey',
@@ -516,6 +522,8 @@ export const franceTrip: Trip = {
       carrier: 'VW Polo or similar, automatic',
       cost: { amount: 173, currency: 'USD' },
       tip: 'Roomy enough packing light, far cheaper than the SUV. Allow 4–4½ hours driving including a break.',
+      privateDocumentUrl: '/images/private-documents/france-2026/sixt-rental-car-confirmation.webp',
+      privateDocumentLabel: 'View confirmation',
     },
     {
       id: 'tr-rental-car-back',
@@ -529,6 +537,8 @@ export const franceTrip: Trip = {
       carrier: 'VW Polo or similar, automatic',
       cost: null,
       notes: 'Return leg of the rental above — cost already counted on the outbound leg. Return the car by ~6:00 PM.',
+      privateDocumentUrl: '/images/private-documents/france-2026/sixt-rental-car-confirmation.webp',
+      privateDocumentLabel: 'View confirmation',
     },
     {
       id: 'tr-tgv-nice',
@@ -545,6 +555,8 @@ export const franceTrip: Trip = {
       websiteUrl: 'https://www.sncf-connect.com/en-en',
       notes: 'Round-trip fare for all 3 travelers — this covers both the outbound and the Oct. 6 return below.',
       tip: 'Direct, 5 hr 54 min.',
+      privateDocumentUrl: '/images/private-documents/france-2026/sncf-paris-nice-round-trip-confirmation.webp',
+      privateDocumentLabel: 'View ticket',
     },
     {
       id: 'tr-bus-eze',
@@ -611,6 +623,8 @@ export const franceTrip: Trip = {
       websiteUrl: 'https://www.sncf-connect.com/en-en',
       notes: 'Return leg of the round-trip TGV booked with the outbound on Oct. 3.',
       tip: 'Direct, 5 hr 55 min.',
+      privateDocumentUrl: '/images/private-documents/france-2026/sncf-paris-nice-round-trip-confirmation.webp',
+      privateDocumentLabel: 'View ticket',
     },
     {
       id: 'tr-flight-home',

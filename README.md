@@ -76,18 +76,18 @@ notes from Bookings/Transport/Trip, and hides the Wallet tab entirely —
 while keeping dates, places, and the `tip` field (public, trip-level
 recommendations) visible. See `src/lib/share.ts`.
 
-### Action links (Directions / Ticket / Website / Reservation / Menu / Call / Modify)
+### Action links (Directions / Ticket / Website / Reservation / Menu / Call / Modify / private documents)
 
 `Booking`, `Transport`, and `ScheduleItem` all extend `LinkActions`
 (`src/types/trip.ts`), rendered as one-tap buttons by
-`components/ui/ActionRow.tsx`. Two of those fields are easy to mix up,
+`components/ui/ActionRow.tsx`. Some of those fields are easy to mix up,
 so read this before adding a link:
 
 - **`ticketUrl`** — public. The general info/purchase page anyone could
   use (a museum's ticketing site, a venue's box office). Always visible,
   Share mode included.
 - **`privateTicketUrl`** — private. *This trip's actual* purchased
-  e-ticket, PDF, or QR-code link from the confirmation email. **Never**
+  e-ticket, PDF, or QR-code **link** from the confirmation email. **Never**
   put a personal ticket link in `ticketUrl` — use `privateTicketUrl`
   instead. ActionRow prefers it over `ticketUrl` for the Ticket button
   outside Share mode, and ignores it completely inside Share mode — if
@@ -95,6 +95,16 @@ so read this before adding a link:
   render in Share mode rather than falling back to it.
 - **`modifyUrl`** — private, same treatment as `privateTicketUrl` (a
   personal manage/cancel link for the booking).
+- **`privateDocumentUrl`** (+ optional `privateDocumentLabel`) — private,
+  same treatment again, but for a **photo** rather than a link: a
+  screenshot of a reservation confirmation, order receipt, or QR-code
+  ticket (see `public/images/private-documents/<trip-id>/`). ActionRow
+  renders it as a button using `privateDocumentLabel` as the text
+  ("View ticket" / "View reservation" / "View confirmation", default
+  "View document") and opens it in the full-screen `Lightbox` component
+  in-app, rather than linking out. **Never** put a personal document
+  image anywhere but `privateDocumentUrl` — it's the only field ActionRow
+  gates on Share mode for that image.
 
 This is enforced once, centrally, in `ActionRow` — not per-page — so
 there's a single place to audit if a new private field is ever added.

@@ -50,7 +50,7 @@ export function Lightbox({
         src={src}
         alt={alt}
         onClick={(e) => e.stopPropagation()}
-        className="max-h-full max-w-full rounded-lg object-contain"
+        className="max-h-full max-w-full touch-pinch-zoom rounded-lg object-contain"
       />
     </div>,
     document.body
