@@ -1,0 +1,268 @@
+import type {
+  Booking,
+  BookingCategory,
+  BookingStatus,
+  ManualItemStatus,
+  ManualItemType,
+  ManualTransportMode,
+  ManualTripItem,
+  OpenItem,
+  ScheduleItem,
+  Transport,
+  TransportMode,
+  Trip,
+} from '../types/trip'
+
+// Converts a manually-created trip item into the same shapes seeded trip
+// data uses (Booking, Transport, ScheduleItem), so every page renders a
+// manual item exactly like a normal one — same cards, same Share-mode
+// redaction (lib/share.ts), same private-document wallet (ActionRow +
+// lib/privateDocs.ts). No page needs to know a "manual item" concept
+// exists; getEffectiveTrip below is the only place that does.
+//
+// Every manual-derived Booking/Transport/ScheduleItem keeps the manual
+// item's own id, which is always prefixed "manual-" (see
+// createManualItem) — that prefix is how the UI tells a manual entry
+// apart from seeded data to decide whether to show the •••
+// edit/delete menu.
+
+const MANUAL_PREFIX = 'manual-'
+
+export function isManualId(id: string): boolean {
+  return id.startsWith(MANUAL_PREFIX)
+}
+
+export function createManualItem(
+  input: Omit<ManualTripItem, 'id' | 'createdAt' | 'privateDocumentKey' | 'privateDocumentType'>
+): ManualTripItem {
+  const id = `${MANUAL_PREFIX}${crypto.randomUUID()}`
+  return {
+    ...input,
+    id,
+    createdAt: new Date().toISOString(),
+    privateDocumentKey: `${id}-doc`,
+    privateDocumentType: defaultPrivateDocumentType(input.type),
+  }
+}
+
+function defaultPrivateDocumentType(type: ManualItemType): ManualTripItem['privateDocumentType'] {
+  switch (type) {
+    case 'stay':
+    case 'transport':
+      return 'confirmation'
+    case 'restaurant':
+      return 'reservation'
+    case 'activity':
+      return 'ticket'
+    default:
+      return undefined
+  }
+}
+
+function statusToBookingStatus(status: ManualItemStatus): BookingStatus {
+  if (status === 'planned') return 'pending'
+  return status
+}
+
+function moneyFor(item: ManualTripItem): Booking['cost'] {
+  if (item.cost == null) return null
+  return { amount: item.cost, currency: item.currency ?? 'USD' }
+}
+
+const BOOKING_CATEGORY: Record<Exclude<ManualItemType, 'transport'>, BookingCategory> = {
+  stay: 'hotel',
+  restaurant: 'dining',
+  activity: 'activity',
+  other: 'other',
+}
+
+export function manualItemToBooking(item: ManualTripItem): Booking {
+  return {
+    id: item.id,
+    category: BOOKING_CATEGORY[item.type as Exclude<ManualItemType, 'transport'>],
+    name: item.title,
+    dateStart: item.date,
+    dateEnd: item.endDate,
+    time: item.time,
+    status: statusToBookingStatus(item.status),
+    cost: moneyFor(item),
+    confirmationCode: item.confirmationCode,
+    address: item.address ?? item.location,
+    notes: item.notes,
+    websiteUrl: item.websiteUrl,
+    reservationUrl: item.reservationUrl,
+    phone: item.phone,
+    privateDocumentKey: item.privateDocumentKey,
+    privateDocumentType: item.privateDocumentType,
+  }
+}
+
+const TRANSPORT_MODE: Record<ManualTransportMode, TransportMode> = {
+  car: 'car',
+  'rental-car': 'car',
+  rideshare: 'local',
+  bus: 'local',
+  train: 'train',
+  flight: 'flight',
+  other: 'local',
+}
+
+const TRANSPORT_MODE_LABEL: Record<ManualTransportMode, string> = {
+  car: 'Car',
+  'rental-car': 'Rental car',
+  rideshare: 'Rideshare',
+  bus: 'Bus',
+  train: 'Train',
+  flight: 'Flight',
+  other: 'Other',
+}
+
+export function manualItemToTransport(item: ManualTripItem): Transport {
+  const mode = item.transportMode ?? 'other'
+  return {
+    id: item.id,
+    mode: TRANSPORT_MODE[mode],
+    from: item.fromLocation ?? '',
+    to: item.toLocation ?? '',
+    date: item.date,
+    departTime: item.time,
+    arriveTime: item.endTime,
+    carrier: item.carrier ?? TRANSPORT_MODE_LABEL[mode],
+    status: statusToBookingStatus(item.status),
+    cost: moneyFor(item),
+    confirmationCode: item.confirmationCode,
+    notes: item.notes,
+    websiteUrl: item.websiteUrl,
+    location: item.fromLocation,
+    privateDocumentKey: item.privateDocumentKey,
+    privateDocumentType: item.privateDocumentType,
+  }
+}
+
+const SCHEDULE_TYPE: Record<ManualItemType, ScheduleItem['type']> = {
+  stay: 'lodging',
+  transport: 'transport',
+  restaurant: 'meal',
+  activity: 'activity',
+  other: 'free',
+}
+
+export function manualItemToScheduleItem(item: ManualTripItem): ScheduleItem {
+  return {
+    id: item.id,
+    time: item.time,
+    label: item.type === 'transport' ? `${item.fromLocation || '?'} → ${item.toLocation || '?'}` : item.title,
+    type: SCHEDULE_TYPE[item.type],
+    location: item.address ?? item.location ?? item.fromLocation,
+    notes: item.notes,
+    websiteUrl: item.websiteUrl,
+    reservationUrl: item.reservationUrl,
+    phone: item.phone,
+    privateDocumentKey: item.privateDocumentKey,
+    privateDocumentType: item.privateDocumentType,
+  }
+}
+
+// Merges a trip's own seeded data with the traveler's manually-added
+// items and resolved-OpenItem overrides into one Trip-shaped object.
+// Every page renders this instead of the raw imported trip, so manual
+// items show up everywhere seeded ones do without any page-specific
+// wiring. Never mutates the seeded trip.
+export function getEffectiveTrip(
+  trip: Trip,
+  manualItems: ManualTripItem[],
+  resolvedOpenItemIds: Record<string, boolean>
+): Trip {
+  const tripManualItems = manualItems.filter((i) => i.tripId === trip.meta.id)
+  const manualBookings = tripManualItems.filter((i) => i.type !== 'transport').map(manualItemToBooking)
+  const manualTransport = tripManualItems.filter((i) => i.type === 'transport').map(manualItemToTransport)
+
+  const scheduleByDate = new Map<string, ScheduleItem[]>()
+  for (const item of tripManualItems) {
+    const list = scheduleByDate.get(item.date) ?? []
+    list.push(manualItemToScheduleItem(item))
+    scheduleByDate.set(item.date, list)
+  }
+
+  const days = trip.days.map((day) => {
+    const extra = scheduleByDate.get(day.date)
+    if (!extra || extra.length === 0) return day
+    const merged = [...day.scheduleItems, ...extra].sort((a, b) => (a.time ?? '99:99').localeCompare(b.time ?? '99:99'))
+    return { ...day, scheduleItems: merged }
+  })
+
+  const openItems = trip.openItems.map((oi) =>
+    resolvedOpenItemIds[`${trip.meta.id}:${oi.id}`] ? { ...oi, status: 'done' as const } : oi
+  )
+
+  return {
+    ...trip,
+    bookings: [...trip.bookings, ...manualBookings],
+    transport: [...trip.transport, ...manualTransport],
+    days,
+    openItems,
+  }
+}
+
+// Whether a manual item plausibly resolves a given OpenItem — matched
+// generically by OpenItem.category and date coverage, never by label
+// text, so this works for any trip without hardcoding. This single
+// predicate backs findResolvableOpenItems, findManualItemsForOpenItem,
+// and the auto-unresolve check below, so "does X justify Y" is computed
+// exactly one way everywhere.
+export function manualItemQualifiesForOpenItem(trip: Trip, item: ManualTripItem, openItem: OpenItem): boolean {
+  if (item.tripId !== trip.meta.id) return false
+  const category = item.type === 'stay' ? 'lodging' : item.type === 'transport' ? 'transport' : null
+  if (category !== openItem.category) return false
+  if (!openItem.relatedDayId) return true
+  const day = trip.days.find((d) => d.id === openItem.relatedDayId)
+  if (!day) return true
+  const start = item.date
+  const end = item.endDate ?? item.date
+  return day.date >= start && day.date <= end
+}
+
+// Which currently-open OpenItems a manual stay/transport item plausibly
+// resolves. Callers show these as "Mark resolved" suggestions; nothing
+// here auto-resolves anything.
+export function findResolvableOpenItems(trip: Trip, item: ManualTripItem): OpenItem[] {
+  return trip.openItems.filter((oi) => oi.status === 'open' && manualItemQualifiesForOpenItem(trip, item, oi))
+}
+
+// The reverse lookup — given one open OpenItem, which of the traveler's
+// manual items (if any) look like they'd resolve it. Used to render a
+// "Mark resolved" affordance on the OpenItem itself (e.g. in Bookings'
+// "Still open" list) rather than only right after saving a new item.
+export function findManualItemsForOpenItem(
+  trip: Trip,
+  manualItems: ManualTripItem[],
+  openItem: OpenItem
+): ManualTripItem[] {
+  return manualItems.filter((i) => manualItemQualifiesForOpenItem(trip, i, openItem))
+}
+
+// After a manual item is deleted or edited, some previously-resolved
+// OpenItems may no longer be justified. An OpenItem stays resolved only
+// as long as at least one manual item both (a) explicitly claims credit
+// for it via relatedOpenItemId — set when the traveler taps "Mark
+// resolved" — and (b) still qualifies under the same category+date-range
+// check used to offer that button in the first place. Returns the ids of
+// OpenItems that should flip back to open, given the manual items list
+// *after* the delete/edit already applied. Never infers a relationship
+// after the fact from label text or any other heuristic.
+export function findOpenItemsToUnresolve(
+  trip: Trip,
+  manualItems: ManualTripItem[],
+  resolvedOpenItemIds: Record<string, boolean>
+): string[] {
+  const tripManualItems = manualItems.filter((i) => i.tripId === trip.meta.id)
+  return trip.openItems
+    .filter((oi) => resolvedOpenItemIds[`${trip.meta.id}:${oi.id}`])
+    .filter(
+      (oi) =>
+        !tripManualItems.some(
+          (i) => i.relatedOpenItemId === oi.id && manualItemQualifiesForOpenItem(trip, i, oi)
+        )
+    )
+    .map((oi) => oi.id)
+}

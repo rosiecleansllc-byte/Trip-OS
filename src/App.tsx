@@ -19,7 +19,7 @@ function App() {
     if (!trip) return <Navigate to="/" replace />
     const pendingCount = trip.bookings.filter((b) => b.status === 'pending').length
     return (
-      <AppShell meta={trip.meta} pendingCount={pendingCount}>
+      <AppShell trip={trip} pendingCount={pendingCount}>
         {node}
       </AppShell>
     )
