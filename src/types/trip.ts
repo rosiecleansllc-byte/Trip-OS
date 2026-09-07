@@ -295,7 +295,8 @@ export interface ManualTripItem {
   carrier?: string
   fromLocation?: string
   toLocation?: string
-  // restaurant-only
+  // restaurant party size, or activity ticket quantity — same "how many
+  // people/tickets" field, labeled per type in the form
   partySize?: number
   // set once the traveler confirms this item resolves a specific OpenItem
   // (e.g. adding a Sep 11-13 stay resolves "Book lodging for Sep 11-13") —
