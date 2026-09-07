@@ -1,0 +1,98 @@
+import { useMemo, useState } from 'react'
+import { ChevronDown } from 'lucide-react'
+import { clsx } from 'clsx'
+import type { Trip } from '../types/trip'
+import { Card } from '../components/ui/Card'
+import { formatDateShort, isSameISODate } from '../lib/date'
+import { useAppStore } from '../store/useAppStore'
+
+export function TripPage({ trip }: { trip: Trip }) {
+  const shareMode = useAppStore((s) => s.shareMode)
+  const [openDay, setOpenDay] = useState<string | null>(
+    trip.days.find((d) => isSameISODate(d.date))?.id ?? trip.days[0]?.id ?? null
+  )
+
+  const legHeaderDayIds = useMemo(() => {
+    const ids = new Set<string>()
+    let lastLegId: string | null = null
+    for (const day of trip.days) {
+      if (day.legId !== lastLegId) {
+        ids.add(day.id)
+        lastLegId = day.legId
+      }
+    }
+    return ids
+  }, [trip.days])
+
+  return (
+    <div className="animate-fade-in space-y-1">
+      <div className="mb-4">
+        <p className="text-[11px] font-medium uppercase tracking-[0.14em] text-gray">The full itinerary</p>
+        <h1 className="font-display text-2xl text-ink">{trip.meta.name}</h1>
+        <p className="mt-0.5 text-sm text-ink-soft">
+          {trip.days.length} days · {trip.legs.length} stops
+        </p>
+      </div>
+
+      <ol className="relative border-l border-line pl-5">
+        {trip.days.map((day) => {
+          const leg = trip.legs.find((l) => l.id === day.legId)
+          const showLegHeader = legHeaderDayIds.has(day.id)
+          const isToday = isSameISODate(day.date)
+          const isOpen = openDay === day.id
+
+          return (
+            <li key={day.id} className="relative">
+              {showLegHeader && (
+                <p className="-ml-5 mb-2 mt-5 pl-5 text-[11px] font-semibold uppercase tracking-[0.14em] text-blue first:mt-0">
+                  {leg!.name}
+                </p>
+              )}
+              <span
+                className={clsx(
+                  'absolute -left-[25px] top-4 h-2.5 w-2.5 rounded-full border-2',
+                  isToday ? 'border-blue bg-blue' : 'border-line bg-paper'
+                )}
+              />
+              <button
+                onClick={() => setOpenDay(isOpen ? null : day.id)}
+                className="w-full pb-3 text-left"
+              >
+                <Card className={clsx('p-4 transition-colors', isToday && 'border-blue-dim/50 bg-blue-tint/40')}>
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <p className="text-xs font-medium text-gray">
+                        Day {day.dayNumber} · {formatDateShort(day.date)}
+                      </p>
+                      <h3 className="font-display text-lg text-ink">{day.title}</h3>
+                    </div>
+                    <ChevronDown
+                      size={18}
+                      className={clsx('mt-1 shrink-0 text-gray transition-transform', isOpen && 'rotate-180')}
+                    />
+                  </div>
+                  <p className="mt-1.5 text-sm text-ink-soft">{day.outfitNote}</p>
+
+                  {isOpen && (
+                    <ul className="mt-3 space-y-2 border-t border-line pt-3">
+                      {day.scheduleItems.map((item) => (
+                        <li key={item.id} className="flex gap-2.5 text-sm">
+                          <span className="w-11 shrink-0 text-xs text-blue">{item.time ?? ''}</span>
+                          <div>
+                            <p className="text-ink">{item.label}</p>
+                            {!shareMode && item.notes && <p className="text-xs text-ink-soft">{item.notes}</p>}
+                            {item.tip && <p className="text-xs italic text-gray">{item.tip}</p>}
+                          </div>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </Card>
+              </button>
+            </li>
+          )
+        })}
+      </ol>
+    </div>
+  )
+}
