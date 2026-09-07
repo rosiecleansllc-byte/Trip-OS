@@ -56,7 +56,12 @@ export function PrivateDocumentAction({
     }
   }, [])
 
-  // Close the ••• menu on an outside tap.
+  // Close the ••• menu on an outside tap. menuRef wraps both the trigger
+  // button and the dropdown panel (see JSX below) — if it only wrapped the
+  // panel, a tap on the trigger itself would count as "outside", so this
+  // listener would close the menu a beat before the trigger's own onClick
+  // fires to reopen it, making the second tap unreliable (close-then-
+  // flicker-open instead of a clean close).
   useEffect(() => {
     if (!menuOpen) return
     const onPointerDown = (e: PointerEvent) => {
@@ -140,72 +145,74 @@ export function PrivateDocumentAction({
   const badge = doc ? fileBadge(doc.type) : null
 
   return (
-    <div className="relative inline-flex items-center gap-1">
+    <div className="inline-flex items-center gap-1">
       <button type="button" onClick={handleView} className={buttonClass}>
         <Eye size={12} />
         {viewLabel}
         {badge && <span className="ml-0.5 text-[9px] font-semibold tracking-wide text-gray">{badge}</span>}
       </button>
-      <button
-        type="button"
-        onClick={() => {
-          setMenuOpen((v) => !v)
-          setConfirmingDelete(false)
-        }}
-        aria-label={`More options for ${viewLabel}`}
-        className="inline-flex h-6 w-6 items-center justify-center rounded-full border border-line text-ink-soft transition-colors hover:border-blue/40"
-      >
-        <MoreHorizontal size={13} />
-      </button>
 
-      {menuOpen && (
-        <div
-          ref={menuRef}
-          className="absolute right-0 top-full z-10 mt-1 w-40 overflow-hidden rounded-xl border border-line bg-surface shadow-lg"
+      {/* menuRef wraps the trigger AND the panel so a tap on the trigger
+          is never treated as an "outside" tap by the effect above. */}
+      <div ref={menuRef} className="relative">
+        <button
+          type="button"
+          onClick={() => {
+            setMenuOpen((v) => !v)
+            setConfirmingDelete(false)
+          }}
+          aria-label={`More options for ${viewLabel}`}
+          className="inline-flex h-6 w-6 items-center justify-center rounded-full border border-line text-ink-soft transition-colors hover:border-blue/40"
         >
-          {confirmingDelete ? (
-            <div className="p-2.5">
-              <p className="text-xs text-ink">Delete this {noun}?</p>
-              <div className="mt-2 flex gap-1.5">
+          <MoreHorizontal size={13} />
+        </button>
+
+        {menuOpen && (
+          <div className="absolute right-0 top-full z-10 mt-1 w-40 overflow-hidden rounded-xl border border-line bg-surface shadow-lg">
+            {confirmingDelete ? (
+              <div className="p-2.5">
+                <p className="text-xs text-ink">Delete this {noun}?</p>
+                <div className="mt-2 flex gap-1.5">
+                  <button
+                    type="button"
+                    onClick={() => setConfirmingDelete(false)}
+                    className="flex-1 rounded-full border border-line py-1 text-xs font-medium text-ink-soft"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleDelete}
+                    className="flex-1 rounded-full bg-red py-1 text-xs font-medium text-white"
+                  >
+                    Delete
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <>
                 <button
                   type="button"
-                  onClick={() => setConfirmingDelete(false)}
-                  className="flex-1 rounded-full border border-line py-1 text-xs font-medium text-ink-soft"
+                  onClick={() => {
+                    setMenuOpen(false)
+                    inputRef.current?.click()
+                  }}
+                  className="block w-full px-3 py-2 text-left text-xs font-medium text-blue hover:bg-bg-soft"
                 >
-                  Cancel
+                  Replace
                 </button>
                 <button
                   type="button"
-                  onClick={handleDelete}
-                  className="flex-1 rounded-full bg-red py-1 text-xs font-medium text-white"
+                  onClick={() => setConfirmingDelete(true)}
+                  className="block w-full border-t border-line px-3 py-2 text-left text-xs font-medium text-red hover:bg-bg-soft"
                 >
                   Delete
                 </button>
-              </div>
-            </div>
-          ) : (
-            <>
-              <button
-                type="button"
-                onClick={() => {
-                  setMenuOpen(false)
-                  inputRef.current?.click()
-                }}
-                className="block w-full px-3 py-2 text-left text-xs font-medium text-blue hover:bg-bg-soft"
-              >
-                Replace
-              </button>
-              <button
-                type="button"
-                onClick={() => setConfirmingDelete(true)}
-                className="block w-full border-t border-line px-3 py-2 text-left text-xs font-medium text-red hover:bg-bg-soft"
-              >
-                Delete
-              </button>
-            </>
-          )}
-        </div>
-      )}
+              </>
+            )}
+          </div>
+        )}
+      </div>
 
       {fileInput}
       {lightboxSrc && <Lightbox src={lightboxSrc} alt={viewLabel} onClose={closeLightbox} />}
