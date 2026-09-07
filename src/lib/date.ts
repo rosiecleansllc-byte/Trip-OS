@@ -36,6 +36,14 @@ export function formatTime(time?: string): string | undefined {
   return d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })
 }
 
+/** e.g. "Sep 29, 4:00 PM" — for a full ISODateTime like a cancellation deadline. */
+export function formatDateTimeCompact(iso: string): string {
+  const [datePart, timePart] = iso.split('T')
+  const date = formatDateCompact(datePart)
+  const time = timePart ? formatTime(timePart.slice(0, 5)) : undefined
+  return time ? `${date}, ${time}` : date
+}
+
 export function daysUntil(iso: string, now: Date = new Date()): number {
   const target = parseISODate(iso)
   const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate())

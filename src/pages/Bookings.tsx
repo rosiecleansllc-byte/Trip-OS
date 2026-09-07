@@ -1,9 +1,10 @@
 import { AlertTriangle, Award, Bed, Circle, ClipboardList, Ticket, UtensilsCrossed } from 'lucide-react'
 import type { Booking, BookingCategory, Trip } from '../types/trip'
+import { ActionRow } from '../components/ui/ActionRow'
 import { Card } from '../components/ui/Card'
 import { SectionHeader } from '../components/ui/SectionHeader'
 import { StatusTag } from '../components/ui/StatusTag'
-import { formatDateCompact } from '../lib/date'
+import { formatDateCompact, formatDateTimeCompact } from '../lib/date'
 import { formatMoney } from '../lib/money'
 import { useAppStore } from '../store/useAppStore'
 import { redactBooking } from '../lib/share'
@@ -47,10 +48,22 @@ function BookingRow({ booking, shareMode }: { booking: Booking; shareMode: boole
       {!shareMode && b.notes && <p className="mt-2 text-xs text-ink-soft">{b.notes}</p>}
       {b.tip && <p className="mt-2 text-xs italic text-gray">{b.tip}</p>}
 
+      <ActionRow
+        location={b.address}
+        websiteUrl={b.websiteUrl}
+        ticketUrl={b.ticketUrl}
+        reservationUrl={b.reservationUrl}
+        menuUrl={b.menuUrl}
+        phone={b.phone}
+        modifyUrl={b.modifyUrl}
+        shareMode={shareMode}
+        className="mt-3"
+      />
+
       {b.cancellationDeadline && b.status !== 'cancelled' && (
         <div className="mt-2.5 flex items-center gap-1.5 rounded-lg bg-red-tint px-2.5 py-1.5 text-xs text-red">
           <AlertTriangle size={13} />
-          Cancel/confirm by {formatDateCompact(b.cancellationDeadline)}
+          Cancel/confirm by {formatDateTimeCompact(b.cancellationDeadline)}
         </div>
       )}
     </Card>

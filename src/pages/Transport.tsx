@@ -1,5 +1,6 @@
 import { Car, Plane, Train } from 'lucide-react'
 import type { Transport as TransportLeg, TransportMode, Trip } from '../types/trip'
+import { ActionRow } from '../components/ui/ActionRow'
 import { Card } from '../components/ui/Card'
 import { SectionHeader } from '../components/ui/SectionHeader'
 import { StatusTag } from '../components/ui/StatusTag'
@@ -39,6 +40,16 @@ function TransportRow({ leg, shareMode }: { leg: TransportLeg; shareMode: boolea
       </div>
       {!shareMode && t.notes && <p className="mt-2 text-xs text-ink-soft">{t.notes}</p>}
       {t.tip && <p className="mt-2 text-xs italic text-gray">{t.tip}</p>}
+
+      <ActionRow
+        location={t.location}
+        websiteUrl={t.websiteUrl}
+        ticketUrl={t.ticketUrl}
+        phone={t.phone}
+        modifyUrl={t.modifyUrl}
+        shareMode={shareMode}
+        className="mt-3"
+      />
     </Card>
   )
 }

@@ -43,10 +43,17 @@ one-line change until a picker exists.
 
 ## Images
 
-Outfit and capsule-item photos are placeholders (`ImagePlaceholder`).
-Drop a real image URL into a capsule item's `imageUrl` or an outfit
-board's `imageUrl` in the seed data and it renders in place of the
-placeholder automatically.
+Every capsule item and outfit board is a clean image slot: no photo yet
+renders `ImagePlaceholder`; adding an `imageUrl` renders the real photo
+in its place automatically, same size and position, no other changes
+needed.
+
+Recommended workflow: drop files into `public/images/capsule/<id>.jpg`
+(e.g. `c1.jpg` for the navy trench) and `public/images/outfits/<id>.jpg`
+(e.g. `ob1.jpg` for Day 1's board) — the ids already match each item in
+`src/data/trips/france-2026.ts` — then set that item's `imageUrl` to
+`/images/capsule/c1.jpg` or `/images/outfits/ob1.jpg`. Any public URL
+works too, not just local files.
 
 ## Share mode
 

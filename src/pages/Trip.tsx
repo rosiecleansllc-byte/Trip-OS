@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react'
 import { ChevronDown, CloudSun } from 'lucide-react'
 import { clsx } from 'clsx'
 import type { Trip } from '../types/trip'
+import { ActionRow } from '../components/ui/ActionRow'
 import { Card } from '../components/ui/Card'
 import { formatDateShort, isSameISODate } from '../lib/date'
 import { useAppStore } from '../store/useAppStore'
@@ -66,11 +67,11 @@ export function TripPage({ trip }: { trip: Trip }) {
                       : 'border-line bg-surface'
                 )}
               />
-              <button
-                onClick={() => setOpenDay(isOpen ? null : day.id)}
-                className="w-full pb-3 text-left"
-              >
-                <Card className={clsx('p-4 transition-colors', isToday && 'border-blue/50 bg-blue-tint/40')}>
+              <Card className={clsx('mb-3 p-4 transition-colors', isToday && 'border-blue/50 bg-blue-tint/40')}>
+                <button
+                  onClick={() => setOpenDay(isOpen ? null : day.id)}
+                  className="w-full text-left"
+                >
                   <div className="flex items-start justify-between gap-3">
                     <div>
                       <p className="text-xs font-medium text-gray">
@@ -84,31 +85,42 @@ export function TripPage({ trip }: { trip: Trip }) {
                     />
                   </div>
                   <p className="mt-1.5 text-sm text-ink-soft">{day.outfitNote}</p>
+                </button>
 
-                  {isOpen && (
-                    <>
-                      {day.weatherNote && (
-                        <p className="mt-3 flex items-start gap-1.5 rounded-lg bg-blue-tint px-2.5 py-1.5 text-xs text-blue">
-                          <CloudSun size={13} className="mt-0.5 shrink-0" />
-                          {day.weatherNote}
-                        </p>
-                      )}
-                      <ul className="mt-3 space-y-2 border-t border-line pt-3">
-                        {day.scheduleItems.map((item) => (
-                          <li key={item.id} className="flex gap-2.5 text-sm">
-                            <span className="w-11 shrink-0 text-xs text-blue">{item.time ?? ''}</span>
-                            <div>
-                              <p className="text-ink">{item.label}</p>
-                              {!shareMode && item.notes && <p className="text-xs text-ink-soft">{item.notes}</p>}
-                              {item.tip && <p className="text-xs italic text-gray">{item.tip}</p>}
-                            </div>
-                          </li>
-                        ))}
-                      </ul>
-                    </>
-                  )}
-                </Card>
-              </button>
+                {isOpen && (
+                  <>
+                    {day.weatherNote && (
+                      <p className="mt-3 flex items-start gap-1.5 rounded-lg bg-blue-tint px-2.5 py-1.5 text-xs text-blue">
+                        <CloudSun size={13} className="mt-0.5 shrink-0" />
+                        {day.weatherNote}
+                      </p>
+                    )}
+                    <ul className="mt-3 space-y-2.5 border-t border-line pt-3">
+                      {day.scheduleItems.map((item) => (
+                        <li key={item.id} className="flex gap-2.5 text-sm">
+                          <span className="w-11 shrink-0 text-xs text-blue">{item.time ?? ''}</span>
+                          <div className="min-w-0 flex-1">
+                            <p className="text-ink">{item.label}</p>
+                            {!shareMode && item.notes && <p className="text-xs text-ink-soft">{item.notes}</p>}
+                            {item.tip && <p className="text-xs italic text-gray">{item.tip}</p>}
+                            <ActionRow
+                              location={item.location}
+                              websiteUrl={item.websiteUrl}
+                              ticketUrl={item.ticketUrl}
+                              reservationUrl={item.reservationUrl}
+                              menuUrl={item.menuUrl}
+                              phone={item.phone}
+                              modifyUrl={item.modifyUrl}
+                              shareMode={shareMode}
+                              className="mt-1.5"
+                            />
+                          </div>
+                        </li>
+                      ))}
+                    </ul>
+                  </>
+                )}
+              </Card>
             </li>
           )
         })}

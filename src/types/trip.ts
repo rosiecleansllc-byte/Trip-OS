@@ -45,7 +45,20 @@ export interface Deadline {
   done?: boolean
 }
 
-export interface ScheduleItem {
+// External actions a booking, transport leg, or schedule item can expose as
+// one-tap buttons. All are public/shareable EXCEPT modifyUrl, which is
+// treated as private (it typically carries a personal manage/cancel token)
+// and is always stripped in Share mode — see components/ui/ActionRow.tsx.
+export interface LinkActions {
+  websiteUrl?: string
+  ticketUrl?: string
+  reservationUrl?: string
+  menuUrl?: string
+  phone?: string
+  modifyUrl?: string // private — stripped in Share mode
+}
+
+export interface ScheduleItem extends LinkActions {
   id: string
   time?: string // HH:mm, omit for all-day items
   label: string
@@ -76,7 +89,7 @@ export interface PrepItem {
   status: 'pending' | 'done'
 }
 
-export interface Booking {
+export interface Booking extends LinkActions {
   id: string
   category: BookingCategory
   name: string
@@ -88,14 +101,13 @@ export interface Booking {
   cost?: Money | null
   isPointsBooking?: boolean
   confirmationCode?: string
-  address?: string
+  address?: string // directions target
   notes?: string // private — stripped in Share mode
   tip?: string // public — survives Share mode
-  cancellationDeadline?: ISODate
-  bookingUrl?: string
+  cancellationDeadline?: ISODateTime
 }
 
-export interface Transport {
+export interface Transport extends LinkActions {
   id: string
   mode: TransportMode
   from: string
@@ -110,6 +122,7 @@ export interface Transport {
   status: BookingStatus
   notes?: string
   tip?: string
+  location?: string // directions target, e.g. the departure station
 }
 
 export type CapsuleCategory =

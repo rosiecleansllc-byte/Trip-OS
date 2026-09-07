@@ -1,7 +1,8 @@
 import { useMemo } from 'react'
 import { Link } from 'react-router-dom'
-import { CheckCircle2, Circle, CloudSun, MapPin, Navigation, ShoppingBag, Sparkles } from 'lucide-react'
+import { CheckCircle2, Circle, CloudSun, MapPin, ShoppingBag, Sparkles } from 'lucide-react'
 import type { Trip } from '../types/trip'
+import { ActionRow } from '../components/ui/ActionRow'
 import { Card } from '../components/ui/Card'
 import { SectionHeader } from '../components/ui/SectionHeader'
 import { ImagePlaceholder } from '../components/ui/ImagePlaceholder'
@@ -14,11 +15,6 @@ const SCHEDULE_ICON: Record<string, string> = {
   transport: '→',
   free: '·',
   lodging: '⌂',
-}
-
-function directionsUrl(place?: string) {
-  if (!place) return undefined
-  return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(place)}`
 }
 
 export function Today({ trip }: { trip: Trip }) {
@@ -84,18 +80,19 @@ export function Today({ trip }: { trip: Trip }) {
                   </span>
                   <div className="min-w-0 flex-1">
                     <p className="text-sm font-medium text-ink">{item.label}</p>
-                    {item.location && (
-                      <a
-                        href={directionsUrl(item.location)}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="mt-1 inline-flex items-center gap-1 text-xs text-blue"
-                      >
-                        <Navigation size={12} /> Directions
-                      </a>
-                    )}
                     {!shareMode && item.notes && <p className="mt-1 text-xs text-ink-soft">{item.notes}</p>}
                     {item.tip && <p className="mt-1 text-xs italic text-gray">{item.tip}</p>}
+                    <ActionRow
+                      location={item.location}
+                      websiteUrl={item.websiteUrl}
+                      ticketUrl={item.ticketUrl}
+                      reservationUrl={item.reservationUrl}
+                      menuUrl={item.menuUrl}
+                      phone={item.phone}
+                      modifyUrl={item.modifyUrl}
+                      shareMode={shareMode}
+                      className="mt-2"
+                    />
                   </div>
                 </Card>
               </li>
