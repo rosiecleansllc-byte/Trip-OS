@@ -4,13 +4,26 @@ export function ImagePlaceholder({
   label,
   className = '',
   imageUrl,
+  fit = 'contain',
+  onClick,
 }: {
   label: string
   className?: string
   imageUrl?: string
+  /** 'contain' (default) never crops a garment — real product photos should use it.
+   *  Use 'cover' only for purely decorative fills where cropping is fine. */
+  fit?: 'contain' | 'cover'
+  onClick?: () => void
 }) {
   if (imageUrl) {
-    return <img src={imageUrl} alt={label} className={`object-cover ${className}`} />
+    return (
+      <img
+        src={imageUrl}
+        alt={label}
+        onClick={onClick}
+        className={`bg-bg-soft ${fit === 'contain' ? 'object-contain' : 'object-cover'} ${onClick ? 'cursor-zoom-in' : ''} ${className}`}
+      />
+    )
   }
   return (
     <div

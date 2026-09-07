@@ -185,6 +185,7 @@ export interface TripMeta {
   coverImageUrl?: string
   weatherDisclaimer?: string
   budgetNote?: string
+  outfitBoardImageUrl?: string // full capsule + daily-outfit board, for the Pack lightbox
 }
 
 export interface Trip {
