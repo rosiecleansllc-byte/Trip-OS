@@ -101,6 +101,9 @@ export function Today({ trip }: { trip: Trip }) {
                       phone={item.phone}
                       privateTicketUrl={item.privateTicketUrl}
                       modifyUrl={item.modifyUrl}
+                      privateDocumentKey={item.privateDocumentKey}
+                      privateDocumentLabel={item.privateDocumentLabel}
+                      privateDocumentType={item.privateDocumentType}
                       shareMode={shareMode}
                       className="mt-2"
                     />

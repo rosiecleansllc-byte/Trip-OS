@@ -52,9 +52,9 @@ export interface Deadline {
 // they point at a venue's official site, general info/purchase page, or
 // contact info, safe to show anyone. They always render, in Share mode too.
 //
-// privateTicketUrl and modifyUrl are PRIVATE and must NEVER render in
-// Share mode — see components/ui/ActionRow.tsx, which enforces this
-// centrally so no page can accidentally leak one:
+// privateTicketUrl, modifyUrl, and the privateDocument* fields are PRIVATE
+// and must NEVER render in Share mode — see components/ui/ActionRow.tsx,
+// which enforces this centrally so no page can accidentally leak one:
 //   - modifyUrl carries a personal manage/cancel token for the booking.
 //   - privateTicketUrl is the traveler's own purchased ticket: the actual
 //     e-ticket/PDF/QR-code link from the confirmation email. NEVER put a
@@ -64,13 +64,34 @@ export interface Deadline {
 //     buys a ticket" and `privateTicketUrl` for "this trip's actual
 //     ticket" — the two are rendered differently by ActionRow (see below)
 //     specifically so the private one can never leak into Share mode.
+//   - privateDocumentKey / privateDocumentLabel / privateDocumentType are a
+//     photo or PDF of the traveler's own reservation confirmation, order
+//     receipt, or QR-code ticket. This app has no backend and no login (by
+//     design), so there is no server that could authenticate a request for
+//     a "private" file — anything placed under public/ or bundled into the
+//     JS is downloadable by anyone with the deployed URL, Share mode or
+//     not. So these documents are NEVER shipped as static assets or seed
+//     data at all. Instead `privateDocumentKey` names a slot (see
+//     lib/privateDocs.ts) that each traveler fills in on their own device:
+//     ActionRow shows an "Add {label}" button that reads a local file
+//     (image or PDF) straight into IndexedDB, and a "View {label}" button
+//     once one is stored — the file itself never leaves the browser, is
+//     never in git, and is never part of the deployed site. The same key
+//     used on a Booking, Transport, and matching ScheduleItem shares one
+//     stored document across Bookings/Transport/Today. privateDocumentType
+//     picks the button label when privateDocumentLabel is omitted ("View
+//     ticket" / "View reservation" / "View confirmation" / "View receipt").
+//     NEVER add a field here that points at a hosted file for a personal
+//     document — if real authenticated hosting is ever added, it needs its
+//     own reviewed field, not a repurposing of this one.
 //
 // ActionRow's Ticket button: outside Share mode it prefers
 // privateTicketUrl (opens the traveler's actual ticket) and falls back to
 // ticketUrl. In Share mode it only ever considers ticketUrl — if a
 // privateTicketUrl exists but no public ticketUrl, the Ticket button is
 // hidden entirely in Share mode rather than falling back to the private
-// link.
+// link. The private-document button follows the same rule as modifyUrl:
+// rendered only outside Share mode, with no public fallback.
 export interface LinkActions {
   websiteUrl?: string
   ticketUrl?: string // public — the info/purchase page anyone can use
@@ -79,6 +100,24 @@ export interface LinkActions {
   phone?: string
   privateTicketUrl?: string // private — this traveler's actual e-ticket/PDF/QR
   modifyUrl?: string // private — manage/cancel link
+  privateDocumentKey?: string // private — slot name for a device-local ticket/reservation/confirmation image or PDF (see lib/privateDocs.ts); never a hosted URL
+  privateDocumentLabel?: string // button text override, e.g. "View ticket" — defaults from privateDocumentType
+  privateDocumentType?: 'ticket' | 'reservation' | 'confirmation' | 'receipt'
+}
+
+// A public, shareable reference resource (an official transit map, a
+// visa-requirements page, an embassy contact page, …) — safe to show
+// anyone, Share mode included, unlike the traveler's own private
+// documents above. isPrivate exists only so a resource can be excluded
+// from Share mode without being deleted; omit it (or set false) for the
+// normal, fully-public case.
+export interface TravelResource {
+  id: string
+  title: string
+  description?: string
+  resourceUrl: string
+  category: string
+  isPrivate?: boolean
 }
 
 export interface ScheduleItem extends LinkActions {
@@ -197,4 +236,5 @@ export interface Trip {
   capsule: CapsuleItem[]
   outfitBoards: OutfitBoard[]
   prepItems: PrepItem[]
+  resources?: TravelResource[] // public reference links, e.g. an official transit map
 }

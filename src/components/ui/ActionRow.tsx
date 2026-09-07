@@ -1,6 +1,7 @@
 import { CalendarCheck, Globe, Navigation, Phone, SquarePen, Ticket, UtensilsCrossed } from 'lucide-react'
 import type { LinkActions } from '../../types/trip'
 import { directionsUrl, telUrl } from '../../lib/links'
+import { PrivateDocumentAction } from './PrivateDocumentAction'
 
 interface ActionRowProps extends LinkActions {
   location?: string
@@ -17,6 +18,9 @@ export function ActionRow({
   phone,
   privateTicketUrl,
   modifyUrl,
+  privateDocumentKey,
+  privateDocumentLabel,
+  privateDocumentType,
   shareMode = false,
   className = '',
 }: ActionRowProps) {
@@ -36,7 +40,13 @@ export function ActionRow({
     !shareMode && modifyUrl && { label: 'Modify', href: modifyUrl, icon: SquarePen, external: true },
   ].filter((a): a is { label: string; href: string; icon: typeof Navigation; external: boolean } => Boolean(a))
 
-  if (actions.length === 0) return null
+  // The private-document action (Add/View a locally-stored ticket,
+  // reservation, or confirmation) follows the same rule as modifyUrl:
+  // rendered only outside Share mode. Unlike every other action here it's
+  // never a URL — see PrivateDocumentAction / lib/privateDocs.ts.
+  const showDocumentAction = !shareMode && Boolean(privateDocumentKey)
+
+  if (actions.length === 0 && !showDocumentAction) return null
 
   return (
     <div className={`flex flex-wrap gap-1.5 ${className}`}>
@@ -52,6 +62,9 @@ export function ActionRow({
           {a.label}
         </a>
       ))}
+      {showDocumentAction && (
+        <PrivateDocumentAction docKey={privateDocumentKey!} label={privateDocumentLabel} docType={privateDocumentType} />
+      )}
     </div>
   )
 }
