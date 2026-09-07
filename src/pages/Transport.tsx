@@ -21,10 +21,12 @@ const MODE_META: Record<TransportMode, { label: string; icon: typeof Plane }> = 
 function TransportRow({
   leg,
   manualItem,
+  trip,
   shareMode,
 }: {
   leg: TransportLeg
   manualItem?: ManualTripItem
+  trip: Trip
   shareMode: boolean
 }) {
   const t = shareMode ? redactTransport(leg) : leg
@@ -42,7 +44,7 @@ function TransportRow({
         </div>
         <div className="flex shrink-0 items-center gap-1.5">
           <StatusTag status={t.status} />
-          {!shareMode && manualItem && <ManualItemMenu item={manualItem} />}
+          {!shareMode && manualItem && <ManualItemMenu item={manualItem} trip={trip} />}
         </div>
       </div>
       <div className="mt-2.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-ink-soft">
@@ -109,7 +111,7 @@ export function Transport({ trip }: { trip: Trip }) {
             />
             <div className="space-y-2.5">
               {items.map((t) => (
-                <TransportRow key={t.id} leg={t} manualItem={manualItemsById.get(t.id)} shareMode={shareMode} />
+                <TransportRow key={t.id} leg={t} manualItem={manualItemsById.get(t.id)} trip={trip} shareMode={shareMode} />
               ))}
             </div>
           </div>

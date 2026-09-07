@@ -4,7 +4,7 @@ import { Bed, Car, CheckCircle2, ChevronLeft, StickyNote, Ticket, UtensilsCrosse
 import type { ManualItemStatus, ManualItemType, ManualTransportMode, ManualTripItem, OpenItem, Trip } from '../../types/trip'
 import { useAppStore } from '../../store/useAppStore'
 import { useManualItemUiStore } from '../../store/useManualItemUiStore'
-import { createManualItem, findResolvableOpenItems } from '../../lib/manualItems'
+import { createManualItem, findOpenItemsToUnresolve, findResolvableOpenItems } from '../../lib/manualItems'
 
 const TYPE_META: Record<ManualItemType, { label: string; icon: typeof Bed; hint: string }> = {
   stay: { label: 'Stay', icon: Bed, hint: 'A hotel, rental, or place to sleep' },
@@ -118,17 +118,22 @@ export function AddItemSheet({ trip }: { trip: Trip }) {
   const openPicker = useManualItemUiStore((s) => s.openPicker)
   const close = useManualItemUiStore((s) => s.close)
 
+  const manualItems = useAppStore((s) => s.manualItems)
+  const resolvedOpenItemIds = useAppStore((s) => s.resolvedOpenItemIds)
   const addManualItem = useAppStore((s) => s.addManualItem)
   const updateManualItem = useAppStore((s) => s.updateManualItem)
   const resolveOpenItem = useAppStore((s) => s.resolveOpenItem)
+  const unresolveOpenItem = useAppStore((s) => s.unresolveOpenItem)
 
   const [form, setForm] = useState<FormState>(() => emptyForm(trip))
   const [resolveCandidates, setResolveCandidates] = useState<OpenItem[] | null>(null)
+  const [savedItemId, setSavedItemId] = useState<string | null>(null)
 
   useEffect(() => {
     if (step !== 'form') return
     setForm(editingItem ? formFromItem(editingItem) : emptyForm(trip))
     setResolveCandidates(null)
+    setSavedItemId(null)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [step, editingItem])
 
@@ -163,15 +168,34 @@ export function AddItemSheet({ trip }: { trip: Trip }) {
     }
 
     let saved: ManualTripItem
+    // Tracks resolvedOpenItemIds as-of-this-save — the store update from
+    // unresolveOpenItem below won't be reflected in the resolvedOpenItemIds
+    // read at the top of this render, so candidates are filtered against
+    // this local copy instead of the (now stale) closed-over one.
+    const effectiveResolvedIds = { ...resolvedOpenItemIds }
+
     if (editingItem) {
       updateManualItem(editingItem.id, base)
       saved = { ...editingItem, ...base }
+      // The edit may have changed the date/route enough that this item no
+      // longer covers an OpenItem it previously justified resolving —
+      // reconcile against the list with the edit already applied and flip
+      // anything now-unjustified back to open.
+      const nextManualItems = manualItems.map((i) => (i.id === saved.id ? saved : i))
+      for (const openItemId of findOpenItemsToUnresolve(trip, nextManualItems, resolvedOpenItemIds)) {
+        unresolveOpenItem(trip.meta.id, openItemId)
+        delete effectiveResolvedIds[`${trip.meta.id}:${openItemId}`]
+      }
     } else {
       saved = createManualItem(base)
       addManualItem(saved)
     }
 
-    const candidates = findResolvableOpenItems(trip, saved)
+    // Only offer to resolve OpenItems that aren't already resolved.
+    const candidates = findResolvableOpenItems(trip, saved).filter(
+      (oi) => !effectiveResolvedIds[`${trip.meta.id}:${oi.id}`]
+    )
+    setSavedItemId(saved.id)
     if (candidates.length > 0) {
       setResolveCandidates(candidates)
     } else {
@@ -209,6 +233,11 @@ export function AddItemSheet({ trip }: { trip: Trip }) {
                     type="button"
                     onClick={() => {
                       resolveOpenItem(trip.meta.id, oi.id)
+                      // Record the relationship explicitly (see
+                      // lib/manualItems.ts findOpenItemsToUnresolve) so
+                      // deleting or editing this item later can reopen
+                      // the OpenItem if nothing else still covers it.
+                      if (savedItemId) updateManualItem(savedItemId, { relatedOpenItemId: oi.id })
                       setResolveCandidates((c) => (c ? c.filter((x) => x.id !== oi.id) : c))
                     }}
                     className="shrink-0 rounded-full bg-blue px-3 py-1.5 text-xs font-medium text-white"

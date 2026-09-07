@@ -1,9 +1,10 @@
 import { useEffect, useRef, useState } from 'react'
 import { MoreHorizontal } from 'lucide-react'
-import type { ManualTripItem } from '../../types/trip'
+import type { ManualTripItem, Trip } from '../../types/trip'
 import { useAppStore } from '../../store/useAppStore'
 import { useManualItemUiStore } from '../../store/useManualItemUiStore'
 import { deletePrivateDoc } from '../../lib/privateDocs'
+import { findOpenItemsToUnresolve } from '../../lib/manualItems'
 
 // The ••• menu shown on a manually-added item (a seeded booking/transport
 // leg/schedule item never gets one — see isManualId in lib/manualItems.ts,
@@ -11,11 +12,22 @@ import { deletePrivateDoc } from '../../lib/privateDocs'
 // same trigger + panel + inline delete-confirm pattern as
 // PrivateDocumentAction for a consistent feel across the two "•••" menus
 // in the app.
-export function ManualItemMenu({ item, className = '' }: { item: ManualTripItem; className?: string }) {
+export function ManualItemMenu({
+  item,
+  trip,
+  className = '',
+}: {
+  item: ManualTripItem
+  trip: Trip
+  className?: string
+}) {
   const [open, setOpen] = useState(false)
   const [confirmingDelete, setConfirmingDelete] = useState(false)
   const menuRef = useRef<HTMLDivElement>(null)
+  const manualItems = useAppStore((s) => s.manualItems)
+  const resolvedOpenItemIds = useAppStore((s) => s.resolvedOpenItemIds)
   const deleteManualItem = useAppStore((s) => s.deleteManualItem)
+  const unresolveOpenItem = useAppStore((s) => s.unresolveOpenItem)
   const openEdit = useManualItemUiStore((s) => s.openEdit)
 
   useEffect(() => {
@@ -35,6 +47,14 @@ export function ManualItemMenu({ item, className = '' }: { item: ManualTripItem;
       await deletePrivateDoc(item.privateDocumentKey).catch(() => {})
     }
     deleteManualItem(item.id)
+    // This item may have been the only thing still justifying a
+    // resolved OpenItem (see lib/manualItems.ts) — recompute against
+    // the list with it removed and flip any now-unjustified ones back
+    // to open, rather than leaving a stale "resolved" behind.
+    const remaining = manualItems.filter((i) => i.id !== item.id)
+    for (const openItemId of findOpenItemsToUnresolve(trip, remaining, resolvedOpenItemIds)) {
+      unresolveOpenItem(trip.meta.id, openItemId)
+    }
     setOpen(false)
     setConfirmingDelete(false)
   }

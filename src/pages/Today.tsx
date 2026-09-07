@@ -41,10 +41,12 @@ const SCHEDULE_ICON: Record<string, string> = {
 function ScheduleCard({
   item,
   manualItem,
+  trip,
   emphasize,
 }: {
   item: ScheduleItem
   manualItem?: ManualTripItem
+  trip: Trip
   emphasize?: boolean
 }) {
   const shareMode = useAppStore((s) => s.shareMode)
@@ -58,7 +60,7 @@ function ScheduleCard({
             </p>
             <p className="mt-0.5 text-lg font-medium text-ink">{item.label}</p>
           </div>
-          {!shareMode && manualItem && <ManualItemMenu item={manualItem} className="shrink-0" />}
+          {!shareMode && manualItem && <ManualItemMenu item={manualItem} trip={trip} className="shrink-0" />}
         </div>
       ) : (
         <>
@@ -66,7 +68,7 @@ function ScheduleCard({
             {formatTime(item.time) ?? SCHEDULE_ICON[item.type]}
           </span>
           <p className="min-w-0 flex-1 text-sm font-medium text-ink">{item.label}</p>
-          {!shareMode && manualItem && <ManualItemMenu item={manualItem} className="shrink-0" />}
+          {!shareMode && manualItem && <ManualItemMenu item={manualItem} trip={trip} className="shrink-0" />}
         </>
       )}
       {!shareMode && item.notes && <p className="mt-1 text-xs text-ink-soft">{item.notes}</p>}
@@ -176,14 +178,14 @@ export function Today({ trip }: { trip: Trip }) {
         {next && (
           <div>
             <SectionHeader eyebrow="Next up" title={next.label} />
-            <ScheduleCard item={next} manualItem={manualItemsById.get(next.id)} emphasize />
+            <ScheduleCard item={next} manualItem={manualItemsById.get(next.id)} trip={trip} emphasize />
           </div>
         )}
 
         {after && (
           <div>
             <SectionHeader eyebrow="After that" title={after.label} />
-            <ScheduleCard item={after} manualItem={manualItemsById.get(after.id)} />
+            <ScheduleCard item={after} manualItem={manualItemsById.get(after.id)} trip={trip} />
           </div>
         )}
 
@@ -193,7 +195,7 @@ export function Today({ trip }: { trip: Trip }) {
             <ol className="space-y-2.5">
               {restOfDay.map((item) => (
                 <li key={item.id}>
-                  <ScheduleCard item={item} manualItem={manualItemsById.get(item.id)} />
+                  <ScheduleCard item={item} manualItem={manualItemsById.get(item.id)} trip={trip} />
                 </li>
               ))}
             </ol>

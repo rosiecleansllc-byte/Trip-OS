@@ -22,10 +22,12 @@ const CATEGORY_META: Record<BookingCategory, { label: string; icon: typeof Bed }
 function BookingRow({
   booking,
   manualItem,
+  trip,
   shareMode,
 }: {
   booking: Booking
   manualItem?: ManualTripItem
+  trip: Trip
   shareMode: boolean
 }) {
   const b = shareMode ? redactBooking(booking) : booking
@@ -44,7 +46,7 @@ function BookingRow({
         </div>
         <div className="flex shrink-0 items-center gap-1.5">
           <StatusTag status={b.status} />
-          {!shareMode && manualItem && <ManualItemMenu item={manualItem} />}
+          {!shareMode && manualItem && <ManualItemMenu item={manualItem} trip={trip} />}
         </div>
       </div>
 
@@ -92,6 +94,7 @@ export function Bookings({ trip }: { trip: Trip }) {
   const manualItems = useAppStore((s) => s.manualItems)
   const resolvedOpenItemIds = useAppStore((s) => s.resolvedOpenItemIds)
   const resolveOpenItem = useAppStore((s) => s.resolveOpenItem)
+  const updateManualItem = useAppStore((s) => s.updateManualItem)
   const effectiveTrip = getEffectiveTrip(trip, manualItems, resolvedOpenItemIds)
   const manualItemsById = new Map(manualItems.filter((i) => i.tripId === trip.meta.id).map((i) => [i.id, i]))
 
@@ -124,7 +127,7 @@ export function Bookings({ trip }: { trip: Trip }) {
             <SectionHeader eyebrow={`${items.length} ${items.length === 1 ? 'item' : 'items'}`} title={meta.label} />
             <div className="space-y-2.5">
               {items.map((b) => (
-                <BookingRow key={b.id} booking={b} manualItem={manualItemsById.get(b.id)} shareMode={shareMode} />
+                <BookingRow key={b.id} booking={b} manualItem={manualItemsById.get(b.id)} trip={trip} shareMode={shareMode} />
               ))}
             </div>
           </div>
@@ -147,7 +150,15 @@ export function Bookings({ trip }: { trip: Trip }) {
                   {resolvableBy.length > 0 && (
                     <button
                       type="button"
-                      onClick={() => resolveOpenItem(trip.meta.id, item.id)}
+                      onClick={() => {
+                        resolveOpenItem(trip.meta.id, item.id)
+                        // Record which manual item(s) justify this
+                        // resolution (lib/manualItems.ts
+                        // findOpenItemsToUnresolve reads this back) so
+                        // deleting or editing one of them later can
+                        // reopen the item if nothing else still covers it.
+                        resolvableBy.forEach((mi) => updateManualItem(mi.id, { relatedOpenItemId: item.id }))
+                      }}
                       className="shrink-0 rounded-full bg-blue px-2.5 py-1 text-xs font-medium text-white"
                     >
                       Mark resolved

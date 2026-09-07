@@ -204,23 +204,29 @@ export function getEffectiveTrip(
   }
 }
 
-// Which currently-open OpenItems a manual stay/transport item plausibly
-// resolves — matched generically by OpenItem.category and date coverage,
-// never by label text, so this works for any trip without hardcoding.
-// Callers show these as "Mark resolved" suggestions; nothing here
-// auto-resolves anything.
-export function findResolvableOpenItems(trip: Trip, item: ManualTripItem): OpenItem[] {
+// Whether a manual item plausibly resolves a given OpenItem — matched
+// generically by OpenItem.category and date coverage, never by label
+// text, so this works for any trip without hardcoding. This single
+// predicate backs findResolvableOpenItems, findManualItemsForOpenItem,
+// and the auto-unresolve check below, so "does X justify Y" is computed
+// exactly one way everywhere.
+export function manualItemQualifiesForOpenItem(trip: Trip, item: ManualTripItem, openItem: OpenItem): boolean {
+  if (item.tripId !== trip.meta.id) return false
   const category = item.type === 'stay' ? 'lodging' : item.type === 'transport' ? 'transport' : null
-  if (!category) return []
+  if (category !== openItem.category) return false
+  if (!openItem.relatedDayId) return true
+  const day = trip.days.find((d) => d.id === openItem.relatedDayId)
+  if (!day) return true
   const start = item.date
   const end = item.endDate ?? item.date
-  return trip.openItems.filter((oi) => {
-    if (oi.status !== 'open' || oi.category !== category) return false
-    if (!oi.relatedDayId) return true
-    const day = trip.days.find((d) => d.id === oi.relatedDayId)
-    if (!day) return true
-    return day.date >= start && day.date <= end
-  })
+  return day.date >= start && day.date <= end
+}
+
+// Which currently-open OpenItems a manual stay/transport item plausibly
+// resolves. Callers show these as "Mark resolved" suggestions; nothing
+// here auto-resolves anything.
+export function findResolvableOpenItems(trip: Trip, item: ManualTripItem): OpenItem[] {
+  return trip.openItems.filter((oi) => oi.status === 'open' && manualItemQualifiesForOpenItem(trip, item, oi))
 }
 
 // The reverse lookup — given one open OpenItem, which of the traveler's
@@ -232,14 +238,31 @@ export function findManualItemsForOpenItem(
   manualItems: ManualTripItem[],
   openItem: OpenItem
 ): ManualTripItem[] {
-  const type = openItem.category === 'lodging' ? 'stay' : openItem.category === 'transport' ? 'transport' : null
-  if (!type) return []
-  const day = openItem.relatedDayId ? trip.days.find((d) => d.id === openItem.relatedDayId) : undefined
-  return manualItems.filter((i) => {
-    if (i.tripId !== trip.meta.id || i.type !== type) return false
-    if (!day) return true
-    const start = i.date
-    const end = i.endDate ?? i.date
-    return day.date >= start && day.date <= end
-  })
+  return manualItems.filter((i) => manualItemQualifiesForOpenItem(trip, i, openItem))
+}
+
+// After a manual item is deleted or edited, some previously-resolved
+// OpenItems may no longer be justified. An OpenItem stays resolved only
+// as long as at least one manual item both (a) explicitly claims credit
+// for it via relatedOpenItemId — set when the traveler taps "Mark
+// resolved" — and (b) still qualifies under the same category+date-range
+// check used to offer that button in the first place. Returns the ids of
+// OpenItems that should flip back to open, given the manual items list
+// *after* the delete/edit already applied. Never infers a relationship
+// after the fact from label text or any other heuristic.
+export function findOpenItemsToUnresolve(
+  trip: Trip,
+  manualItems: ManualTripItem[],
+  resolvedOpenItemIds: Record<string, boolean>
+): string[] {
+  const tripManualItems = manualItems.filter((i) => i.tripId === trip.meta.id)
+  return trip.openItems
+    .filter((oi) => resolvedOpenItemIds[`${trip.meta.id}:${oi.id}`])
+    .filter(
+      (oi) =>
+        !tripManualItems.some(
+          (i) => i.relatedOpenItemId === oi.id && manualItemQualifiesForOpenItem(trip, i, oi)
+        )
+    )
+    .map((oi) => oi.id)
 }

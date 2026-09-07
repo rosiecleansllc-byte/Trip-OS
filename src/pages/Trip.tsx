@@ -109,7 +109,7 @@ export function TripPage({ trip }: { trip: Trip }) {
                             <div className="flex items-start justify-between gap-2">
                               <p className="text-ink">{item.label}</p>
                               {!shareMode && manualItemsById.has(item.id) && (
-                                <ManualItemMenu item={manualItemsById.get(item.id)!} className="shrink-0" />
+                                <ManualItemMenu item={manualItemsById.get(item.id)!} trip={trip} className="shrink-0" />
                               )}
                             </div>
                             {!shareMode && item.notes && <p className="text-xs text-ink-soft">{item.notes}</p>}
