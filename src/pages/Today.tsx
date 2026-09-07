@@ -1,11 +1,12 @@
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { CheckCircle2, Circle, CloudSun, MapPin, ShoppingBag, Sparkles } from 'lucide-react'
+import { CheckCircle2, Circle, CloudSun, Maximize2, MapPin, ShoppingBag, Sparkles } from 'lucide-react'
 import type { Trip } from '../types/trip'
 import { ActionRow } from '../components/ui/ActionRow'
 import { Card } from '../components/ui/Card'
 import { SectionHeader } from '../components/ui/SectionHeader'
 import { ImagePlaceholder } from '../components/ui/ImagePlaceholder'
+import { Lightbox } from '../components/ui/Lightbox'
 import { daysUntil, findCurrentDay, findNextDay, formatDateLong, formatTime, tripPhase } from '../lib/date'
 import { useAppStore } from '../store/useAppStore'
 
@@ -22,6 +23,7 @@ export function Today({ trip }: { trip: Trip }) {
   const phase = useMemo(() => tripPhase(trip.meta.startDate, trip.meta.endDate), [trip])
   const today = useMemo(() => findCurrentDay(trip.days), [trip])
   const upcoming = useMemo(() => findNextDay(trip.days), [trip])
+  const [lightboxSrc, setLightboxSrc] = useState<string | null>(null)
 
   if (phase === 'active' && today) {
     const leg = trip.legs.find((l) => l.id === today.legId)
@@ -45,28 +47,36 @@ export function Today({ trip }: { trip: Trip }) {
           </p>
         )}
 
-        <Card className="p-4">
-          <SectionHeader eyebrow="Today's outfit" title={today.outfitNote} />
-          <div className="flex gap-3">
+        <Card className="overflow-hidden">
+          <div className="relative">
             <ImagePlaceholder
-              label="Outfit photo"
+              label="Today's outfit"
               imageUrl={outfitBoard?.imageUrl}
-              className="h-24 w-20 shrink-0 rounded-xl"
+              className="h-72 w-full"
+              onClick={outfitBoard?.imageUrl ? () => setLightboxSrc(outfitBoard.imageUrl!) : undefined}
             />
-            <div className="flex flex-1 flex-wrap content-start gap-1.5">
+            {outfitBoard?.imageUrl && (
+              <span className="pointer-events-none absolute right-2.5 top-2.5 flex h-7 w-7 items-center justify-center rounded-full bg-ink/60 text-white">
+                <Maximize2 size={13} />
+              </span>
+            )}
+          </div>
+          <div className="p-4">
+            <p className="text-sm text-ink">{today.outfitNote}</p>
+            <div className="mt-3 flex flex-wrap gap-1.5">
               {outfitBoard?.itemNames.map((item) => (
                 <span key={item} className="rounded-full border border-line bg-bg px-2.5 py-1 text-xs text-ink-soft">
                   {item}
                 </span>
               ))}
             </div>
+            <Link
+              to="/pack"
+              className="mt-3 inline-flex items-center gap-1 text-xs font-medium text-blue"
+            >
+              <ShoppingBag size={13} /> Full capsule in Pack
+            </Link>
           </div>
-          <Link
-            to="/pack"
-            className="mt-3 inline-flex items-center gap-1 text-xs font-medium text-blue"
-          >
-            <ShoppingBag size={13} /> Full capsule in Pack
-          </Link>
         </Card>
 
         <div>
@@ -122,6 +132,10 @@ export function Today({ trip }: { trip: Trip }) {
               ))}
             </div>
           </div>
+        )}
+
+        {lightboxSrc && (
+          <Lightbox src={lightboxSrc} alt={`${today.title} outfit`} onClose={() => setLightboxSrc(null)} />
         )}
       </div>
     )

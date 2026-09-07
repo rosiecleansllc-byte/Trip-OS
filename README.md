@@ -24,7 +24,9 @@ src/
   lib/                    date, money, and share-mode redaction helpers
   components/
     layout/               TopBar, BottomNav, AppShell
-    ui/                    Card, StatusTag, SectionHeader, ImagePlaceholder
+    ui/                    Card, StatusTag, SectionHeader, ImagePlaceholder,
+                           ActionRow (Directions/Ticket/Website/Call/…),
+                           Lightbox (full-screen image viewer, portal-rendered)
   pages/                  Today, Trip, Bookings, Transport, Pack, Wallet
 ```
 
@@ -43,17 +45,29 @@ one-line change until a picker exists.
 
 ## Images
 
-Every capsule item and outfit board is a clean image slot: no photo yet
-renders `ImagePlaceholder`; adding an `imageUrl` renders the real photo
-in its place automatically, same size and position, no other changes
-needed.
+Every capsule item and outfit board is an image slot: no `imageUrl` set
+renders `ImagePlaceholder` (a labeled gray box); setting one renders the
+real photo in its place automatically, same size and position, no other
+changes needed. `ImagePlaceholder` defaults to `object-contain` so a real
+garment photo is never cropped or distorted, whatever its aspect ratio.
 
-Recommended workflow: drop files into `public/images/capsule/<id>.jpg`
-(e.g. `c1.jpg` for the navy trench) and `public/images/outfits/<id>.jpg`
-(e.g. `ob1.jpg` for Day 1's board) — the ids already match each item in
-`src/data/trips/france-2026.ts` — then set that item's `imageUrl` to
-`/images/capsule/c1.jpg` or `/images/outfits/ob1.jpg`. Any public URL
-works too, not just local files.
+For France 2026, `public/images/` is already populated — all cropped
+from the approved master outfit board (`public/images/outfits/
+france-2026-master-board.webp`, viewable full-screen from the Pack tab's
+"View full outfit board" button):
+
+- `public/images/capsule/<id>.webp` — one crop per capsule piece, id
+  matching `src/data/trips/france-2026.ts` (e.g. `c1.webp` is the navy
+  trench). A couple of items (the optional rain capelet) have no crop
+  since they're not shown on the board — placeholder by design, not an
+  oversight.
+- `public/images/outfits/day-01.webp` … `day-12.webp` — one crop per
+  day's full outfit panel, wired to that day's `OutfitBoard.imageUrl`.
+
+To add a future trip's photos, follow the same pattern: drop files into
+those two folders (any naming works, `.webp` recommended) and point each
+item's `imageUrl` at the path. Any public URL works too, not just local
+files.
 
 ## Share mode
 
