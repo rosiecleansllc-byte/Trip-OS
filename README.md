@@ -27,8 +27,9 @@ src/
     layout/               TopBar, BottomNav, AppShell
     ui/                    Card, StatusTag, SectionHeader, ImagePlaceholder,
                            ActionRow (Directions/Ticket/Website/Call/…),
-                           PrivateDocumentAction (Add/View a device-local
-                           ticket/reservation/confirmation, image or PDF),
+                           PrivateDocumentAction (Add/View/Replace/Delete a
+                           device-local ticket/reservation/confirmation,
+                           image or PDF),
                            Lightbox (full-screen image viewer, portal-rendered)
   pages/                  Today, Trip, Bookings, Transport, Pack, Wallet
 ```
@@ -126,10 +127,22 @@ QR-code tickets are **never** part of the repo or the seed data. Instead:
   renders an **"Add {ticket/reservation/confirmation/receipt}"** button
   until the traveler picks a file (image or PDF) from their own phone —
   it's written straight into this browser's IndexedDB via
-  `lib/privateDocs.ts` and never sent anywhere. Once stored, the same spot
-  shows **"View {…}"** instead, opening images in the existing `Lightbox`
-  (full quality, no compression, `touch-pinch-zoom` for mobile) and PDFs
-  in a new tab via the browser's native viewer.
+  `lib/privateDocs.ts` and never sent anywhere, keeping the original
+  `Blob`, MIME type, and filename exactly as picked (no rasterizing PDFs,
+  no recompressing images — a QR code stays scannable). Once stored, the
+  same spot shows **"View {…}"** instead, with a small `IMG`/`PDF` badge,
+  plus a quiet **•••** menu next to it:
+  - **View** opens images in the existing `Lightbox` (full quality,
+    `touch-pinch-zoom` for mobile) and PDFs in a new tab via the
+    browser's native viewer, using a short-lived `Blob` URL that's
+    revoked once the tab's had time to load it.
+  - **Replace** (in the ••• menu) reopens the same file picker and
+    overwrites the stored file under the same key — an image can be
+    replaced with a PDF or vice versa; `privateDocumentType` (the
+    ticket/reservation/confirmation label) doesn't change, since that
+    describes the real-world document, not the file format.
+  - **Delete** (in the ••• menu, red) asks "Delete this {ticket/…}?"
+    before removing the IndexedDB record and reverting to "Add {…}".
 - `privateDocumentType` (`'ticket' | 'reservation' | 'confirmation' |
   'receipt'`) picks the button wording automatically; set
   `privateDocumentLabel` only to override it.
@@ -137,7 +150,12 @@ QR-code tickets are **never** part of the repo or the seed data. Instead:
   device, or Share mode on the same device, shows the "Add" button again
   rather than exposing anything, and there's nothing for Share mode to
   redact because ActionRow never even renders `PrivateDocumentAction`
-  when `shareMode` is true.
+  when `shareMode` is true (verified: zero Add/View/Replace/Delete
+  buttons and zero document-key strings reach the Share-mode DOM).
+- Since the same key is shared across a Booking/Transport/ScheduleItem
+  trio, Add/Replace/Delete on one page take effect everywhere that key
+  is used the next time each page mounts (SPA tab navigation always
+  unmounts/remounts, so this is immediate in practice).
 
 If this app ever gets real backend/auth infrastructure, a hosted private
 document would need its own reviewed field — don't repurpose
