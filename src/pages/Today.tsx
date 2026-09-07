@@ -10,12 +10,13 @@ import {
   MapPin,
   Sparkles,
 } from 'lucide-react'
-import type { ScheduleItem, Trip } from '../types/trip'
+import type { ManualTripItem, ScheduleItem, Trip } from '../types/trip'
 import { ActionRow } from '../components/ui/ActionRow'
 import { Card } from '../components/ui/Card'
 import { SectionHeader } from '../components/ui/SectionHeader'
 import { ImagePlaceholder } from '../components/ui/ImagePlaceholder'
 import { Lightbox } from '../components/ui/Lightbox'
+import { ManualItemMenu } from '../components/manual/ManualItemMenu'
 import {
   daysUntil,
   findCurrentDay,
@@ -26,6 +27,7 @@ import {
   tripPhase,
 } from '../lib/date'
 import { computeReadiness } from '../lib/readiness'
+import { getEffectiveTrip } from '../lib/manualItems'
 import { useAppStore } from '../store/useAppStore'
 
 const SCHEDULE_ICON: Record<string, string> = {
@@ -36,23 +38,35 @@ const SCHEDULE_ICON: Record<string, string> = {
   lodging: '⌂',
 }
 
-function ScheduleCard({ item, emphasize }: { item: ScheduleItem; emphasize?: boolean }) {
+function ScheduleCard({
+  item,
+  manualItem,
+  emphasize,
+}: {
+  item: ScheduleItem
+  manualItem?: ManualTripItem
+  emphasize?: boolean
+}) {
   const shareMode = useAppStore((s) => s.shareMode)
   return (
     <Card className={emphasize ? 'p-4' : 'flex items-start gap-3 p-3.5'} accent={emphasize ? 'blue' : undefined}>
       {emphasize ? (
-        <>
-          <p className="text-[11px] font-medium uppercase tracking-[0.14em] text-blue">
-            {formatTime(item.time) ?? 'Anytime'}
-          </p>
-          <p className="mt-0.5 text-lg font-medium text-ink">{item.label}</p>
-        </>
+        <div className="flex items-start justify-between gap-2">
+          <div>
+            <p className="text-[11px] font-medium uppercase tracking-[0.14em] text-blue">
+              {formatTime(item.time) ?? 'Anytime'}
+            </p>
+            <p className="mt-0.5 text-lg font-medium text-ink">{item.label}</p>
+          </div>
+          {!shareMode && manualItem && <ManualItemMenu item={manualItem} className="shrink-0" />}
+        </div>
       ) : (
         <>
           <span className="mt-0.5 w-11 shrink-0 text-xs font-medium text-blue">
             {formatTime(item.time) ?? SCHEDULE_ICON[item.type]}
           </span>
           <p className="min-w-0 flex-1 text-sm font-medium text-ink">{item.label}</p>
+          {!shareMode && manualItem && <ManualItemMenu item={manualItem} className="shrink-0" />}
         </>
       )}
       {!shareMode && item.notes && <p className="mt-1 text-xs text-ink-soft">{item.notes}</p>}
@@ -77,9 +91,19 @@ function ScheduleCard({ item, emphasize }: { item: ScheduleItem; emphasize?: boo
 }
 
 export function Today({ trip }: { trip: Trip }) {
+  const manualItems = useAppStore((s) => s.manualItems)
+  const resolvedOpenItemIds = useAppStore((s) => s.resolvedOpenItemIds)
+  const effectiveTrip = useMemo(
+    () => getEffectiveTrip(trip, manualItems, resolvedOpenItemIds),
+    [trip, manualItems, resolvedOpenItemIds]
+  )
+  const manualItemsById = useMemo(
+    () => new Map(manualItems.filter((i) => i.tripId === trip.meta.id).map((i) => [i.id, i])),
+    [manualItems, trip.meta.id]
+  )
   const phase = useMemo(() => tripPhase(trip.meta.startDate, trip.meta.endDate), [trip])
-  const today = useMemo(() => findCurrentDay(trip.days), [trip])
-  const upcoming = useMemo(() => findNextDay(trip.days), [trip])
+  const today = useMemo(() => findCurrentDay(effectiveTrip.days), [effectiveTrip])
+  const upcoming = useMemo(() => findNextDay(effectiveTrip.days), [effectiveTrip])
   const [lightboxSrc, setLightboxSrc] = useState<string | null>(null)
 
   if (phase === 'active' && today) {
@@ -88,7 +112,7 @@ export function Today({ trip }: { trip: Trip }) {
     const deadlines = today.deadlines ?? []
     const { next, after } = findNextScheduleItem(today.scheduleItems)
     const restOfDay = today.scheduleItems.filter((item) => item.id !== next?.id && item.id !== after?.id)
-    const dayOpenItems = (trip.openItems ?? []).filter((i) => i.status === 'open' && i.relatedDayId === today.id)
+    const dayOpenItems = effectiveTrip.openItems.filter((i) => i.status === 'open' && i.relatedDayId === today.id)
 
     return (
       <div className="animate-fade-in space-y-6">
@@ -152,14 +176,14 @@ export function Today({ trip }: { trip: Trip }) {
         {next && (
           <div>
             <SectionHeader eyebrow="Next up" title={next.label} />
-            <ScheduleCard item={next} emphasize />
+            <ScheduleCard item={next} manualItem={manualItemsById.get(next.id)} emphasize />
           </div>
         )}
 
         {after && (
           <div>
             <SectionHeader eyebrow="After that" title={after.label} />
-            <ScheduleCard item={after} />
+            <ScheduleCard item={after} manualItem={manualItemsById.get(after.id)} />
           </div>
         )}
 
@@ -169,7 +193,7 @@ export function Today({ trip }: { trip: Trip }) {
             <ol className="space-y-2.5">
               {restOfDay.map((item) => (
                 <li key={item.id}>
-                  <ScheduleCard item={item} />
+                  <ScheduleCard item={item} manualItem={manualItemsById.get(item.id)} />
                 </li>
               ))}
             </ol>
@@ -235,7 +259,7 @@ export function Today({ trip }: { trip: Trip }) {
   // feeds into readyLines/openItems (see lib/readiness.ts), so this card
   // is safe to show in Share mode too, same as the rest of the app's
   // "hide specific private fields, not whole sections" rule.
-  const { percent, readyLines, openItems } = computeReadiness(trip)
+  const { percent, readyLines, openItems } = computeReadiness(effectiveTrip)
 
   return (
     <div className="animate-fade-in space-y-6">

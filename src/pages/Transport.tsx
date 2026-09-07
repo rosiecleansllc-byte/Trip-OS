@@ -1,13 +1,15 @@
 import { BookOpen, Car, ExternalLink, Plane, Train } from 'lucide-react'
-import type { Transport as TransportLeg, TransportMode, Trip } from '../types/trip'
+import type { ManualTripItem, Transport as TransportLeg, TransportMode, Trip } from '../types/trip'
 import { ActionRow } from '../components/ui/ActionRow'
 import { Card } from '../components/ui/Card'
 import { SectionHeader } from '../components/ui/SectionHeader'
 import { StatusTag } from '../components/ui/StatusTag'
+import { ManualItemMenu } from '../components/manual/ManualItemMenu'
 import { formatDateCompact } from '../lib/date'
 import { formatMoney } from '../lib/money'
 import { useAppStore } from '../store/useAppStore'
 import { redactTransport } from '../lib/share'
+import { getEffectiveTrip } from '../lib/manualItems'
 
 const MODE_META: Record<TransportMode, { label: string; icon: typeof Plane }> = {
   flight: { label: 'Flights', icon: Plane },
@@ -16,7 +18,15 @@ const MODE_META: Record<TransportMode, { label: string; icon: typeof Plane }> = 
   car: { label: 'Car', icon: Car },
 }
 
-function TransportRow({ leg, shareMode }: { leg: TransportLeg; shareMode: boolean }) {
+function TransportRow({
+  leg,
+  manualItem,
+  shareMode,
+}: {
+  leg: TransportLeg
+  manualItem?: ManualTripItem
+  shareMode: boolean
+}) {
   const t = shareMode ? redactTransport(leg) : leg
   return (
     <Card className="p-4">
@@ -30,7 +40,10 @@ function TransportRow({ leg, shareMode }: { leg: TransportLeg; shareMode: boolea
             {t.departTime ? ` · ${t.departTime}${t.arriveTime ? `–${t.arriveTime}` : ''}` : ''}
           </p>
         </div>
-        <StatusTag status={t.status} className="shrink-0" />
+        <div className="flex shrink-0 items-center gap-1.5">
+          <StatusTag status={t.status} />
+          {!shareMode && manualItem && <ManualItemMenu item={manualItem} />}
+        </div>
       </div>
       <div className="mt-2.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-ink-soft">
         {t.carrier && <span>{t.carrier}</span>}
@@ -60,11 +73,16 @@ function TransportRow({ leg, shareMode }: { leg: TransportLeg; shareMode: boolea
 
 export function Transport({ trip }: { trip: Trip }) {
   const shareMode = useAppStore((s) => s.shareMode)
+  const manualItems = useAppStore((s) => s.manualItems)
+  const resolvedOpenItemIds = useAppStore((s) => s.resolvedOpenItemIds)
+  const effectiveTrip = getEffectiveTrip(trip, manualItems, resolvedOpenItemIds)
+  const manualItemsById = new Map(manualItems.filter((i) => i.tripId === trip.meta.id).map((i) => [i.id, i]))
+
   const order: TransportMode[] = ['flight', 'train', 'local', 'car']
   const byMode = order
     .map((mode) => ({
       mode,
-      items: trip.transport.filter((t) => t.mode === mode).sort((a, b) => a.date.localeCompare(b.date)),
+      items: effectiveTrip.transport.filter((t) => t.mode === mode).sort((a, b) => a.date.localeCompare(b.date)),
     }))
     .filter((g) => g.items.length > 0)
 
@@ -91,7 +109,7 @@ export function Transport({ trip }: { trip: Trip }) {
             />
             <div className="space-y-2.5">
               {items.map((t) => (
-                <TransportRow key={t.id} leg={t} shareMode={shareMode} />
+                <TransportRow key={t.id} leg={t} manualItem={manualItemsById.get(t.id)} shareMode={shareMode} />
               ))}
             </div>
           </div>

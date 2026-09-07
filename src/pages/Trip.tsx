@@ -4,26 +4,32 @@ import { clsx } from 'clsx'
 import type { Trip } from '../types/trip'
 import { ActionRow } from '../components/ui/ActionRow'
 import { Card } from '../components/ui/Card'
+import { ManualItemMenu } from '../components/manual/ManualItemMenu'
 import { formatDateShort, isSameISODate } from '../lib/date'
 import { useAppStore } from '../store/useAppStore'
+import { getEffectiveTrip } from '../lib/manualItems'
 
 export function TripPage({ trip }: { trip: Trip }) {
   const shareMode = useAppStore((s) => s.shareMode)
+  const manualItems = useAppStore((s) => s.manualItems)
+  const resolvedOpenItemIds = useAppStore((s) => s.resolvedOpenItemIds)
+  const effectiveTrip = getEffectiveTrip(trip, manualItems, resolvedOpenItemIds)
+  const manualItemsById = new Map(manualItems.filter((i) => i.tripId === trip.meta.id).map((i) => [i.id, i]))
   const [openDay, setOpenDay] = useState<string | null>(
-    trip.days.find((d) => isSameISODate(d.date))?.id ?? trip.days[0]?.id ?? null
+    effectiveTrip.days.find((d) => isSameISODate(d.date))?.id ?? effectiveTrip.days[0]?.id ?? null
   )
 
   const legHeaderDayIds = useMemo(() => {
     const ids = new Set<string>()
     let lastLegId: string | null = null
-    for (const day of trip.days) {
+    for (const day of effectiveTrip.days) {
       if (day.legId !== lastLegId) {
         ids.add(day.id)
         lastLegId = day.legId
       }
     }
     return ids
-  }, [trip.days])
+  }, [effectiveTrip.days])
 
   return (
     <div className="animate-fade-in space-y-1">
@@ -31,7 +37,7 @@ export function TripPage({ trip }: { trip: Trip }) {
         <p className="text-[11px] font-medium uppercase tracking-[0.14em] text-ink-soft">The full itinerary</p>
         <h1 className="font-display text-2xl text-ink">{trip.meta.name}</h1>
         <p className="mt-0.5 text-sm text-ink-soft">
-          {trip.days.length} days · {trip.legs.length} stops
+          {effectiveTrip.days.length} days · {trip.legs.length} stops
         </p>
       </div>
 
@@ -43,7 +49,7 @@ export function TripPage({ trip }: { trip: Trip }) {
       )}
 
       <ol className="relative border-l-2 border-blue/25 pl-5">
-        {trip.days.map((day) => {
+        {effectiveTrip.days.map((day) => {
           const leg = trip.legs.find((l) => l.id === day.legId)
           const showLegHeader = legHeaderDayIds.has(day.id)
           const isToday = isSameISODate(day.date)
@@ -100,7 +106,12 @@ export function TripPage({ trip }: { trip: Trip }) {
                         <li key={item.id} className="flex gap-2.5 text-sm">
                           <span className="w-11 shrink-0 text-xs text-blue">{item.time ?? ''}</span>
                           <div className="min-w-0 flex-1">
-                            <p className="text-ink">{item.label}</p>
+                            <div className="flex items-start justify-between gap-2">
+                              <p className="text-ink">{item.label}</p>
+                              {!shareMode && manualItemsById.has(item.id) && (
+                                <ManualItemMenu item={manualItemsById.get(item.id)!} className="shrink-0" />
+                              )}
+                            </div>
                             {!shareMode && item.notes && <p className="text-xs text-ink-soft">{item.notes}</p>}
                             {item.tip && <p className="text-xs italic text-gray">{item.tip}</p>}
                             <ActionRow

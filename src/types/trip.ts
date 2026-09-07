@@ -255,6 +255,56 @@ export interface TripMeta {
   outfitBoardImageUrl?: string // full capsule + daily-outfit board, for the Pack lightbox
 }
 
+// A trip item Cecilia adds herself from inside the app — a stay, a leg of
+// transport, a restaurant reservation, an activity, or a free-form note —
+// as opposed to everything above, which only ever comes from a trip's
+// seed data file. Manual items are stored client-side (see useAppStore)
+// and, at render time, get converted into the same Booking/Transport/
+// ScheduleItem shapes as seeded data (see lib/manualItems.ts) so every
+// page — Bookings, Transport, Trip, Today, Wallet — displays them exactly
+// like a normal entry, Share-mode redaction included, with no per-page
+// special-casing. One field set covers every type; a given type only
+// ever populates the fields its form collects.
+export type ManualItemType = 'stay' | 'transport' | 'restaurant' | 'activity' | 'other'
+export type ManualItemStatus = 'planned' | 'confirmed' | 'paid'
+export type ManualTransportMode = 'car' | 'rental-car' | 'rideshare' | 'train' | 'bus' | 'flight' | 'other'
+
+export interface ManualTripItem {
+  id: string
+  tripId: string
+  type: ManualItemType
+  title: string // stay/restaurant/activity/other name; unused for transport, which derives its label from fromLocation/toLocation
+  date: ISODate
+  endDate?: ISODate // stay checkout date
+  time?: string // check-in / reservation / start / departure time
+  endTime?: string // activity end time / transport arrival time
+  location?: string // activity venue name
+  address?: string // directions target
+  phone?: string
+  websiteUrl?: string
+  reservationUrl?: string
+  notes?: string
+  status: ManualItemStatus
+  cost?: number
+  currency?: string
+  confirmationCode?: string // private — stripped in Share mode
+  privateDocumentKey?: string
+  privateDocumentType?: LinkActions['privateDocumentType']
+  // transport-only
+  transportMode?: ManualTransportMode
+  carrier?: string
+  fromLocation?: string
+  toLocation?: string
+  // restaurant-only
+  partySize?: number
+  // set once the traveler confirms this item resolves a specific OpenItem
+  // (e.g. adding a Sep 11-13 stay resolves "Book lodging for Sep 11-13") —
+  // see lib/manualItems.ts findResolvableOpenItems, which matches on
+  // OpenItem.category + date coverage rather than on any hardcoded label.
+  relatedOpenItemId?: string
+  createdAt: string // ISO timestamp
+}
+
 export interface Trip {
   meta: TripMeta
   legs: Leg[]

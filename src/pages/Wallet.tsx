@@ -4,11 +4,15 @@ import { Card } from '../components/ui/Card'
 import { SectionHeader } from '../components/ui/SectionHeader'
 import { formatMoney } from '../lib/money'
 import { useAppStore } from '../store/useAppStore'
+import { getEffectiveTrip } from '../lib/manualItems'
 
 type Costed = (Booking | Transport) & { label: string }
 
 export function WalletPage({ trip }: { trip: Trip }) {
   const shareMode = useAppStore((s) => s.shareMode)
+  const manualItems = useAppStore((s) => s.manualItems)
+  const resolvedOpenItemIds = useAppStore((s) => s.resolvedOpenItemIds)
+  const effectiveTrip = getEffectiveTrip(trip, manualItems, resolvedOpenItemIds)
 
   if (shareMode) {
     return (
@@ -23,8 +27,8 @@ export function WalletPage({ trip }: { trip: Trip }) {
   }
 
   const items: Costed[] = [
-    ...trip.bookings.map((b) => ({ ...b, label: b.name })),
-    ...trip.transport.map((t) => ({ ...t, label: `${t.from} → ${t.to}` })),
+    ...effectiveTrip.bookings.map((b) => ({ ...b, label: b.name })),
+    ...effectiveTrip.transport.map((t) => ({ ...t, label: `${t.from} → ${t.to}` })),
   ]
 
   const currencies = Array.from(
