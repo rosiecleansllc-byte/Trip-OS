@@ -709,4 +709,14 @@ export const franceTrip: Trip = {
       status: 'pending',
     },
   ],
+
+  resources: [
+    {
+      id: 'res-paris-transit-map',
+      title: 'Paris Transit Map',
+      description: 'Île-de-France Mobilités official network map — Métro, RER, Transilien, and tram lines.',
+      resourceUrl: '/documents/france-2026/paris-transit-map.pdf',
+      category: 'Local transport',
+    },
+  ],
 }

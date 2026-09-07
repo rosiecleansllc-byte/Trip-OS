@@ -153,6 +153,14 @@ separate from booked legs. `isPrivate` exists only to exclude one from
 Share mode without deleting it — leave it unset for the normal, fully
 public case.
 
+A resource's `resourceUrl` can point anywhere — an external site, or a
+generic (non-personal) file committed under `public/documents/<trip-id>/`
+the same way images live under `public/images/<trip-id>/`. Unlike a
+private document, a public resource file has no traveler-specific data
+in it, so committing it is fine; France 2026's Paris Transit Map
+(`public/documents/france-2026/paris-transit-map.pdf`, the official
+Île-de-France Mobilités network map) is an example.
+
 ## Commands
 
 ```
