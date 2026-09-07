@@ -1,4 +1,4 @@
-import type { DayPlan } from '../types/trip'
+import type { DayPlan, ScheduleItem } from '../types/trip'
 
 export function parseISODate(iso: string): Date {
   const [y, m, d] = iso.split('-').map(Number)
@@ -63,6 +63,28 @@ export function findCurrentDay(days: DayPlan[], now: Date = new Date()): DayPlan
 /** Find the next day that hasn't happened yet (today or in the future). */
 export function findNextDay(days: DayPlan[], now: Date = new Date()): DayPlan | undefined {
   return [...days].sort((a, b) => a.date.localeCompare(b.date)).find((d) => daysUntil(d.date, now) >= 0)
+}
+
+// Which schedule item is "next" right now, and which comes after it — so
+// Today can lead with a single upcoming item instead of the whole day's
+// list. Items are assumed to already be authored in chronological order;
+// this just finds the last timed item that has already passed and treats
+// whatever follows it as next. Untimed items (no `time`) never count as
+// "passed" on their own, so a run of untimed items after the last timed
+// one all remain eligible — the first of them is "next".
+export function findNextScheduleItem(
+  items: ScheduleItem[],
+  now: Date = new Date()
+): { next?: ScheduleItem; after?: ScheduleItem } {
+  const nowMinutes = now.getHours() * 60 + now.getMinutes()
+  let lastPastIndex = -1
+  items.forEach((item, i) => {
+    if (!item.time) return
+    const [h, m] = item.time.split(':').map(Number)
+    if (h * 60 + m <= nowMinutes) lastPastIndex = i
+  })
+  const nextIndex = lastPastIndex + 1
+  return { next: items[nextIndex], after: items[nextIndex + 1] }
 }
 
 export function tripPhase(startDate: string, endDate: string, now: Date = new Date()): 'pre' | 'active' | 'post' {

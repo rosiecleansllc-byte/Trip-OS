@@ -699,30 +699,38 @@ export const franceTrip: Trip = {
     { id: 'ob12', dayId: 'd12', imageUrl: '/images/outfits/day-12.webp', itemNames: ['White T-Shirt', 'Dark Jeans', 'Light Cream 3/4-Sleeve Cardigan', 'White Sneakers', 'Black Crossbody Bag'], note: 'Comfortable and simple for the journey home.' },
   ],
 
-  prepItems: [
+  openItems: [
     {
-      id: 'prep-riviera-tickets',
+      id: 'open-riviera-tickets',
+      tripId: 'france-2026',
       label: 'Buy Riviera bus/TER tickets',
+      category: 'transport',
+      status: 'open',
       detail: 'Not worth reserving weeks ahead — buy locally or the day before.',
-      status: 'pending',
     },
     {
-      id: 'prep-idp',
+      id: 'open-idp',
+      tripId: 'france-2026',
       label: "Blake's International Driving Permit",
+      category: 'documents',
+      status: 'open',
       detail: 'If feasible; otherwise carry his physical license, passport, and credit card, and check the rental company’s requirements before pickup.',
-      status: 'pending',
     },
     {
-      id: 'prep-esim',
+      id: 'open-esim',
+      tripId: 'france-2026',
       label: 'Holafly eSIMs',
+      category: 'other',
+      status: 'open',
       detail: 'Decide whether to set these up for you and Blake’s phones.',
-      status: 'pending',
     },
     {
-      id: 'prep-weather-check',
+      id: 'open-weather-check',
+      tripId: 'france-2026',
       label: 'Final weather check',
+      category: 'other',
+      status: 'open',
       detail: 'About 7–10 days before departure — adjust outfits day-by-day rather than repacking the whole capsule.',
-      status: 'pending',
     },
   ],
 

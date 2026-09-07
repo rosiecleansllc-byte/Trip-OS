@@ -1,13 +1,31 @@
 import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { CheckCircle2, Circle, CloudSun, Maximize2, MapPin, ShoppingBag, Sparkles } from 'lucide-react'
-import type { Trip } from '../types/trip'
+import {
+  AlertTriangle,
+  CheckCircle2,
+  Circle,
+  CloudSun,
+  Luggage,
+  Maximize2,
+  MapPin,
+  Sparkles,
+} from 'lucide-react'
+import type { ScheduleItem, Trip } from '../types/trip'
 import { ActionRow } from '../components/ui/ActionRow'
 import { Card } from '../components/ui/Card'
 import { SectionHeader } from '../components/ui/SectionHeader'
 import { ImagePlaceholder } from '../components/ui/ImagePlaceholder'
 import { Lightbox } from '../components/ui/Lightbox'
-import { daysUntil, findCurrentDay, findNextDay, formatDateLong, formatTime, tripPhase } from '../lib/date'
+import {
+  daysUntil,
+  findCurrentDay,
+  findNextDay,
+  findNextScheduleItem,
+  formatDateLong,
+  formatTime,
+  tripPhase,
+} from '../lib/date'
+import { computeReadiness } from '../lib/readiness'
 import { useAppStore } from '../store/useAppStore'
 
 const SCHEDULE_ICON: Record<string, string> = {
@@ -18,8 +36,47 @@ const SCHEDULE_ICON: Record<string, string> = {
   lodging: '⌂',
 }
 
-export function Today({ trip }: { trip: Trip }) {
+function ScheduleCard({ item, emphasize }: { item: ScheduleItem; emphasize?: boolean }) {
   const shareMode = useAppStore((s) => s.shareMode)
+  return (
+    <Card className={emphasize ? 'p-4' : 'flex items-start gap-3 p-3.5'} accent={emphasize ? 'blue' : undefined}>
+      {emphasize ? (
+        <>
+          <p className="text-[11px] font-medium uppercase tracking-[0.14em] text-blue">
+            {formatTime(item.time) ?? 'Anytime'}
+          </p>
+          <p className="mt-0.5 text-lg font-medium text-ink">{item.label}</p>
+        </>
+      ) : (
+        <>
+          <span className="mt-0.5 w-11 shrink-0 text-xs font-medium text-blue">
+            {formatTime(item.time) ?? SCHEDULE_ICON[item.type]}
+          </span>
+          <p className="min-w-0 flex-1 text-sm font-medium text-ink">{item.label}</p>
+        </>
+      )}
+      {!shareMode && item.notes && <p className="mt-1 text-xs text-ink-soft">{item.notes}</p>}
+      {item.tip && <p className="mt-1 text-xs italic text-gray">{item.tip}</p>}
+      <ActionRow
+        location={item.location}
+        websiteUrl={item.websiteUrl}
+        ticketUrl={item.ticketUrl}
+        reservationUrl={item.reservationUrl}
+        menuUrl={item.menuUrl}
+        phone={item.phone}
+        privateTicketUrl={item.privateTicketUrl}
+        modifyUrl={item.modifyUrl}
+        privateDocumentKey={item.privateDocumentKey}
+        privateDocumentLabel={item.privateDocumentLabel}
+        privateDocumentType={item.privateDocumentType}
+        shareMode={shareMode}
+        className="mt-2"
+      />
+    </Card>
+  )
+}
+
+export function Today({ trip }: { trip: Trip }) {
   const phase = useMemo(() => tripPhase(trip.meta.startDate, trip.meta.endDate), [trip])
   const today = useMemo(() => findCurrentDay(trip.days), [trip])
   const upcoming = useMemo(() => findNextDay(trip.days), [trip])
@@ -29,6 +86,9 @@ export function Today({ trip }: { trip: Trip }) {
     const leg = trip.legs.find((l) => l.id === today.legId)
     const outfitBoard = trip.outfitBoards.find((b) => b.id === today.outfitBoardId)
     const deadlines = today.deadlines ?? []
+    const { next, after } = findNextScheduleItem(today.scheduleItems)
+    const restOfDay = today.scheduleItems.filter((item) => item.id !== next?.id && item.id !== after?.id)
+    const dayOpenItems = (trip.openItems ?? []).filter((i) => i.status === 'open' && i.relatedDayId === today.id)
 
     return (
       <div className="animate-fade-in space-y-6">
@@ -47,72 +107,74 @@ export function Today({ trip }: { trip: Trip }) {
           </p>
         )}
 
-        <Card className="overflow-hidden">
-          <div className="relative">
-            <ImagePlaceholder
-              label="Today's outfit"
-              imageUrl={outfitBoard?.imageUrl}
-              className="h-72 w-full"
-              onClick={outfitBoard?.imageUrl ? () => setLightboxSrc(outfitBoard.imageUrl!) : undefined}
-            />
-            {outfitBoard?.imageUrl && (
-              <span className="pointer-events-none absolute right-2.5 top-2.5 flex h-7 w-7 items-center justify-center rounded-full bg-ink/60 text-white">
-                <Maximize2 size={13} />
-              </span>
-            )}
-          </div>
-          <div className="p-4">
-            <p className="text-sm text-ink">{today.outfitNote}</p>
-            <div className="mt-3 flex flex-wrap gap-1.5">
-              {outfitBoard?.itemNames.map((item) => (
-                <span key={item} className="rounded-full border border-line bg-bg px-2.5 py-1 text-xs text-ink-soft">
-                  {item}
-                </span>
-              ))}
-            </div>
-            <Link
-              to="/pack"
-              className="mt-3 inline-flex items-center gap-1 text-xs font-medium text-blue"
-            >
-              <ShoppingBag size={13} /> Full capsule in Pack
-            </Link>
-          </div>
-        </Card>
-
-        <div>
-          <SectionHeader eyebrow="Schedule" title="Today's plan" />
-          <ol className="space-y-2.5">
-            {today.scheduleItems.map((item) => (
-              <li key={item.id}>
-                <Card className="flex items-start gap-3 p-3.5">
-                  <span className="mt-0.5 w-11 shrink-0 text-xs font-medium text-blue">
-                    {formatTime(item.time) ?? SCHEDULE_ICON[item.type]}
-                  </span>
-                  <div className="min-w-0 flex-1">
-                    <p className="text-sm font-medium text-ink">{item.label}</p>
-                    {!shareMode && item.notes && <p className="mt-1 text-xs text-ink-soft">{item.notes}</p>}
-                    {item.tip && <p className="mt-1 text-xs italic text-gray">{item.tip}</p>}
-                    <ActionRow
-                      location={item.location}
-                      websiteUrl={item.websiteUrl}
-                      ticketUrl={item.ticketUrl}
-                      reservationUrl={item.reservationUrl}
-                      menuUrl={item.menuUrl}
-                      phone={item.phone}
-                      privateTicketUrl={item.privateTicketUrl}
-                      modifyUrl={item.modifyUrl}
-                      privateDocumentKey={item.privateDocumentKey}
-                      privateDocumentLabel={item.privateDocumentLabel}
-                      privateDocumentType={item.privateDocumentType}
-                      shareMode={shareMode}
-                      className="mt-2"
-                    />
-                  </div>
-                </Card>
-              </li>
+        {dayOpenItems.length > 0 && (
+          <div className="space-y-2">
+            {dayOpenItems.map((item) => (
+              <p key={item.id} className="flex items-start gap-2 rounded-xl bg-red-tint px-3.5 py-2.5 text-xs text-red">
+                <AlertTriangle size={14} className="mt-0.5 shrink-0" />
+                {item.label} still TBD
+              </p>
             ))}
-          </ol>
-        </div>
+          </div>
+        )}
+
+        {outfitBoard && (
+          <Card className="overflow-hidden">
+            <div className="relative">
+              <ImagePlaceholder
+                label="Today's outfit"
+                imageUrl={outfitBoard.imageUrl}
+                className="h-72 w-full"
+                onClick={outfitBoard.imageUrl ? () => setLightboxSrc(outfitBoard.imageUrl!) : undefined}
+              />
+              {outfitBoard.imageUrl && (
+                <span className="pointer-events-none absolute right-2.5 top-2.5 flex h-7 w-7 items-center justify-center rounded-full bg-ink/60 text-white">
+                  <Maximize2 size={13} />
+                </span>
+              )}
+            </div>
+            <div className="p-4">
+              <p className="text-sm text-ink">{today.outfitNote}</p>
+              <div className="mt-3 flex flex-wrap gap-1.5">
+                {outfitBoard.itemNames.map((item) => (
+                  <span key={item} className="rounded-full border border-line bg-bg px-2.5 py-1 text-xs text-ink-soft">
+                    {item}
+                  </span>
+                ))}
+              </div>
+              <Link to="/pack" className="mt-3 inline-flex items-center gap-1 text-xs font-medium text-blue">
+                <Luggage size={13} /> Full capsule in Pack
+              </Link>
+            </div>
+          </Card>
+        )}
+
+        {next && (
+          <div>
+            <SectionHeader eyebrow="Next up" title={next.label} />
+            <ScheduleCard item={next} emphasize />
+          </div>
+        )}
+
+        {after && (
+          <div>
+            <SectionHeader eyebrow="After that" title={after.label} />
+            <ScheduleCard item={after} />
+          </div>
+        )}
+
+        {restOfDay.length > 0 && (
+          <div>
+            <SectionHeader eyebrow="Schedule" title="Rest of today" />
+            <ol className="space-y-2.5">
+              {restOfDay.map((item) => (
+                <li key={item.id}>
+                  <ScheduleCard item={item} />
+                </li>
+              ))}
+            </ol>
+          </div>
+        )}
 
         {deadlines.length > 0 && (
           <div>
@@ -162,9 +224,18 @@ export function Today({ trip }: { trip: Trip }) {
     )
   }
 
-  // Pre-trip: show the next upcoming item.
+  // Pre-trip: Trip Readiness dashboard — confirmed items vs. genuinely
+  // open ones, computed from the trip's own booking/transport status and
+  // OpenItems (lib/readiness.ts), never from whether a document has been
+  // loaded into this device's IndexedDB yet.
   const nextDay = upcoming
   const countdown = nextDay ? daysUntil(trip.meta.startDate) : null
+  // Readiness is computed only from Booking/Transport status and OpenItems
+  // — no cost, confirmation code, note, or private-document field ever
+  // feeds into readyLines/openItems (see lib/readiness.ts), so this card
+  // is safe to show in Share mode too, same as the rest of the app's
+  // "hide specific private fields, not whole sections" rule.
+  const { percent, readyLines, openItems } = computeReadiness(trip)
 
   return (
     <div className="animate-fade-in space-y-6">
@@ -172,7 +243,7 @@ export function Today({ trip }: { trip: Trip }) {
         <div className="bg-blue px-5 py-6 text-white">
           <p className="text-[11px] font-medium uppercase tracking-[0.14em] text-white/70">Next up</p>
           <p className="font-display text-3xl">
-            {countdown !== null && countdown > 0 ? `${countdown} days` : 'Today'}
+            {countdown !== null && countdown > 0 ? `${countdown} days away` : 'Today'}
           </p>
           <p className="mt-1 text-sm text-white/85">until {trip.meta.name} begins</p>
         </div>
@@ -183,6 +254,47 @@ export function Today({ trip }: { trip: Trip }) {
           </p>
           <p className="mt-1">{formatDateLong(trip.meta.startDate)} — {formatDateLong(trip.meta.endDate)}</p>
         </div>
+      </Card>
+
+      <Card className="p-4">
+        <div className="flex items-center justify-between">
+          <p className="font-display text-xl text-ink">Trip Ready · {percent}%</p>
+          <span
+            className={
+              percent >= 70
+                ? 'rounded-full bg-blue-tint px-2.5 py-1 text-[11px] font-medium uppercase tracking-wide text-blue'
+                : 'rounded-full bg-red-tint px-2.5 py-1 text-[11px] font-medium uppercase tracking-wide text-red'
+            }
+          >
+            {percent >= 70 ? 'Ready' : 'Needs attention'}
+          </span>
+        </div>
+        <div className="mt-2.5 h-1.5 overflow-hidden rounded-full bg-bg-soft">
+          <div className="h-full rounded-full bg-blue transition-all" style={{ width: `${percent}%` }} />
+        </div>
+
+        {readyLines.length > 0 && (
+          <div className="mt-4 space-y-1.5">
+            {readyLines.map((line) => (
+              <p key={line} className="flex items-start gap-2 text-xs text-ink">
+                <CheckCircle2 size={14} className="mt-0.5 shrink-0 text-blue" />
+                {line}
+              </p>
+            ))}
+          </div>
+        )}
+
+        {openItems.length > 0 && (
+          <div className="mt-4 space-y-1.5 border-t border-line pt-3">
+            <p className="text-[11px] font-medium uppercase tracking-[0.14em] text-ink-soft">Still needed</p>
+            {openItems.map((item) => (
+              <p key={item.id} className="flex items-start gap-2 text-xs text-ink">
+                <Circle size={14} className={`mt-0.5 shrink-0 ${item.priority === 'high' ? 'text-red' : 'text-gray'}`} />
+                {item.label}
+              </p>
+            ))}
+          </div>
+        )}
       </Card>
 
       {nextDay && (
@@ -207,31 +319,13 @@ export function Today({ trip }: { trip: Trip }) {
           <Link to="/pack">
             <Card className="p-4">
               <p className="text-sm font-medium text-ink">Pack</p>
-              <p className="mt-1 text-xs text-ink-soft">Review the capsule wardrobe</p>
+              <p className="mt-1 text-xs text-ink-soft">
+                {trip.capsule.length > 0 ? 'Review the capsule wardrobe' : 'Review your packing list'}
+              </p>
             </Card>
           </Link>
         </div>
       </div>
-
-      {trip.prepItems.length > 0 && (
-        <div>
-          <SectionHeader eyebrow={`${trip.prepItems.length} left`} title="Still open" />
-          <div className="space-y-2">
-            {trip.prepItems.map((item) => (
-              <Card key={item.id} className="flex items-start gap-2.5 p-3.5">
-                <Circle size={15} className="mt-0.5 shrink-0 text-red" />
-                <div>
-                  <p className="text-sm text-ink">{item.label}</p>
-                  {item.detail && <p className="mt-0.5 text-xs text-ink-soft">{item.detail}</p>}
-                </div>
-              </Card>
-            ))}
-          </div>
-          <Link to="/bookings" className="mt-2 inline-block text-xs font-medium text-blue">
-            Full list in Bookings
-          </Link>
-        </div>
-      )}
     </div>
   )
 }
