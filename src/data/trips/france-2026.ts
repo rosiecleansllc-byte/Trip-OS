@@ -53,7 +53,7 @@ export const franceTrip: Trip = {
       scheduleItems: [
         { id: 'd1-1', time: '14:10', label: 'Land at CDG (JFK → CDG)', type: 'transport', location: 'Charles de Gaulle Airport (CDG)' },
         { id: 'd1-2', label: 'Official airport taxi to La Maison Montparnasse', type: 'transport', notes: 'Chose the official Left Bank taxi fare over the ~$92 private transfer.' },
-        { id: 'd1-3', label: 'Check in, settle in', type: 'lodging', location: 'La Maison Montparnasse, Paris', websiteUrl: 'https://lamaisonmontparnasse.fr/en/homepage/', notes: 'Allow 2½–3 hours from landing through immigration, baggage, taxi, and check-in — expect to be settled around 5:00–5:30 PM.' },
+        { id: 'd1-3', label: 'Check in, settle in', type: 'lodging', location: 'La Maison Montparnasse, Paris', websiteUrl: 'https://lamaisonmontparnasse.fr/en/homepage/', notes: 'Allow 2½–3 hours from landing through immigration, baggage, taxi, and check-in — expect to be settled around 5:00–5:30 PM.', privateDocumentKey: 'la-maison-montparnasse-confirmation', privateDocumentType: 'confirmation' },
         { id: 'd1-4', time: '19:30', label: 'Dinner: Le Procope', type: 'meal', location: 'Le Procope, Paris', websiteUrl: 'https://www.procope.com/en/', reservationUrl: 'https://www.procope.com/en/o/reserver/', tip: 'Your first-night Paris dinner — the later time gives you margin after the flight.', privateDocumentKey: 'le-procope-ticket', privateDocumentType: 'ticket' },
       ],
       outfitBoardId: 'ob1',
@@ -85,7 +85,7 @@ export const franceTrip: Trip = {
       scheduleItems: [
         { id: 'd3-1', label: 'Relaxed Saint-Germain / central Paris start', type: 'free' },
         { id: 'd3-2', label: 'Avenue Montaigne — fashion browsing, Pont Alexandre III area', type: 'activity' },
-        { id: 'd3-3', label: 'La Galerie Dior', type: 'activity', location: 'La Galerie Dior, Paris', websiteUrl: 'https://www.galeriedior.com/en', ticketUrl: 'https://www.galeriedior.com/en/practical-information', notes: 'Keep the ticketed entry time from your confirmation as the anchor for the afternoon.' },
+        { id: 'd3-3', label: 'La Galerie Dior', type: 'activity', location: 'La Galerie Dior, Paris', websiteUrl: 'https://www.galeriedior.com/en', ticketUrl: 'https://www.galeriedior.com/en/practical-information', notes: 'Keep the ticketed entry time from your confirmation as the anchor for the afternoon.', privateDocumentKey: 'galerie-dior-ticket', privateDocumentType: 'ticket' },
         { id: 'd3-4', label: 'Avenue Montaigne / Eiffel–Rue de l’Université area, cafés and shopping', type: 'free', tip: 'Keep the evening flexible rather than booking another event — this is the strongest day for the black dress.' },
       ],
       outfitBoardId: 'ob3',
@@ -101,7 +101,7 @@ export const franceTrip: Trip = {
         { id: 'd4-1', label: 'Easy Paris morning, breakfast', type: 'meal', tip: 'You have a later Versailles entry, so no need for an early start.' },
         { id: 'd4-2', time: '12:00', label: 'Head to Gare Montparnasse', type: 'transport', location: 'Gare Montparnasse, Paris' },
         { id: 'd4-3', label: 'Transilien Line N to Versailles-Chantiers', type: 'transport', websiteUrl: 'https://www.sncf-connect.com/en-en', tip: '~25 minute ride; allow 50–60 minutes door-to-door from the hotel.' },
-        { id: 'd4-4', time: '13:30', label: 'Palace of Versailles + gardens', type: 'activity', location: 'Palace of Versailles', websiteUrl: 'https://en.chateauversailles.fr/', ticketUrl: 'https://en.chateauversailles.fr/plan-your-visit/tickets-and-prices', tip: 'Ticket covers timed palace entry, gardens, park, Trianon Estate, temporary exhibitions, Royal Tennis Court, and the Gallery of Coaches when open. Spend 3–3½ hours rather than trying to see everything.' },
+        { id: 'd4-4', time: '13:30', label: 'Palace of Versailles + gardens', type: 'activity', location: 'Palace of Versailles', websiteUrl: 'https://en.chateauversailles.fr/', ticketUrl: 'https://en.chateauversailles.fr/plan-your-visit/tickets-and-prices', tip: 'Ticket covers timed palace entry, gardens, park, Trianon Estate, temporary exhibitions, Royal Tennis Court, and the Gallery of Coaches when open. Spend 3–3½ hours rather than trying to see everything.', privateDocumentKey: 'versailles-ticket', privateDocumentType: 'ticket' },
         { id: 'd4-5', label: 'Return to Paris', type: 'transport', notes: 'Aim to be back around 6:00–6:30 PM.' },
         { id: 'd4-6', time: '19:30', label: 'Dinner: Joséphine Chez Dumonet', type: 'meal', location: 'Joséphine Chez Dumonet, Paris', websiteUrl: 'https://www.josephinechezdumonet.fr/', phone: '+33 1 45 48 52 40', notes: '€75 card hold — decision deadline is 4:00 PM Paris time today. Reminder is already scheduled so you can cancel if Versailles runs long.', privateDocumentKey: 'josephine-dumonet-ticket', privateDocumentType: 'ticket' },
       ],
@@ -118,7 +118,7 @@ export const franceTrip: Trip = {
       scheduleItems: [
         { id: 'd5-1', label: 'Breakfast near La Maison', type: 'meal' },
         { id: 'd5-2', time: '09:15', label: 'Taxi/Bolt to the Louvre', type: 'transport' },
-        { id: 'd5-3', time: '10:00', label: 'Louvre — highlights route', type: 'activity', location: 'Louvre Museum, Paris', websiteUrl: 'https://www.louvre.fr/en/', ticketUrl: 'https://ticket.louvre.fr/en', tip: 'Using the Les Frenchies 3-hour route: Winged Victory, Mona Lisa, Wedding Feast at Cana, Coronation of Napoleon, Galerie d’Apollon/Crown Jewels, Venus de Milo, Great Sphinx, select Egyptian rooms, Caryatids, Louis XIV portrait. Treat it as highlights, not an attempt to “do” the Louvre — aim to leave around 1:00–1:30 PM.' },
+        { id: 'd5-3', time: '10:00', label: 'Louvre — highlights route', type: 'activity', location: 'Louvre Museum, Paris', websiteUrl: 'https://www.louvre.fr/en/', ticketUrl: 'https://ticket.louvre.fr/en', tip: 'Using the Les Frenchies 3-hour route: Winged Victory, Mona Lisa, Wedding Feast at Cana, Coronation of Napoleon, Galerie d’Apollon/Crown Jewels, Venus de Milo, Great Sphinx, select Egyptian rooms, Caryatids, Louis XIV portrait. Treat it as highlights, not an attempt to “do” the Louvre — aim to leave around 1:00–1:30 PM.', privateDocumentKey: 'louvre-ticket', privateDocumentType: 'ticket' },
         { id: 'd5-4', label: 'Palais Royal → Café Kitsuné → Tuileries', type: 'activity' },
         { id: 'd5-5', time: '15:30', label: 'Bolt/taxi toward the Eiffel area', type: 'transport' },
         { id: 'd5-6', time: '16:30', label: 'Dinner: Le Campanella', type: 'meal', location: 'Le Campanella, 18 Avenue Bosquet, Paris', notes: 'Chosen over Le Suffren for the atmosphere.', privateDocumentKey: 'le-campanella-ticket', privateDocumentType: 'ticket' },
@@ -138,7 +138,7 @@ export const franceTrip: Trip = {
       scheduleItems: [
         { id: 'd6-1', time: '08:00', label: 'Pick up rental car near Gare Montparnasse', type: 'transport', tip: 'Blake is driving — VW Polo or similar automatic, roomy enough packing light, cheaper than the SUV.', privateDocumentKey: 'sixt-rental-car-confirmation', privateDocumentType: 'confirmation' },
         { id: 'd6-2', label: 'Drive to Mont-Saint-Michel', type: 'transport', notes: 'Allow roughly 4–4½ hours including a break; estimated arrival 12:30–1:00 PM.' },
-        { id: 'd6-3', label: 'Check in at Hôtel Vert, leave luggage', type: 'lodging', location: 'Hôtel Vert, Le Mont-Saint-Michel', websiteUrl: 'https://vert.hotelmontsaintmichel.org/en/', phone: '+33 2 33 60 09 33', tip: 'Right by the free Mont-Saint-Michel shuttle zone.' },
+        { id: 'd6-3', label: 'Check in at Hôtel Vert, leave luggage', type: 'lodging', location: 'Hôtel Vert, Le Mont-Saint-Michel', websiteUrl: 'https://vert.hotelmontsaintmichel.org/en/', phone: '+33 2 33 60 09 33', tip: 'Right by the free Mont-Saint-Michel shuttle zone.', privateDocumentKey: 'hotel-vert-confirmation', privateDocumentType: 'confirmation' },
         { id: 'd6-4', label: 'Shuttle to the Mont — village, Grande Rue, bay views', type: 'activity', location: 'Le Mont-Saint-Michel', websiteUrl: 'https://www.abbaye-mont-saint-michel.fr/en/', notes: 'Abbey interior only if same-day tickets are available and Mom feels up to the stairs — otherwise just enjoy the village. The Mont is still worth it either way. Stay long enough for the quieter late-afternoon/evening atmosphere since you’re sleeping nearby.' },
       ],
       outfitBoardId: 'ob6',
@@ -154,7 +154,7 @@ export const franceTrip: Trip = {
         { id: 'd7-1', label: 'Breakfast, optional return to the Mont for more time', type: 'free' },
         { id: 'd7-2', time: '12:00', label: 'Depart for Paris', type: 'transport', tip: 'Blake is driving, so you control departure time — normal traffic and one short break puts you back around 4:30–5:00 PM.' },
         { id: 'd7-3', time: '18:00', label: 'Return the rental car', type: 'transport', privateDocumentKey: 'sixt-rental-car-confirmation', privateDocumentType: 'confirmation' },
-        { id: 'd7-4', label: 'Check in at Hôtel Léopold', type: 'lodging', location: 'Hôtel Léopold, Paris', websiteUrl: 'https://www.leopoldhotelparis.com/en/', tip: 'Moving Léopold to Oct. 2 means an evening and breakfast here instead of leaving before sunrise.' },
+        { id: 'd7-4', label: 'Check in at Hôtel Léopold', type: 'lodging', location: 'Hôtel Léopold, Paris', websiteUrl: 'https://www.leopoldhotelparis.com/en/', tip: 'Moving Léopold to Oct. 2 means an evening and breakfast here instead of leaving before sunrise.', privateDocumentKey: 'hotel-leopold-confirmation', privateDocumentType: 'confirmation' },
         { id: 'd7-5', label: 'Dinner near Montparnasse / Saint-Germain', type: 'meal', notes: 'Keep it casual — no hard reservation tonight.' },
       ],
       outfitBoardId: 'ob7',
@@ -171,7 +171,7 @@ export const franceTrip: Trip = {
         { id: 'd8-1', label: 'Breakfast at Léopold', type: 'meal' },
         { id: 'd8-2', label: 'Taxi/Bolt to Gare de Lyon', type: 'transport', location: 'Gare de Lyon, Paris' },
         { id: 'd8-3', time: '09:10', label: 'TGV INOUI to Nice-Ville', type: 'transport', websiteUrl: 'https://www.sncf-connect.com/en-en', tip: 'Direct, 5 hr 54 min, arriving 3:04 PM.', privateDocumentKey: 'sncf-paris-nice-confirmation', privateDocumentType: 'confirmation' },
-        { id: 'd8-4', label: 'Check in at Le Balcon du Vieux Nice', type: 'lodging', location: 'Le Balcon du Vieux Nice, Nice' },
+        { id: 'd8-4', label: 'Check in at Le Balcon du Vieux Nice', type: 'lodging', location: 'Le Balcon du Vieux Nice, Nice', privateDocumentKey: 'le-balcon-vieux-nice-confirmation', privateDocumentType: 'confirmation' },
         { id: 'd8-5', label: 'Vieux Nice, Cours Saleya, Promenade des Anglais, dinner', type: 'activity', tip: 'Le Panier is a nice option if you decide to reserve; otherwise keep arrival dinner flexible.' },
       ],
       outfitBoardId: 'ob8',
@@ -219,7 +219,7 @@ export const franceTrip: Trip = {
       scheduleItems: [
         { id: 'd11-1', time: '07:55', label: 'TGV INOUI Nice-Ville → Paris Gare de Lyon', type: 'transport', websiteUrl: 'https://www.sncf-connect.com/en-en', tip: 'Early start — direct, 5 hr 55 min, arriving 1:50 PM.', privateDocumentKey: 'sncf-paris-nice-confirmation', privateDocumentType: 'confirmation' },
         { id: 'd11-2', label: 'Continue toward CDG', type: 'transport' },
-        { id: 'd11-3', label: 'Check in at Moxy Paris CDG Airport', type: 'lodging', location: 'Moxy Paris Charles de Gaulle Airport', websiteUrl: 'https://www.marriott.com/en-us/hotels/parox-moxy-paris-charles-de-gaulle-airport/overview/', notes: 'Decompression night — early dinner, shower, reorganize luggage, early bed. No sightseeing.' },
+        { id: 'd11-3', label: 'Check in at Moxy Paris CDG Airport', type: 'lodging', location: 'Moxy Paris Charles de Gaulle Airport', websiteUrl: 'https://www.marriott.com/en-us/hotels/parox-moxy-paris-charles-de-gaulle-airport/overview/', notes: 'Decompression night — early dinner, shower, reorganize luggage, early bed. No sightseeing.', privateDocumentKey: 'moxy-cdg-confirmation', privateDocumentType: 'confirmation' },
       ],
       outfitBoardId: 'ob11',
     },
@@ -252,6 +252,8 @@ export const franceTrip: Trip = {
       address: 'La Maison Montparnasse, Paris',
       websiteUrl: 'https://lamaisonmontparnasse.fr/en/homepage/',
       tip: '5 nights, central Paris base for the first leg.',
+      privateDocumentKey: 'la-maison-montparnasse-confirmation',
+      privateDocumentType: 'confirmation',
     },
     {
       id: 'bk-hotel-vert',
@@ -267,6 +269,8 @@ export const franceTrip: Trip = {
       websiteUrl: 'https://vert.hotelmontsaintmichel.org/en/',
       phone: '+33 2 33 60 09 33',
       tip: 'Right by the free Mont-Saint-Michel shuttle zone.',
+      privateDocumentKey: 'hotel-vert-confirmation',
+      privateDocumentType: 'confirmation',
     },
     {
       id: 'bk-hotel-leopold',
@@ -280,6 +284,8 @@ export const franceTrip: Trip = {
       address: 'Hôtel Léopold, Paris',
       websiteUrl: 'https://www.leopoldhotelparis.com/en/',
       notes: 'Family Room — double bed + sofa bed. Fewest-stairs-from-the-elevator request noted. Breakfast included.',
+      privateDocumentKey: 'hotel-leopold-confirmation',
+      privateDocumentType: 'confirmation',
     },
     {
       id: 'bk-hotel-nice',
@@ -292,6 +298,8 @@ export const franceTrip: Trip = {
       cost: { amount: 590.51, currency: 'USD' },
       address: 'Le Balcon du Vieux Nice, Nice',
       notes: 'Top floor with lift, only a few entrance stairs, sofa bed suitable for the third adult, host can help with luggage. No standalone official site — booked through the listing platform.',
+      privateDocumentKey: 'le-balcon-vieux-nice-confirmation',
+      privateDocumentType: 'confirmation',
     },
     {
       id: 'bk-hotel-moxy',
@@ -307,6 +315,8 @@ export const franceTrip: Trip = {
       websiteUrl: 'https://www.marriott.com/en-us/hotels/parox-moxy-paris-charles-de-gaulle-airport/overview/',
       notes: 'Family Room (queen + sofa bed) — confirmed to legally accommodate all three adults.',
       tip: 'Keeps the early flight home stress-free.',
+      privateDocumentKey: 'moxy-cdg-confirmation',
+      privateDocumentType: 'confirmation',
     },
     {
       id: 'bk-dinner-le-procope',
@@ -365,6 +375,8 @@ export const franceTrip: Trip = {
       websiteUrl: 'https://www.galeriedior.com/en',
       ticketUrl: 'https://www.galeriedior.com/en/practical-information',
       notes: 'Keep the ticketed entry time from your confirmation email as the anchor for the afternoon.',
+      privateDocumentKey: 'galerie-dior-ticket',
+      privateDocumentType: 'ticket',
     },
     {
       id: 'bk-ticket-versailles',
@@ -379,6 +391,8 @@ export const franceTrip: Trip = {
       websiteUrl: 'https://en.chateauversailles.fr/',
       ticketUrl: 'https://en.chateauversailles.fr/plan-your-visit/tickets-and-prices',
       tip: 'Covers timed palace entry, gardens, park, Trianon Estate, temporary exhibitions, Royal Tennis Court, and the Gallery of Coaches when open.',
+      privateDocumentKey: 'versailles-ticket',
+      privateDocumentType: 'ticket',
     },
     {
       id: 'bk-dinner-josephine',
@@ -410,6 +424,8 @@ export const franceTrip: Trip = {
       websiteUrl: 'https://www.louvre.fr/en/',
       ticketUrl: 'https://ticket.louvre.fr/en',
       tip: 'Using the Les Frenchies 3-hour highlights route rather than trying to see everything.',
+      privateDocumentKey: 'louvre-ticket',
+      privateDocumentType: 'ticket',
     },
     {
       id: 'bk-dinner-campanella',
