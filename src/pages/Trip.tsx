@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { ChevronDown } from 'lucide-react'
+import { ChevronDown, CloudSun } from 'lucide-react'
 import { clsx } from 'clsx'
 import type { Trip } from '../types/trip'
 import { Card } from '../components/ui/Card'
@@ -33,6 +33,13 @@ export function TripPage({ trip }: { trip: Trip }) {
           {trip.days.length} days · {trip.legs.length} stops
         </p>
       </div>
+
+      {trip.meta.weatherDisclaimer && (
+        <div className="mb-5 flex gap-2.5 rounded-2xl border border-line bg-ivory-dim p-3.5 text-xs text-ink-soft">
+          <CloudSun size={16} className="mt-0.5 shrink-0 text-blue" />
+          <p>{trip.meta.weatherDisclaimer}</p>
+        </div>
+      )}
 
       <ol className="relative border-l border-line pl-5">
         {trip.days.map((day) => {
@@ -74,18 +81,26 @@ export function TripPage({ trip }: { trip: Trip }) {
                   <p className="mt-1.5 text-sm text-ink-soft">{day.outfitNote}</p>
 
                   {isOpen && (
-                    <ul className="mt-3 space-y-2 border-t border-line pt-3">
-                      {day.scheduleItems.map((item) => (
-                        <li key={item.id} className="flex gap-2.5 text-sm">
-                          <span className="w-11 shrink-0 text-xs text-blue">{item.time ?? ''}</span>
-                          <div>
-                            <p className="text-ink">{item.label}</p>
-                            {!shareMode && item.notes && <p className="text-xs text-ink-soft">{item.notes}</p>}
-                            {item.tip && <p className="text-xs italic text-gray">{item.tip}</p>}
-                          </div>
-                        </li>
-                      ))}
-                    </ul>
+                    <>
+                      {day.weatherNote && (
+                        <p className="mt-3 flex items-start gap-1.5 rounded-lg bg-blue-tint px-2.5 py-1.5 text-xs text-blue">
+                          <CloudSun size={13} className="mt-0.5 shrink-0" />
+                          {day.weatherNote}
+                        </p>
+                      )}
+                      <ul className="mt-3 space-y-2 border-t border-line pt-3">
+                        {day.scheduleItems.map((item) => (
+                          <li key={item.id} className="flex gap-2.5 text-sm">
+                            <span className="w-11 shrink-0 text-xs text-blue">{item.time ?? ''}</span>
+                            <div>
+                              <p className="text-ink">{item.label}</p>
+                              {!shareMode && item.notes && <p className="text-xs text-ink-soft">{item.notes}</p>}
+                              {item.tip && <p className="text-xs italic text-gray">{item.tip}</p>}
+                            </div>
+                          </li>
+                        ))}
+                      </ul>
+                    </>
                   )}
                 </Card>
               </button>

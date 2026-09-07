@@ -1,4 +1,4 @@
-import { AlertTriangle, Award, Bed, Ticket, UtensilsCrossed } from 'lucide-react'
+import { AlertTriangle, Award, Bed, Circle, ClipboardList, Ticket, UtensilsCrossed } from 'lucide-react'
 import type { Booking, BookingCategory, Trip } from '../types/trip'
 import { Card } from '../components/ui/Card'
 import { SectionHeader } from '../components/ui/SectionHeader'
@@ -89,6 +89,23 @@ export function Bookings({ trip }: { trip: Trip }) {
           </div>
         )
       })}
+
+      {trip.prepItems.length > 0 && (
+        <div>
+          <SectionHeader title="Still open" action={<ClipboardList size={16} className="text-blue" />} />
+          <div className="space-y-2.5">
+            {trip.prepItems.map((item) => (
+              <Card key={item.id} className="flex items-start gap-2.5 p-3.5">
+                <Circle size={15} className="mt-0.5 shrink-0 text-warn" />
+                <div>
+                  <p className="text-sm text-ink">{item.label}</p>
+                  {item.detail && <p className="mt-0.5 text-xs text-ink-soft">{item.detail}</p>}
+                </div>
+              </Card>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   )
 }

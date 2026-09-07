@@ -2,7 +2,7 @@ import { Award, CircleDollarSign, EyeOff } from 'lucide-react'
 import type { Booking, Transport, Trip } from '../types/trip'
 import { Card } from '../components/ui/Card'
 import { SectionHeader } from '../components/ui/SectionHeader'
-import { currencySymbol, formatMoney } from '../lib/money'
+import { formatMoney } from '../lib/money'
 import { useAppStore } from '../store/useAppStore'
 
 type Costed = (Booking | Transport) & { label: string }
@@ -34,13 +34,12 @@ export function WalletPage({ trip }: { trip: Trip }) {
 
   const paidByCurrency: Record<string, number> = {}
   const remainingByCurrency: Record<string, number> = {}
-  let pointsCount = 0
   let tbdCount = 0
 
   for (const item of items) {
-    if ('isPointsBooking' in item && item.isPointsBooking) pointsCount += 1
+    const isPoints = 'isPointsBooking' in item && item.isPointsBooking
     if (!item.cost) {
-      if (item.status !== 'cancelled') tbdCount += 1
+      if (item.status !== 'cancelled' && !isPoints) tbdCount += 1
       continue
     }
     if (item.status === 'paid') {
@@ -108,8 +107,15 @@ export function WalletPage({ trip }: { trip: Trip }) {
         </div>
       )}
 
+      {trip.meta.budgetNote && (
+        <Card className="p-4">
+          <p className="text-xs font-medium uppercase tracking-wide text-gray">Remaining spend guidance</p>
+          <p className="mt-1.5 text-sm text-ink-soft">{trip.meta.budgetNote}</p>
+        </Card>
+      )}
+
       <p className="pt-1 text-center text-[11px] text-gray">
-        Costs use {currencySymbol(trip.meta.tripCurrency)} unless noted. Toggle Share mode to hide amounts.
+        Costs are shown in the currency they were charged in. Toggle Share mode to hide amounts.
       </p>
     </div>
   )

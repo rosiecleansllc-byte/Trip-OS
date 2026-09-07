@@ -1,6 +1,6 @@
 import { useMemo } from 'react'
 import { Link } from 'react-router-dom'
-import { CheckCircle2, Circle, MapPin, Navigation, ShoppingBag, Sparkles } from 'lucide-react'
+import { CheckCircle2, Circle, CloudSun, MapPin, Navigation, ShoppingBag, Sparkles } from 'lucide-react'
 import type { Trip } from '../types/trip'
 import { Card } from '../components/ui/Card'
 import { SectionHeader } from '../components/ui/SectionHeader'
@@ -41,6 +41,13 @@ export function Today({ trip }: { trip: Trip }) {
           <h1 className="font-display text-2xl text-ink">{today.title}</h1>
           <p className="mt-0.5 text-sm text-ink-soft">{formatDateLong(today.date)}</p>
         </div>
+
+        {today.weatherNote && (
+          <p className="flex items-start gap-2 rounded-xl bg-blue-tint px-3.5 py-2.5 text-xs text-blue">
+            <CloudSun size={14} className="mt-0.5 shrink-0" />
+            {today.weatherNote}
+          </p>
+        )}
 
         <Card className="p-4">
           <SectionHeader eyebrow="Today's outfit" title={today.outfitNote} />
@@ -186,6 +193,26 @@ export function Today({ trip }: { trip: Trip }) {
           </Link>
         </div>
       </div>
+
+      {trip.prepItems.length > 0 && (
+        <div>
+          <SectionHeader eyebrow={`${trip.prepItems.length} left`} title="Still open" />
+          <div className="space-y-2">
+            {trip.prepItems.map((item) => (
+              <Card key={item.id} className="flex items-start gap-2.5 p-3.5">
+                <Circle size={15} className="mt-0.5 shrink-0 text-warn" />
+                <div>
+                  <p className="text-sm text-ink">{item.label}</p>
+                  {item.detail && <p className="mt-0.5 text-xs text-ink-soft">{item.detail}</p>}
+                </div>
+              </Card>
+            ))}
+          </div>
+          <Link to="/bookings" className="mt-2 inline-block text-xs font-medium text-blue">
+            Full list in Bookings
+          </Link>
+        </div>
+      )}
     </div>
   )
 }

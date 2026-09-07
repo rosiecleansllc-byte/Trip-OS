@@ -66,6 +66,14 @@ export interface DayPlan {
   scheduleItems: ScheduleItem[]
   deadlines?: Deadline[]
   outfitBoardId?: string
+  weatherNote?: string
+}
+
+export interface PrepItem {
+  id: string
+  label: string
+  detail?: string
+  status: 'pending' | 'done'
 }
 
 export interface Booking {
@@ -139,6 +147,8 @@ export interface TripMeta {
   tripCurrency: string
   status: 'upcoming' | 'active' | 'past'
   coverImageUrl?: string
+  weatherDisclaimer?: string
+  budgetNote?: string
 }
 
 export interface Trip {
@@ -149,4 +159,5 @@ export interface Trip {
   transport: Transport[]
   capsule: CapsuleItem[]
   outfitBoards: OutfitBoard[]
+  prepItems: PrepItem[]
 }
