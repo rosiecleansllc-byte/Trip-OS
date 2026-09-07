@@ -51,7 +51,7 @@ export const franceTrip: Trip = {
       outfitNote: 'White button-down + dark jeans + navy trench + white sneakers + black crossbody.',
       weatherNote: 'Likely jacket/trench weather by evening — think upper 50s–60s°F, not summer heat.',
       scheduleItems: [
-        { id: 'd1-1', time: '14:10', label: 'Land at CDG (JFK → CDG)', type: 'transport', location: 'Charles de Gaulle Airport (CDG)' },
+        { id: 'd1-1', time: '14:10', label: 'Land at CDG (JFK → CDG)', type: 'transport', location: 'Charles de Gaulle Airport (CDG)', privateDocumentKey: 'france-outbound-flight-confirmation', privateDocumentType: 'confirmation' },
         { id: 'd1-2', label: 'Official airport taxi to La Maison Montparnasse', type: 'transport', notes: 'Chose the official Left Bank taxi fare over the ~$92 private transfer.' },
         { id: 'd1-3', label: 'Check in, settle in', type: 'lodging', location: 'La Maison Montparnasse, Paris', websiteUrl: 'https://lamaisonmontparnasse.fr/en/homepage/', notes: 'Allow 2½–3 hours from landing through immigration, baggage, taxi, and check-in — expect to be settled around 5:00–5:30 PM.', privateDocumentKey: 'la-maison-montparnasse-confirmation', privateDocumentType: 'confirmation' },
         { id: 'd1-4', time: '19:30', label: 'Dinner: Le Procope', type: 'meal', location: 'Le Procope, Paris', websiteUrl: 'https://www.procope.com/en/', reservationUrl: 'https://www.procope.com/en/o/reserver/', tip: 'Your first-night Paris dinner — the later time gives you margin after the flight.', privateDocumentKey: 'le-procope-ticket', privateDocumentType: 'ticket' },
@@ -232,7 +232,7 @@ export const franceTrip: Trip = {
       outfitNote: 'White T-shirt + dark jeans + light cream cardigan + white sneakers + black crossbody.',
       scheduleItems: [
         { id: 'd12-1', time: '05:30', label: 'Air France terminal', type: 'transport', location: 'Charles de Gaulle Airport (CDG)', tip: 'Staying at the airport hotel makes this far easier than leaving central Paris before dawn.' },
-        { id: 'd12-2', time: '08:30', label: 'Flight home: CDG → JFK', type: 'transport' },
+        { id: 'd12-2', time: '08:30', label: 'Flight home: CDG → JFK', type: 'transport', privateDocumentKey: 'france-return-flight-confirmation', privateDocumentType: 'confirmation' },
       ],
       deadlines: [{ id: 'd12-dl1', label: 'Be at the Air France terminal', datetime: '2026-10-07T05:30' }],
       outfitBoardId: 'ob12',
@@ -508,6 +508,8 @@ export const franceTrip: Trip = {
       status: 'confirmed',
       cost: null,
       notes: 'Cost excluded from the ground-trip budget (international airfare tracked separately).',
+      privateDocumentKey: 'france-outbound-flight-confirmation',
+      privateDocumentType: 'confirmation',
     },
     {
       id: 'tr-airport-taxi',
@@ -659,6 +661,8 @@ export const franceTrip: Trip = {
       status: 'confirmed',
       cost: null,
       notes: 'Cost excluded from the ground-trip budget (international airfare tracked separately). Air France — be at the terminal by 5:30–5:45 AM.',
+      privateDocumentKey: 'france-return-flight-confirmation',
+      privateDocumentType: 'confirmation',
     },
   ],
 
