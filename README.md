@@ -62,6 +62,29 @@ notes from Bookings/Transport/Trip, and hides the Wallet tab entirely —
 while keeping dates, places, and the `tip` field (public, trip-level
 recommendations) visible. See `src/lib/share.ts`.
 
+### Action links (Directions / Ticket / Website / Reservation / Menu / Call / Modify)
+
+`Booking`, `Transport`, and `ScheduleItem` all extend `LinkActions`
+(`src/types/trip.ts`), rendered as one-tap buttons by
+`components/ui/ActionRow.tsx`. Two of those fields are easy to mix up,
+so read this before adding a link:
+
+- **`ticketUrl`** — public. The general info/purchase page anyone could
+  use (a museum's ticketing site, a venue's box office). Always visible,
+  Share mode included.
+- **`privateTicketUrl`** — private. *This trip's actual* purchased
+  e-ticket, PDF, or QR-code link from the confirmation email. **Never**
+  put a personal ticket link in `ticketUrl` — use `privateTicketUrl`
+  instead. ActionRow prefers it over `ticketUrl` for the Ticket button
+  outside Share mode, and ignores it completely inside Share mode — if
+  it's the only ticket link an item has, the Ticket button just doesn't
+  render in Share mode rather than falling back to it.
+- **`modifyUrl`** — private, same treatment as `privateTicketUrl` (a
+  personal manage/cancel link for the booking).
+
+This is enforced once, centrally, in `ActionRow` — not per-page — so
+there's a single place to audit if a new private field is ever added.
+
 ## Commands
 
 ```

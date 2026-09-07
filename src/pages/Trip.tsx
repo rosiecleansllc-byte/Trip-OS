@@ -110,6 +110,7 @@ export function TripPage({ trip }: { trip: Trip }) {
                               reservationUrl={item.reservationUrl}
                               menuUrl={item.menuUrl}
                               phone={item.phone}
+                              privateTicketUrl={item.privateTicketUrl}
                               modifyUrl={item.modifyUrl}
                               shareMode={shareMode}
                               className="mt-1.5"

@@ -46,16 +46,39 @@ export interface Deadline {
 }
 
 // External actions a booking, transport leg, or schedule item can expose as
-// one-tap buttons. All are public/shareable EXCEPT modifyUrl, which is
-// treated as private (it typically carries a personal manage/cancel token)
-// and is always stripped in Share mode — see components/ui/ActionRow.tsx.
+// one-tap buttons.
+//
+// websiteUrl / ticketUrl / reservationUrl / menuUrl / phone are PUBLIC —
+// they point at a venue's official site, general info/purchase page, or
+// contact info, safe to show anyone. They always render, in Share mode too.
+//
+// privateTicketUrl and modifyUrl are PRIVATE and must NEVER render in
+// Share mode — see components/ui/ActionRow.tsx, which enforces this
+// centrally so no page can accidentally leak one:
+//   - modifyUrl carries a personal manage/cancel token for the booking.
+//   - privateTicketUrl is the traveler's own purchased ticket: the actual
+//     e-ticket/PDF/QR-code link from the confirmation email. NEVER put a
+//     personal ticket link in `ticketUrl` — that field is the public
+//     info/purchase page (e.g. the museum's ticketing site), not the
+//     traveler's redeemable ticket. Use `ticketUrl` for "where anyone
+//     buys a ticket" and `privateTicketUrl` for "this trip's actual
+//     ticket" — the two are rendered differently by ActionRow (see below)
+//     specifically so the private one can never leak into Share mode.
+//
+// ActionRow's Ticket button: outside Share mode it prefers
+// privateTicketUrl (opens the traveler's actual ticket) and falls back to
+// ticketUrl. In Share mode it only ever considers ticketUrl — if a
+// privateTicketUrl exists but no public ticketUrl, the Ticket button is
+// hidden entirely in Share mode rather than falling back to the private
+// link.
 export interface LinkActions {
   websiteUrl?: string
-  ticketUrl?: string
+  ticketUrl?: string // public — the info/purchase page anyone can use
   reservationUrl?: string
   menuUrl?: string
   phone?: string
-  modifyUrl?: string // private — stripped in Share mode
+  privateTicketUrl?: string // private — this traveler's actual e-ticket/PDF/QR
+  modifyUrl?: string // private — manage/cancel link
 }
 
 export interface ScheduleItem extends LinkActions {

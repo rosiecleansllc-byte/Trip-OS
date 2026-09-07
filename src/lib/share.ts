@@ -4,8 +4,9 @@ import type { Booking, ScheduleItem, Transport } from '../types/trip'
 // personal notes — while keeping dates, places, and the high-level tips
 // that are actually useful to share with someone else. Public action links
 // (website/ticket/reservation/menu/phone) are NOT private and survive
-// Share mode; only modifyUrl is treated as private, and that's enforced
-// centrally in ActionRow rather than here.
+// Share mode; only privateTicketUrl (the traveler's actual e-ticket/PDF/QR)
+// and modifyUrl are private, and that's enforced centrally in ActionRow
+// rather than here — see the LinkActions comment in types/trip.ts.
 
 export function redactBooking(b: Booking): Booking {
   return {
