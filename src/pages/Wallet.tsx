@@ -54,7 +54,7 @@ export function WalletPage({ trip }: { trip: Trip }) {
   return (
     <div className="animate-fade-in space-y-7">
       <div>
-        <p className="text-[11px] font-medium uppercase tracking-[0.14em] text-gray">Trip spend</p>
+        <p className="text-[11px] font-medium uppercase tracking-[0.14em] text-ink-soft">Trip spend</p>
         <h1 className="font-display text-2xl text-ink">Wallet</h1>
       </div>
 
@@ -62,7 +62,7 @@ export function WalletPage({ trip }: { trip: Trip }) {
         <SectionHeader title="Paid so far" />
         <div className="grid grid-cols-2 gap-3">
           {currencies.map((cur) => (
-            <Card key={cur} className="p-4">
+            <Card key={cur} accent="blue" className="p-4">
               <p className="text-[11px] uppercase tracking-wide text-gray">{cur}</p>
               <p className="font-display text-2xl text-ink">
                 {formatMoney({ amount: paidByCurrency[cur] ?? 0, currency: cur })}
@@ -76,7 +76,7 @@ export function WalletPage({ trip }: { trip: Trip }) {
         <SectionHeader title="Remaining / pending" />
         <div className="grid grid-cols-2 gap-3">
           {currencies.map((cur) => (
-            <Card key={cur} className="p-4">
+            <Card key={cur} accent={(remainingByCurrency[cur] ?? 0) > 0 ? 'red' : undefined} className="p-4">
               <p className="text-[11px] uppercase tracking-wide text-gray">{cur}</p>
               <p className="font-display text-2xl text-ink">
                 {formatMoney({ amount: remainingByCurrency[cur] ?? 0, currency: cur })}

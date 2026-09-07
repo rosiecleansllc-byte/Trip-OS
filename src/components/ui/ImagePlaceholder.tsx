@@ -14,7 +14,7 @@ export function ImagePlaceholder({
   }
   return (
     <div
-      className={`flex flex-col items-center justify-center gap-1.5 bg-ivory-dim text-gray ${className}`}
+      className={`flex flex-col items-center justify-center gap-1.5 bg-bg-soft text-gray ${className}`}
       role="img"
       aria-label={label}
     >

@@ -15,14 +15,16 @@ function App() {
 
   if (!trip) {
     return (
-      <div className="flex min-h-dvh items-center justify-center bg-ivory p-6 text-center text-ink-soft">
+      <div className="flex min-h-dvh items-center justify-center bg-bg p-6 text-center text-ink-soft">
         No trip found. Add one in src/data/trips and register it in tripsIndex.ts.
       </div>
     )
   }
 
+  const pendingCount = trip.bookings.filter((b) => b.status === 'pending').length
+
   return (
-    <AppShell meta={trip.meta}>
+    <AppShell meta={trip.meta} pendingCount={pendingCount}>
       <Routes>
         <Route path="/" element={<Navigate to="/today" replace />} />
         <Route path="/today" element={<Today trip={trip} />} />

@@ -59,7 +59,7 @@ export function Today({ trip }: { trip: Trip }) {
             />
             <div className="flex flex-1 flex-wrap content-start gap-1.5">
               {outfitBoard?.itemNames.map((item) => (
-                <span key={item} className="rounded-full border border-line bg-ivory px-2.5 py-1 text-xs text-ink-soft">
+                <span key={item} className="rounded-full border border-line bg-bg px-2.5 py-1 text-xs text-ink-soft">
                   {item}
                 </span>
               ))}
@@ -108,11 +108,15 @@ export function Today({ trip }: { trip: Trip }) {
             <SectionHeader eyebrow="Don't miss" title="Deadlines today" />
             <div className="space-y-2">
               {deadlines.map((d) => (
-                <Card key={d.id} className="flex items-center gap-2.5 p-3 text-sm">
+                <Card
+                  key={d.id}
+                  accent={d.done ? undefined : 'red'}
+                  className="flex items-center gap-2.5 p-3 text-sm"
+                >
                   {d.done ? (
-                    <CheckCircle2 size={16} className="text-good" />
+                    <CheckCircle2 size={16} className="text-blue" />
                   ) : (
-                    <Circle size={16} className="text-warn" />
+                    <Circle size={16} className="text-red" />
                   )}
                   <span className="flex-1 text-ink">{d.label}</span>
                   <span className="text-xs text-ink-soft">{formatTime(d.datetime.slice(11, 16))}</span>
@@ -135,7 +139,7 @@ export function Today({ trip }: { trip: Trip }) {
         </p>
         <Link
           to="/trip"
-          className="mt-2 rounded-full bg-blue px-5 py-2 text-sm font-medium text-ivory"
+          className="mt-2 rounded-full bg-blue px-5 py-2 text-sm font-medium text-white"
         >
           Relive the timeline
         </Link>
@@ -150,12 +154,12 @@ export function Today({ trip }: { trip: Trip }) {
   return (
     <div className="animate-fade-in space-y-6">
       <Card className="overflow-hidden">
-        <div className="bg-blue px-5 py-6 text-ivory">
-          <p className="text-[11px] font-medium uppercase tracking-[0.14em] text-ivory/70">Next up</p>
+        <div className="bg-blue px-5 py-6 text-white">
+          <p className="text-[11px] font-medium uppercase tracking-[0.14em] text-white/70">Next up</p>
           <p className="font-display text-3xl">
             {countdown !== null && countdown > 0 ? `${countdown} days` : 'Today'}
           </p>
-          <p className="mt-1 text-sm text-ivory/85">until {trip.meta.name} begins</p>
+          <p className="mt-1 text-sm text-white/85">until {trip.meta.name} begins</p>
         </div>
         <div className="p-4 text-sm text-ink-soft">
           <p className="flex items-center gap-1.5">
@@ -200,7 +204,7 @@ export function Today({ trip }: { trip: Trip }) {
           <div className="space-y-2">
             {trip.prepItems.map((item) => (
               <Card key={item.id} className="flex items-start gap-2.5 p-3.5">
-                <Circle size={15} className="mt-0.5 shrink-0 text-warn" />
+                <Circle size={15} className="mt-0.5 shrink-0 text-red" />
                 <div>
                   <p className="text-sm text-ink">{item.label}</p>
                   {item.detail && <p className="mt-0.5 text-xs text-ink-soft">{item.detail}</p>}

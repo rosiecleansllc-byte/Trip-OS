@@ -23,18 +23,18 @@ export function Pack({ trip }: { trip: Trip }) {
   return (
     <div className="animate-fade-in space-y-6">
       <div>
-        <p className="text-[11px] font-medium uppercase tracking-[0.14em] text-gray">What to bring</p>
+        <p className="text-[11px] font-medium uppercase tracking-[0.14em] text-ink-soft">What to bring</p>
         <h1 className="font-display text-2xl text-ink">Pack</h1>
       </div>
 
-      <div className="flex gap-1 rounded-full border border-line bg-paper p-1">
+      <div className="flex gap-1 rounded-full border border-line bg-surface p-1">
         {(['capsule', 'outfits'] as const).map((key) => (
           <button
             key={key}
             onClick={() => setTab(key)}
             className={clsx(
               'flex-1 rounded-full py-2 text-sm font-medium transition-colors',
-              tab === key ? 'bg-blue text-ivory' : 'text-ink-soft'
+              tab === key ? 'bg-blue text-white' : 'text-ink-soft'
             )}
           >
             {key === 'capsule' ? 'Capsule wardrobe' : 'Outfit boards'}
@@ -49,7 +49,7 @@ export function Pack({ trip }: { trip: Trip }) {
             if (items.length === 0) return null
             return (
               <div key={cat}>
-                <SectionHeader eyebrow={`${items.length} items`} title={CATEGORY_LABELS[cat]} />
+                <SectionHeader eyebrow={`${items.length} items`} title={CATEGORY_LABELS[cat]} accent="red" />
                 <div className="grid grid-cols-2 gap-3">
                   {items.map((item) => (
                     <Card key={item.id} className="overflow-hidden">
@@ -90,7 +90,7 @@ export function Pack({ trip }: { trip: Trip }) {
                   {board.itemNames.map((item) => (
                     <span
                       key={item}
-                      className="rounded-full border border-line bg-ivory px-2.5 py-1 text-[11px] text-ink-soft"
+                      className="rounded-full border border-line bg-bg px-2.5 py-1 text-[11px] text-ink-soft"
                     >
                       {item}
                     </span>

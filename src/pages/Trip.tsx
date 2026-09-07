@@ -27,7 +27,7 @@ export function TripPage({ trip }: { trip: Trip }) {
   return (
     <div className="animate-fade-in space-y-1">
       <div className="mb-4">
-        <p className="text-[11px] font-medium uppercase tracking-[0.14em] text-gray">The full itinerary</p>
+        <p className="text-[11px] font-medium uppercase tracking-[0.14em] text-ink-soft">The full itinerary</p>
         <h1 className="font-display text-2xl text-ink">{trip.meta.name}</h1>
         <p className="mt-0.5 text-sm text-ink-soft">
           {trip.days.length} days · {trip.legs.length} stops
@@ -35,18 +35,19 @@ export function TripPage({ trip }: { trip: Trip }) {
       </div>
 
       {trip.meta.weatherDisclaimer && (
-        <div className="mb-5 flex gap-2.5 rounded-2xl border border-line bg-ivory-dim p-3.5 text-xs text-ink-soft">
+        <div className="mb-5 flex gap-2.5 rounded-2xl border border-line bg-bg-soft p-3.5 text-xs text-ink-soft">
           <CloudSun size={16} className="mt-0.5 shrink-0 text-blue" />
           <p>{trip.meta.weatherDisclaimer}</p>
         </div>
       )}
 
-      <ol className="relative border-l border-line pl-5">
+      <ol className="relative border-l-2 border-blue/25 pl-5">
         {trip.days.map((day) => {
           const leg = trip.legs.find((l) => l.id === day.legId)
           const showLegHeader = legHeaderDayIds.has(day.id)
           const isToday = isSameISODate(day.date)
           const isOpen = openDay === day.id
+          const hasOpenDeadline = (day.deadlines ?? []).some((d) => !d.done)
 
           return (
             <li key={day.id} className="relative">
@@ -58,14 +59,18 @@ export function TripPage({ trip }: { trip: Trip }) {
               <span
                 className={clsx(
                   'absolute -left-[25px] top-4 h-2.5 w-2.5 rounded-full border-2',
-                  isToday ? 'border-blue bg-blue' : 'border-line bg-paper'
+                  isToday
+                    ? 'border-blue bg-blue'
+                    : hasOpenDeadline
+                      ? 'border-red bg-surface'
+                      : 'border-line bg-surface'
                 )}
               />
               <button
                 onClick={() => setOpenDay(isOpen ? null : day.id)}
                 className="w-full pb-3 text-left"
               >
-                <Card className={clsx('p-4 transition-colors', isToday && 'border-blue-dim/50 bg-blue-tint/40')}>
+                <Card className={clsx('p-4 transition-colors', isToday && 'border-blue/50 bg-blue-tint/40')}>
                   <div className="flex items-start justify-between gap-3">
                     <div>
                       <p className="text-xs font-medium text-gray">

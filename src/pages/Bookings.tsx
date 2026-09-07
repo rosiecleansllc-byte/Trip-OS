@@ -22,8 +22,10 @@ function BookingRow({ booking, shareMode }: { booking: Booking; shareMode: boole
     ? `${formatDateCompact(b.dateStart)} – ${formatDateCompact(b.dateEnd)}`
     : formatDateCompact(b.dateStart)
 
+  const hasOpenDeadline = Boolean(b.cancellationDeadline) && b.status !== 'cancelled'
+
   return (
-    <Card className="p-4">
+    <Card accent={hasOpenDeadline ? 'red' : undefined} className="p-4">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <p className="text-sm font-medium text-ink">{b.name}</p>
@@ -46,7 +48,7 @@ function BookingRow({ booking, shareMode }: { booking: Booking; shareMode: boole
       {b.tip && <p className="mt-2 text-xs italic text-gray">{b.tip}</p>}
 
       {b.cancellationDeadline && b.status !== 'cancelled' && (
-        <div className="mt-2.5 flex items-center gap-1.5 rounded-lg bg-warn-tint px-2.5 py-1.5 text-xs text-warn">
+        <div className="mt-2.5 flex items-center gap-1.5 rounded-lg bg-red-tint px-2.5 py-1.5 text-xs text-red">
           <AlertTriangle size={13} />
           Cancel/confirm by {formatDateCompact(b.cancellationDeadline)}
         </div>
@@ -67,7 +69,7 @@ export function Bookings({ trip }: { trip: Trip }) {
   return (
     <div className="animate-fade-in space-y-7">
       <div>
-        <p className="text-[11px] font-medium uppercase tracking-[0.14em] text-gray">Everything booked</p>
+        <p className="text-[11px] font-medium uppercase tracking-[0.14em] text-ink-soft">Everything booked</p>
         <h1 className="font-display text-2xl text-ink">Bookings</h1>
         {pendingCount > 0 && (
           <p className="mt-1 text-sm text-ink-soft">
@@ -96,7 +98,7 @@ export function Bookings({ trip }: { trip: Trip }) {
           <div className="space-y-2.5">
             {trip.prepItems.map((item) => (
               <Card key={item.id} className="flex items-start gap-2.5 p-3.5">
-                <Circle size={15} className="mt-0.5 shrink-0 text-warn" />
+                <Circle size={15} className="mt-0.5 shrink-0 text-red" />
                 <div>
                   <p className="text-sm text-ink">{item.label}</p>
                   {item.detail && <p className="mt-0.5 text-xs text-ink-soft">{item.detail}</p>}

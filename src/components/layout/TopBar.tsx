@@ -11,12 +11,12 @@ export function TopBar({ meta }: { meta: TripMeta }) {
     <header
       className={clsx(
         'sticky top-0 z-20 border-b px-4 pt-[calc(0.75rem+env(safe-area-inset-top))] pb-3 backdrop-blur transition-colors supports-[backdrop-filter]:bg-opacity-90',
-        shareMode ? 'border-blue-dim/30 bg-blue-tint' : 'border-line bg-ivory/95'
+        shareMode ? 'border-blue/30 bg-blue-tint' : 'border-line bg-bg/95'
       )}
     >
       <div className="mx-auto flex max-w-md items-center justify-between">
         <div>
-          <p className="text-[11px] font-medium uppercase tracking-[0.14em] text-gray">Trip OS</p>
+          <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-blue">Trip OS</p>
           <h1 className="font-display text-lg leading-tight text-ink">{meta.name}</h1>
         </div>
         <button
@@ -24,8 +24,8 @@ export function TopBar({ meta }: { meta: TripMeta }) {
           className={clsx(
             'flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition-colors',
             shareMode
-              ? 'border-blue bg-blue text-ivory'
-              : 'border-line bg-paper text-ink-soft hover:border-blue-dim/40'
+              ? 'border-blue bg-blue text-white'
+              : 'border-line bg-surface text-ink-soft hover:border-blue/40'
           )}
         >
           {shareMode ? <Eye size={14} /> : <EyeOff size={14} />}

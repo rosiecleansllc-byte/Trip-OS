@@ -1,11 +1,11 @@
 import type { BookingStatus } from '../../types/trip'
 
 const STYLES: Record<BookingStatus, string> = {
-  confirmed: 'bg-blue-tint text-blue border-blue-dim/30',
-  paid: 'bg-good-tint text-good border-good/25',
-  pending: 'bg-warn-tint text-warn border-warn/25',
-  optional: 'bg-ivory-dim text-ink-soft border-line',
-  cancelled: 'bg-alert-tint text-alert border-alert/25 line-through',
+  confirmed: 'bg-blue-tint text-blue border-blue/20',
+  paid: 'bg-blue text-white border-blue',
+  pending: 'bg-white text-red border-red',
+  optional: 'bg-bg-soft text-ink-soft border-line',
+  cancelled: 'bg-bg-soft text-ink-soft border-line line-through',
 }
 
 const LABELS: Record<BookingStatus, string> = {

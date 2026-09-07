@@ -56,7 +56,7 @@ export function Transport({ trip }: { trip: Trip }) {
   return (
     <div className="animate-fade-in space-y-7">
       <div>
-        <p className="text-[11px] font-medium uppercase tracking-[0.14em] text-gray">Getting around</p>
+        <p className="text-[11px] font-medium uppercase tracking-[0.14em] text-ink-soft">Getting around</p>
         <h1 className="font-display text-2xl text-ink">Transport</h1>
       </div>
 
