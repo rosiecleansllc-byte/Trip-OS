@@ -1,4 +1,5 @@
-import { Eye, EyeOff } from 'lucide-react'
+import { Eye, EyeOff, LayoutGrid } from 'lucide-react'
+import { Link } from 'react-router-dom'
 import { useAppStore } from '../../store/useAppStore'
 import type { TripMeta } from '../../types/trip'
 import { clsx } from 'clsx'
@@ -15,10 +16,15 @@ export function TopBar({ meta }: { meta: TripMeta }) {
       )}
     >
       <div className="mx-auto flex max-w-md items-center justify-between">
-        <div>
-          <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-blue">Trip OS</p>
-          <h1 className="font-display text-lg leading-tight text-ink">{meta.name}</h1>
-        </div>
+        <Link to="/" className="flex items-center gap-2 min-w-0">
+          <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-line bg-surface text-ink-soft">
+            <LayoutGrid size={15} />
+          </span>
+          <div className="min-w-0">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-blue">Trip OS</p>
+            <h1 className="truncate font-display text-lg leading-tight text-ink">{meta.name}</h1>
+          </div>
+        </Link>
         <button
           onClick={toggleShareMode}
           className={clsx(

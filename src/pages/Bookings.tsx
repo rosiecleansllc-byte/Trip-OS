@@ -82,6 +82,9 @@ export function Bookings({ trip }: { trip: Trip }) {
     .filter((g) => g.items.length > 0)
 
   const pendingCount = trip.bookings.filter((b) => b.status === 'pending').length
+  const openItems = (trip.openItems ?? [])
+    .filter((i) => i.status === 'open')
+    .sort((a, b) => (a.priority === 'high' ? 0 : 1) - (b.priority === 'high' ? 0 : 1))
 
   return (
     <div className="animate-fade-in space-y-7">
@@ -109,13 +112,13 @@ export function Bookings({ trip }: { trip: Trip }) {
         )
       })}
 
-      {trip.prepItems.length > 0 && (
+      {openItems.length > 0 && (
         <div>
           <SectionHeader title="Still open" action={<ClipboardList size={16} className="text-blue" />} />
           <div className="space-y-2.5">
-            {trip.prepItems.map((item) => (
+            {openItems.map((item) => (
               <Card key={item.id} className="flex items-start gap-2.5 p-3.5">
-                <Circle size={15} className="mt-0.5 shrink-0 text-red" />
+                <Circle size={15} className={`mt-0.5 shrink-0 ${item.priority === 'high' ? 'text-red' : 'text-gray'}`} />
                 <div>
                   <p className="text-sm text-ink">{item.label}</p>
                   {item.detail && <p className="mt-0.5 text-xs text-ink-soft">{item.detail}</p>}

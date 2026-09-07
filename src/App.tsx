@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react'
 import { Navigate, Route, Routes } from 'react-router-dom'
 import { AppShell } from './components/layout/AppShell'
 import { getTrip } from './data/tripsIndex'
@@ -8,34 +9,33 @@ import { Bookings } from './pages/Bookings'
 import { Transport } from './pages/Transport'
 import { Pack } from './pages/Pack'
 import { WalletPage } from './pages/Wallet'
+import { TripsHome } from './pages/TripsHome'
 
 function App() {
   const currentTripId = useAppStore((s) => s.currentTripId)
   const trip = getTrip(currentTripId)
 
-  if (!trip) {
+  const withShell = (node: ReactNode) => {
+    if (!trip) return <Navigate to="/" replace />
+    const pendingCount = trip.bookings.filter((b) => b.status === 'pending').length
     return (
-      <div className="flex min-h-dvh items-center justify-center bg-bg p-6 text-center text-ink-soft">
-        No trip found. Add one in src/data/trips and register it in tripsIndex.ts.
-      </div>
+      <AppShell meta={trip.meta} pendingCount={pendingCount}>
+        {node}
+      </AppShell>
     )
   }
 
-  const pendingCount = trip.bookings.filter((b) => b.status === 'pending').length
-
   return (
-    <AppShell meta={trip.meta} pendingCount={pendingCount}>
-      <Routes>
-        <Route path="/" element={<Navigate to="/today" replace />} />
-        <Route path="/today" element={<Today trip={trip} />} />
-        <Route path="/trip" element={<TripPage trip={trip} />} />
-        <Route path="/bookings" element={<Bookings trip={trip} />} />
-        <Route path="/transport" element={<Transport trip={trip} />} />
-        <Route path="/pack" element={<Pack trip={trip} />} />
-        <Route path="/wallet" element={<WalletPage trip={trip} />} />
-        <Route path="*" element={<Navigate to="/today" replace />} />
-      </Routes>
-    </AppShell>
+    <Routes>
+      <Route path="/" element={<TripsHome />} />
+      <Route path="/today" element={withShell(trip && <Today trip={trip} />)} />
+      <Route path="/trip" element={withShell(trip && <TripPage trip={trip} />)} />
+      <Route path="/bookings" element={withShell(trip && <Bookings trip={trip} />)} />
+      <Route path="/transport" element={withShell(trip && <Transport trip={trip} />)} />
+      <Route path="/pack" element={withShell(trip && <Pack trip={trip} />)} />
+      <Route path="/wallet" element={withShell(trip && <WalletPage trip={trip} />)} />
+      <Route path="*" element={<Navigate to="/" replace />} />
+    </Routes>
   )
 }
 

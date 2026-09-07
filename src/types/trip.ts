@@ -144,11 +144,39 @@ export interface DayPlan {
   weatherNote?: string
 }
 
-export interface PrepItem {
+export type OpenItemCategory = 'lodging' | 'transport' | 'packing' | 'documents' | 'other'
+export type OpenItemPriority = 'high' | 'normal'
+
+// A genuinely unresolved piece of trip planning — "we haven't decided/booked
+// this yet" — as opposed to a Booking/Transport row, which represents
+// something already confirmed. Keeping these as real, typed, filterable
+// data (instead of prose buried in a note) is what lets Today's readiness
+// dashboard and Bookings' "Still open" list both compute from the same
+// source. priority controls both display order and how much an item
+// counts against readiness (see lib/readiness.ts) — 'high' for things that
+// block the trip from actually working (missing lodging, an undecided
+// travel leg), 'normal' for lower-stakes prep (packing, optional bookings).
+export interface OpenItem {
   id: string
+  tripId: string
   label: string
+  category: OpenItemCategory
+  priority?: OpenItemPriority // defaults to 'normal'
+  status: 'open' | 'done'
   detail?: string
-  status: 'pending' | 'done'
+  dueDate?: ISODate
+  relatedDayId?: string // ties it to a DayPlan.id, so Today can surface it on that day
+  relatedBookingId?: string // ties it to a Booking.id or Transport.id
+}
+
+// One line in a packing checklist. Deliberately separate from the France
+// capsule-wardrobe/outfit-board system (CapsuleItem/OutfitBoard below,
+// which is a styled visual wardrobe planner) — a trip can have either,
+// both, or neither. Pack renders whichever the trip's data provides.
+export interface PackingItem {
+  id: string
+  category: string // freeform section heading, e.g. "Clothing", "Tech"
+  label: string
 }
 
 export interface Booking extends LinkActions {
@@ -235,6 +263,7 @@ export interface Trip {
   transport: Transport[]
   capsule: CapsuleItem[]
   outfitBoards: OutfitBoard[]
-  prepItems: PrepItem[]
+  openItems: OpenItem[]
+  packingList?: PackingItem[] // a plain checklist, for trips without a styled capsule wardrobe
   resources?: TravelResource[] // public reference links, e.g. an official transit map
 }

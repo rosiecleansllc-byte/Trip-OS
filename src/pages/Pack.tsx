@@ -1,12 +1,13 @@
 import { useState } from 'react'
 import { clsx } from 'clsx'
-import { Maximize2 } from 'lucide-react'
+import { Check, Maximize2 } from 'lucide-react'
 import type { CapsuleCategory, Trip } from '../types/trip'
 import { Card } from '../components/ui/Card'
 import { SectionHeader } from '../components/ui/SectionHeader'
 import { ImagePlaceholder } from '../components/ui/ImagePlaceholder'
 import { Lightbox } from '../components/ui/Lightbox'
 import { formatDateCompact } from '../lib/date'
+import { useAppStore } from '../store/useAppStore'
 
 const CATEGORY_LABELS: Record<CapsuleCategory, string> = {
   outerwear: 'Outerwear',
@@ -19,8 +20,77 @@ const CATEGORY_LABELS: Record<CapsuleCategory, string> = {
 
 const CATEGORY_ORDER: CapsuleCategory[] = ['outerwear', 'top', 'bottom', 'dress', 'shoes', 'accessory']
 
+function PackingChecklist({ trip }: { trip: Trip }) {
+  const packedItems = useAppStore((s) => s.packedItems)
+  const togglePacked = useAppStore((s) => s.togglePacked)
+  const items = trip.packingList ?? []
+  const packedCount = items.filter((item) => packedItems[`${trip.meta.id}:${item.id}`]).length
+  const percent = items.length > 0 ? Math.round((packedCount / items.length) * 100) : 0
+
+  const categories = Array.from(new Set(items.map((i) => i.category)))
+
+  return (
+    <div className="space-y-6">
+      <Card className="p-4">
+        <div className="flex items-center justify-between">
+          <p className="text-sm font-medium text-ink">
+            Packed {packedCount} of {items.length}
+          </p>
+          <p className="text-xs font-medium text-blue">{percent}%</p>
+        </div>
+        <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-bg-soft">
+          <div className="h-full rounded-full bg-blue transition-all" style={{ width: `${percent}%` }} />
+        </div>
+      </Card>
+
+      {categories.map((category) => {
+        const categoryItems = items.filter((i) => i.category === category)
+        return (
+          <div key={category}>
+            <SectionHeader eyebrow={`${categoryItems.length} items`} title={category} accent="red" />
+            <div className="space-y-2">
+              {categoryItems.map((item) => {
+                const key = `${trip.meta.id}:${item.id}`
+                const packed = Boolean(packedItems[key])
+                return (
+                  <button
+                    key={item.id}
+                    type="button"
+                    onClick={() => togglePacked(trip.meta.id, item.id)}
+                    className="block w-full text-left"
+                  >
+                    <Card className="flex items-center gap-3 p-3.5">
+                      <span
+                        className={clsx(
+                          'flex h-5 w-5 shrink-0 items-center justify-center rounded-full border transition-colors',
+                          packed ? 'border-blue bg-blue text-white' : 'border-line text-transparent'
+                        )}
+                      >
+                        <Check size={13} strokeWidth={3} />
+                      </span>
+                      <span className={clsx('text-sm', packed ? 'text-ink-soft line-through' : 'text-ink')}>
+                        {item.label}
+                      </span>
+                    </Card>
+                  </button>
+                )
+              })}
+            </div>
+          </div>
+        )
+      })}
+    </div>
+  )
+}
+
 export function Pack({ trip }: { trip: Trip }) {
-  const [tab, setTab] = useState<'capsule' | 'outfits'>('capsule')
+  const hasCapsule = trip.capsule.length > 0
+  const hasChecklist = (trip.packingList?.length ?? 0) > 0
+  const tabs = [
+    ...(hasCapsule ? (['capsule', 'outfits'] as const) : []),
+    ...(hasChecklist ? (['checklist'] as const) : []),
+  ]
+  const [tab, setTab] = useState<(typeof tabs)[number]>(tabs[0])
   const [lightbox, setLightbox] = useState<{ src: string; alt: string } | null>(null)
 
   return (
@@ -40,22 +110,26 @@ export function Pack({ trip }: { trip: Trip }) {
         </button>
       )}
 
-      <div className="flex gap-1 rounded-full border border-line bg-surface p-1">
-        {(['capsule', 'outfits'] as const).map((key) => (
-          <button
-            key={key}
-            onClick={() => setTab(key)}
-            className={clsx(
-              'flex-1 rounded-full py-2 text-sm font-medium transition-colors',
-              tab === key ? 'bg-blue text-white' : 'text-ink-soft'
-            )}
-          >
-            {key === 'capsule' ? 'Capsule wardrobe' : 'Outfit boards'}
-          </button>
-        ))}
-      </div>
+      {tabs.length > 1 && (
+        <div className="flex gap-1 rounded-full border border-line bg-surface p-1">
+          {tabs.map((key) => (
+            <button
+              key={key}
+              onClick={() => setTab(key)}
+              className={clsx(
+                'flex-1 rounded-full py-2 text-sm font-medium transition-colors',
+                tab === key ? 'bg-blue text-white' : 'text-ink-soft'
+              )}
+            >
+              {key === 'capsule' ? 'Capsule wardrobe' : key === 'outfits' ? 'Outfit boards' : 'Checklist'}
+            </button>
+          ))}
+        </div>
+      )}
 
-      {tab === 'capsule' ? (
+      {tab === 'checklist' && <PackingChecklist trip={trip} />}
+
+      {tab === 'capsule' && (
         <div className="space-y-6">
           {CATEGORY_ORDER.map((cat) => {
             const items = trip.capsule.filter((c) => c.category === cat)
@@ -78,7 +152,9 @@ export function Pack({ trip }: { trip: Trip }) {
             )
           })}
         </div>
-      ) : (
+      )}
+
+      {tab === 'outfits' && (
         <div className="space-y-4">
           {trip.outfitBoards.map((board) => {
             const day = trip.days.find((d) => d.id === board.dayId)
