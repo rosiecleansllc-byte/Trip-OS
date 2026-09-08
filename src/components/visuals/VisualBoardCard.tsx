@@ -72,6 +72,22 @@ export function VisualBoardCard({
     setConfirmingDelete(false)
   }
 
+  // Removes only the image, keeping the board (title/day/notes) intact —
+  // distinct from Delete below, which removes the whole board. Lets a
+  // board go back to the imageless "Add image" state without losing
+  // anything the traveler already typed in.
+  const handleRemoveImage = async () => {
+    setActionError(null)
+    try {
+      await deleteVisualBoardImage(board.imageKey)
+      setVersion((v) => v + 1)
+    } catch {
+      setActionError("Couldn't remove the image. Try again.")
+    }
+    setMenuOpen(false)
+    setConfirmingDelete(false)
+  }
+
   const handleDelete = async () => {
     setActionError(null)
     try {
@@ -109,14 +125,16 @@ export function VisualBoardCard({
 
       <button
         type="button"
-        onClick={() => url && setLightboxOpen(true)}
-        disabled={!url}
-        className={`flex w-full items-center justify-center bg-bg-soft ${aspect === 'wide' ? 'aspect-video' : 'aspect-square'}`}
+        onClick={() => (url ? setLightboxOpen(true) : inputRef.current?.click())}
+        className={`flex w-full flex-col items-center justify-center gap-1.5 bg-bg-soft ${aspect === 'wide' ? 'aspect-video' : 'aspect-square'}`}
       >
         {url ? (
           <img src={url} alt={board.title} className="h-full w-full object-contain" />
         ) : (
-          <ImageIcon size={22} className="text-ink-soft" />
+          <>
+            <ImageIcon size={22} className="text-ink-soft" />
+            <span className="text-[11px] font-medium text-blue">Add image</span>
+          </>
         )}
       </button>
 
@@ -186,8 +204,17 @@ export function VisualBoardCard({
                   className="flex w-full items-center gap-1 border-t border-line px-3 py-2 text-left text-xs font-medium text-blue hover:bg-bg-soft"
                 >
                   <Upload size={11} />
-                  Replace image
+                  {url ? 'Replace image' : 'Add image'}
                 </button>
+                {url && (
+                  <button
+                    type="button"
+                    onClick={() => void handleRemoveImage()}
+                    className="block w-full border-t border-line px-3 py-2 text-left text-xs font-medium text-ink-soft hover:bg-bg-soft"
+                  >
+                    Remove image
+                  </button>
+                )}
                 <button
                   type="button"
                   onClick={() => {

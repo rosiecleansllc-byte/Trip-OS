@@ -17,7 +17,6 @@ import { ActionRow } from '../components/ui/ActionRow'
 import { Card } from '../components/ui/Card'
 import { OpenItemToggle } from '../components/ui/OpenItemToggle'
 import { SectionHeader } from '../components/ui/SectionHeader'
-import { ImagePlaceholder } from '../components/ui/ImagePlaceholder'
 import { Lightbox } from '../components/ui/Lightbox'
 import { ManualItemMenu } from '../components/manual/ManualItemMenu'
 import { TodayAlertBanner } from '../components/alerts/TodayAlertBanner'
@@ -36,7 +35,9 @@ import { getEffectiveTrip } from '../lib/manualItems'
 import { computeLeaveBy } from '../lib/leaveBy'
 import { getTripTimeZone, nowInZone } from '../lib/timezone'
 import { useNow } from '../lib/useNow'
-import { findDayVisualBoard, useVisualBoardImage } from '../lib/visualBoards'
+import { findDayVisualBoards, useVisualBoardImage } from '../lib/visualBoards'
+import { getOutfitBoardsForDay } from '../lib/outfits'
+import { OutfitBoardLookCard } from '../components/visuals/OutfitBoardSection'
 import { buildWalletDocEntries, sortWalletEntries } from '../lib/walletDocs'
 import { getWeatherLocationForDay, isWithinForecastRange, useWeather } from '../lib/weather'
 import { useAppStore } from '../store/useAppStore'
@@ -167,19 +168,27 @@ export function Today({ trip }: { trip: Trip }) {
   const upcoming = useMemo(() => findNextDay(effectiveTrip.days, now), [effectiveTrip, now])
   const [lightboxSrc, setLightboxSrc] = useState<string | null>(null)
   const [showCompleted, setShowCompleted] = useState(false)
+  const [showMoreLooks, setShowMoreLooks] = useState(false)
 
   const walletEntries = useMemo(() => sortWalletEntries(buildWalletDocEntries(effectiveTrip)), [effectiveTrip])
 
-  // A traveler-uploaded outfit board takes precedence over the seeded one
-  // for today's active-day display (but never deletes/hides the seeded
-  // one — Pack still shows both). Computed unconditionally, like the
-  // weather hooks below, so useVisualBoardImage's own hook call stays
-  // outside the phase==='active' branch.
-  const uploadedOutfitBoard =
-    !shareMode && phase === 'active' && today
-      ? findDayVisualBoard(visualBoards, trip.meta.id, today.id)
-      : undefined
-  const { url: uploadedOutfitUrl } = useVisualBoardImage(uploadedOutfitBoard?.imageKey)
+  // A day's seeded OutfitBoards (see lib/outfits.ts) are the source of
+  // truth for what today covers — title, notes, item list — with each
+  // item independently matched against the traveler's own uploads (same
+  // approach as Pack's master Outfit Board), so a day can show several
+  // looks (e.g. Sept 9's Travel Day + Franklin's BBQ) without any one
+  // missing photo hiding the rest. Only when a trip has no seeded
+  // structure at all for today does an uploaded 'outfit' visual stand in
+  // on its own, full-bleed, as before.
+  const todaysSeededLooks = phase === 'active' && today ? getOutfitBoardsForDay(effectiveTrip, today) : []
+  const todaysUploadedLooks =
+    !shareMode && phase === 'active' && today ? findDayVisualBoards(visualBoards, trip.meta.id, today.id) : []
+  const fallbackUploadedBoard = todaysSeededLooks.length === 0 ? todaysUploadedLooks[0] : undefined
+  const { url: fallbackUploadedUrl } = useVisualBoardImage(fallbackUploadedBoard?.imageKey)
+  // Zeroed out in Share mode so OutfitBoardLookCard's item-chip matching
+  // never surfaces a traveler's own upload there — mirrors
+  // OutfitBoardSection's identical guard in Pack.
+  const tripVisualBoards = shareMode ? [] : visualBoards.filter((b) => b.tripId === trip.meta.id)
 
   // Both weather hooks always run (Rules of Hooks) — only one location is
   // ever defined depending on trip phase, so only one ever actually
@@ -197,7 +206,6 @@ export function Today({ trip }: { trip: Trip }) {
 
   if (phase === 'active' && today) {
     const leg = trip.legs.find((l) => l.id === today.legId)
-    const outfitBoard = trip.outfitBoards.find((b) => b.id === today.outfitBoardId)
     const deadlines = today.deadlines ?? []
     const { next } = findNextScheduleItem(today.scheduleItems, now)
     const afterNext = today.scheduleItems.filter((item) => item.id !== next?.id)
@@ -241,63 +249,65 @@ export function Today({ trip }: { trip: Trip }) {
           </div>
         )}
 
-        {uploadedOutfitBoard ? (
-          <Card className="overflow-hidden">
-            <div className="relative">
+        {todaysSeededLooks.length > 0 ? (
+          <div className="space-y-2.5">
+            <OutfitBoardLookCard
+              board={todaysSeededLooks[0]}
+              dayLabel="Today's outfit"
+              tripVisualBoards={tripVisualBoards}
+              onOpen={(src) => setLightboxSrc(src)}
+            />
+            {todaysSeededLooks.length > 1 && (
               <button
                 type="button"
-                onClick={() => uploadedOutfitUrl && setLightboxSrc(uploadedOutfitUrl)}
-                disabled={!uploadedOutfitUrl}
-                className="flex h-72 w-full items-center justify-center bg-bg-soft"
+                onClick={() => setShowMoreLooks((v) => !v)}
+                className="w-full rounded-full border border-blue/30 bg-blue-tint py-2 text-xs font-medium text-blue"
               >
-                {uploadedOutfitUrl ? (
-                  <img src={uploadedOutfitUrl} alt="Today's outfit" className="h-full w-full object-contain" />
-                ) : (
-                  <ImageIcon size={22} className="text-ink-soft" />
-                )}
+                {showMoreLooks ? 'Hide other looks' : `${todaysSeededLooks.length} looks today — see the other one`}
               </button>
-              {uploadedOutfitUrl && (
-                <span className="pointer-events-none absolute right-2.5 top-2.5 flex h-7 w-7 items-center justify-center rounded-full bg-ink/60 text-white">
-                  <Maximize2 size={13} />
-                </span>
-              )}
-            </div>
-            <div className="p-4">
-              <p className="text-[11px] font-medium uppercase tracking-[0.14em] text-blue">Today's outfit</p>
-              <p className="mt-0.5 text-sm font-medium text-ink">{uploadedOutfitBoard.title}</p>
-              {uploadedOutfitBoard.notes && <p className="mt-1 text-xs text-ink-soft">{uploadedOutfitBoard.notes}</p>}
-              <Link to="/pack" className="mt-3 inline-flex items-center gap-1 text-xs font-medium text-blue">
-                <Luggage size={13} /> More visuals in Pack
-              </Link>
-            </div>
-          </Card>
+            )}
+            {showMoreLooks &&
+              todaysSeededLooks.slice(1).map((board) => (
+                <OutfitBoardLookCard
+                  key={board.id}
+                  board={board}
+                  dayLabel="Also today"
+                  tripVisualBoards={tripVisualBoards}
+                  onOpen={(src) => setLightboxSrc(src)}
+                />
+              ))}
+            <Link to="/pack" className="inline-flex items-center gap-1 text-xs font-medium text-blue">
+              <Luggage size={13} /> Full outfit board in Pack
+            </Link>
+          </div>
         ) : (
-          outfitBoard && (
+          fallbackUploadedBoard && (
             <Card className="overflow-hidden">
               <div className="relative">
-                <ImagePlaceholder
-                  label="Today's outfit"
-                  imageUrl={outfitBoard.imageUrl}
-                  className="h-72 w-full"
-                  onClick={outfitBoard.imageUrl ? () => setLightboxSrc(outfitBoard.imageUrl!) : undefined}
-                />
-                {outfitBoard.imageUrl && (
+                <button
+                  type="button"
+                  onClick={() => fallbackUploadedUrl && setLightboxSrc(fallbackUploadedUrl)}
+                  disabled={!fallbackUploadedUrl}
+                  className="flex h-72 w-full items-center justify-center bg-bg-soft"
+                >
+                  {fallbackUploadedUrl ? (
+                    <img src={fallbackUploadedUrl} alt="Today's outfit" className="h-full w-full object-contain" />
+                  ) : (
+                    <ImageIcon size={22} className="text-ink-soft" />
+                  )}
+                </button>
+                {fallbackUploadedUrl && (
                   <span className="pointer-events-none absolute right-2.5 top-2.5 flex h-7 w-7 items-center justify-center rounded-full bg-ink/60 text-white">
                     <Maximize2 size={13} />
                   </span>
                 )}
               </div>
               <div className="p-4">
-                <p className="text-sm text-ink">{today.outfitNote}</p>
-                <div className="mt-3 flex flex-wrap gap-1.5">
-                  {outfitBoard.itemNames.map((item) => (
-                    <span key={item} className="rounded-full border border-line bg-bg px-2.5 py-1 text-xs text-ink-soft">
-                      {item}
-                    </span>
-                  ))}
-                </div>
+                <p className="text-[11px] font-medium uppercase tracking-[0.14em] text-blue">Today's outfit</p>
+                <p className="mt-0.5 text-sm font-medium text-ink">{fallbackUploadedBoard.title}</p>
+                {fallbackUploadedBoard.notes && <p className="mt-1 text-xs text-ink-soft">{fallbackUploadedBoard.notes}</p>}
                 <Link to="/pack" className="mt-3 inline-flex items-center gap-1 text-xs font-medium text-blue">
-                  <Luggage size={13} /> Full capsule in Pack
+                  <Luggage size={13} /> More visuals in Pack
                 </Link>
               </div>
             </Card>

@@ -168,6 +168,13 @@ export interface DayPlan {
   scheduleItems: ScheduleItem[]
   deadlines?: Deadline[]
   outfitBoardId?: string
+  // When a day has more than one look (e.g. a travel-day outfit plus a
+  // separate one for an activity later that day), set this instead of
+  // outfitBoardId — see lib/outfits.ts getOutfitBoardsForDay, the one
+  // place that resolves either form generically. outfitBoardId alone
+  // still works unchanged for every single-look day (e.g. every France
+  // day), so no existing trip needs to change.
+  outfitBoardIds?: string[]
   weatherNote?: string
 }
 
@@ -265,6 +272,7 @@ export interface CapsuleItem {
   name: string
   note?: string
   imageUrl?: string
+  color?: string
 }
 
 export interface OutfitBoard {
@@ -273,6 +281,11 @@ export interface OutfitBoard {
   itemNames: string[]
   note: string
   imageUrl?: string
+  // Distinguishes multiple looks on the same day (e.g. "Travel Day to
+  // Austin" vs "Franklin's BBQ") — see DayPlan.outfitBoardIds. Optional
+  // since a single-look day (the common case, e.g. every France day)
+  // never needs one; `note` alone is enough to read there.
+  label?: string
 }
 
 export interface TripMeta {
@@ -384,7 +397,7 @@ export interface ManualTripItem {
 // content, never merged into a trip's seeded OutfitBoard/CapsuleItem
 // arrays. The image itself lives in IndexedDB (see lib/visualBoards.ts),
 // never localStorage/git/public — only this metadata is persisted here.
-export type VisualBoardType = 'outfit' | 'capsule' | 'packing' | 'mood' | 'city' | 'other'
+export type VisualBoardType = 'outfit' | 'capsule' | 'packing' | 'shoes' | 'accessories' | 'mood' | 'city' | 'other'
 
 export interface VisualBoard {
   id: string
@@ -396,6 +409,32 @@ export interface VisualBoard {
   imageKey: string // storage key into lib/visualBoards.ts's IndexedDB wallet
   notes?: string
   createdAt: string // ISO timestamp
+  // When a day has more than one 'outfit'-type board, marks which one a
+  // single-outfit surface (Today's "Today's outfit" card) should lead
+  // with — see lib/visualBoards.ts findDayVisualBoards. Never required:
+  // with none marked, the earliest-created board leads.
+  primaryForDay?: boolean
+}
+
+// A traveler-curated group of her own already-uploaded visuals — e.g. a
+// shoes photo + an accessories photo + a top photo assembled into one
+// named "look" (as opposed to a single VisualBoard, which is one photo).
+// Purely additive and generic like VisualBoard: stored client-side in
+// useAppStore as a flat array filtered by tripId, never seeded, never
+// duplicating an image blob — each id in visualBoardIds just points at
+// an existing VisualBoard, whose own imageKey is the only place the
+// actual picture lives. Deleting a linked VisualBoard doesn't delete the
+// look; that slot's thumbnail just stops resolving (rendered as a
+// placeholder, same as a slot that was never linked).
+export interface OutfitLook {
+  id: string
+  tripId: string
+  title: string
+  dayId?: string
+  sortOrder: number
+  visualBoardIds: string[]
+  notes?: string
+  primaryForDay?: boolean
 }
 
 export interface Trip {

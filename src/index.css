@@ -45,14 +45,24 @@ body {
   scrollbar-width: none;
 }
 
+/* Pure opacity fade — deliberately never touches `transform`. An element
+   that's the target of a CSS Animation affecting `transform` becomes a
+   containing block for its own position:fixed descendants in Chromium
+   for as long as the animation effect stays attached (including its
+   filled end state — `transform: none` in a later keyframe does NOT
+   undo this once the property has been animated at all). Every page
+   nests its fullscreen sheets (AddVisualBoardSheet, AddOutfitLookSheet)
+   inside this same .animate-fade-in wrapper, so the original
+   translateY(4px)→translateY(0) version silently reparented those
+   sheets' "fixed inset-0" from the real viewport to this wrapper's own
+   (page-content-sized, scrolling) box — clipping and mispositioning the
+   sheet instead of covering the full screen. */
 @keyframes fade-in {
   from {
     opacity: 0;
-    transform: translateY(4px);
   }
   to {
     opacity: 1;
-    transform: translateY(0);
   }
 }
 .animate-fade-in {

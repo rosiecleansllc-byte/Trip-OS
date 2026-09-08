@@ -9,14 +9,21 @@ import { Lightbox } from '../components/ui/Lightbox'
 import { WeatherCard } from '../components/ui/WeatherCard'
 import { AddVisualBoardSheet } from '../components/visuals/AddVisualBoardSheet'
 import { VisualBoardCard } from '../components/visuals/VisualBoardCard'
-import { formatDateCompact } from '../lib/date'
+import { AddOutfitLookSheet } from '../components/visuals/AddOutfitLookSheet'
+import { OutfitLookCard } from '../components/visuals/OutfitLookCard'
+import { OutfitBoardSection } from '../components/visuals/OutfitBoardSection'
+import { CapsuleItemImage } from '../components/pack/CapsuleItemImage'
 import { getWeatherLocationForDay, isWithinForecastRange, useWeather } from '../lib/weather'
 import { sortVisualBoards } from '../lib/visualBoards'
+import { sortOutfitLooks } from '../lib/outfits'
 import { useAppStore } from '../store/useAppStore'
 import { useVisualBoardUiStore } from '../store/useVisualBoardUiStore'
+import { useOutfitLookUiStore } from '../store/useOutfitLookUiStore'
 
 const OUTFIT_TIER: VisualBoardType[] = ['outfit']
 const CAPSULE_TIER: VisualBoardType[] = ['capsule', 'packing']
+const SHOES_TIER: VisualBoardType[] = ['shoes']
+const ACCESSORIES_TIER: VisualBoardType[] = ['accessories']
 const OTHER_TIER: VisualBoardType[] = ['mood', 'city', 'other']
 
 const CATEGORY_LABELS: Record<CapsuleCategory, string> = {
@@ -125,10 +132,15 @@ export function Pack({ trip }: { trip: Trip }) {
   const [lightbox, setLightbox] = useState<{ src: string; alt: string } | null>(null)
   const visualBoards = useAppStore((s) => s.visualBoards)
   const openPicker = useVisualBoardUiStore((s) => s.openPicker)
+  const outfitLooks = useAppStore((s) => s.outfitLooks)
+  const openNewLook = useOutfitLookUiStore((s) => s.openNew)
   const tripVisualBoards = sortVisualBoards(visualBoards.filter((b) => b.tripId === trip.meta.id))
   const outfitBoards = tripVisualBoards.filter((b) => OUTFIT_TIER.includes(b.type))
   const capsulePackingBoards = tripVisualBoards.filter((b) => CAPSULE_TIER.includes(b.type))
+  const shoesBoards = tripVisualBoards.filter((b) => SHOES_TIER.includes(b.type))
+  const accessoriesBoards = tripVisualBoards.filter((b) => ACCESSORIES_TIER.includes(b.type))
   const otherBoards = tripVisualBoards.filter((b) => OTHER_TIER.includes(b.type))
+  const tripOutfitLooks = sortOutfitLooks(outfitLooks.filter((l) => l.tripId === trip.meta.id))
 
   // Context only — this never rewrites the packing list or outfits, it
   // just gives Cecilia a sense of what to expect before she reads the
@@ -192,7 +204,11 @@ export function Pack({ trip }: { trip: Trip }) {
                 <div className="grid grid-cols-2 gap-3">
                   {items.map((item) => (
                     <Card key={item.id} className="overflow-hidden">
-                      <ImagePlaceholder label={item.name} imageUrl={item.imageUrl} className="h-32 w-full" />
+                      {shareMode ? (
+                        <ImagePlaceholder label={item.name} imageUrl={item.imageUrl} className="h-32 w-full" />
+                      ) : (
+                        <CapsuleItemImage item={item} trip={trip} className="h-32 w-full" />
+                      )}
                       <div className="p-2.5">
                         <p className="text-xs font-medium text-ink">{item.name}</p>
                         {item.note && <p className="mt-0.5 text-[11px] text-ink-soft">{item.note}</p>}
@@ -207,38 +223,42 @@ export function Pack({ trip }: { trip: Trip }) {
       )}
 
       {activeTab === 'outfits' && (
-        <div className="space-y-4">
-          {trip.outfitBoards.map((board) => {
-            const day = trip.days.find((d) => d.id === board.dayId)
-            if (!day) return null
-            return (
-              <Card key={board.id} className="overflow-hidden">
-                <ImagePlaceholder
-                  label={`Day ${day.dayNumber} outfit`}
-                  imageUrl={board.imageUrl}
-                  className="h-56 w-full"
-                  onClick={board.imageUrl ? () => setLightbox({ src: board.imageUrl!, alt: `Day ${day.dayNumber} — ${day.title}` }) : undefined}
-                />
-                <div className="p-4">
-                  <p className="text-xs font-medium text-gray">
-                    Day {day.dayNumber} · {formatDateCompact(day.date)}
-                  </p>
-                  <p className="text-sm font-medium text-ink">{day.title}</p>
-                  <p className="mt-1 text-xs text-ink-soft">{board.note}</p>
-                  <div className="mt-3 flex flex-wrap gap-1.5">
-                    {board.itemNames.map((item) => (
-                      <span
-                        key={item}
-                        className="rounded-full border border-line bg-bg px-2.5 py-1 text-[11px] text-ink-soft"
-                      >
-                        {item}
-                      </span>
-                    ))}
-                  </div>
+        <div className="space-y-6">
+          <OutfitBoardSection trip={trip} />
+
+          {/* Freely-editable custom looks (see types/trip.ts OutfitLook) —
+              never seeded, purely traveler-created by linking whatever
+              they've already uploaded above. Hidden entirely in Share
+              mode along with the control to add one, same as every other
+              uploaded/private surface in Pack. */}
+          {!shareMode && (
+            <div>
+              <SectionHeader
+                eyebrow={`${tripOutfitLooks.length} look${tripOutfitLooks.length === 1 ? '' : 's'}`}
+                title="Your outfit looks"
+                accent="red"
+              />
+              <button
+                type="button"
+                onClick={openNewLook}
+                className="mb-3 flex w-full items-center justify-center gap-2 rounded-full border border-blue/30 bg-blue-tint py-2.5 text-sm font-medium text-blue"
+              >
+                <Plus size={15} />
+                Add look
+              </button>
+              {tripOutfitLooks.length === 0 ? (
+                <p className="rounded-2xl border border-dashed border-line px-6 py-8 text-center text-xs text-ink-soft">
+                  Group a few uploaded visuals into a named look, e.g. "Franklin's BBQ" or "Summit day."
+                </p>
+              ) : (
+                <div className="space-y-2.5">
+                  {tripOutfitLooks.map((look) => (
+                    <OutfitLookCard key={look.id} look={look} trip={trip} />
+                  ))}
                 </div>
-              </Card>
-            )
-          })}
+              )}
+            </div>
+          )}
         </div>
       )}
 
@@ -291,6 +311,30 @@ export function Pack({ trip }: { trip: Trip }) {
                   </div>
                 </div>
               )}
+              {shoesBoards.length > 0 && (
+                <div>
+                  <SectionHeader eyebrow={`${shoesBoards.length} board${shoesBoards.length === 1 ? '' : 's'}`} title="Shoes" accent="red" />
+                  <div className="grid grid-cols-2 gap-3">
+                    {shoesBoards.map((board) => (
+                      <VisualBoardCard key={board.id} board={board} trip={trip} />
+                    ))}
+                  </div>
+                </div>
+              )}
+              {accessoriesBoards.length > 0 && (
+                <div>
+                  <SectionHeader
+                    eyebrow={`${accessoriesBoards.length} board${accessoriesBoards.length === 1 ? '' : 's'}`}
+                    title="Accessories"
+                    accent="red"
+                  />
+                  <div className="grid grid-cols-2 gap-3">
+                    {accessoriesBoards.map((board) => (
+                      <VisualBoardCard key={board.id} board={board} trip={trip} />
+                    ))}
+                  </div>
+                </div>
+              )}
               {otherBoards.length > 0 && (
                 <div>
                   <SectionHeader eyebrow={`${otherBoards.length} board${otherBoards.length === 1 ? '' : 's'}`} title="Inspiration boards" accent="red" />
@@ -308,6 +352,7 @@ export function Pack({ trip }: { trip: Trip }) {
 
       {lightbox && <Lightbox src={lightbox.src} alt={lightbox.alt} onClose={() => setLightbox(null)} />}
       {!shareMode && <AddVisualBoardSheet trip={trip} />}
+      {!shareMode && <AddOutfitLookSheet trip={trip} />}
     </div>
   )
 }

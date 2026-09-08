@@ -1,22 +1,14 @@
 import { useEffect, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { clsx } from 'clsx'
-import { Building2, Layers, Luggage, ImageIcon, Shirt, Sparkles, X } from 'lucide-react'
+import { ImageIcon, X } from 'lucide-react'
 import type { Trip, VisualBoard, VisualBoardType } from '../../types/trip'
 import { useAppStore } from '../../store/useAppStore'
 import { useVisualBoardUiStore } from '../../store/useVisualBoardUiStore'
-import { createVisualBoard, putVisualBoardImage, VISUAL_BOARD_TYPE_META } from '../../lib/visualBoards'
+import { createVisualBoard, putVisualBoardImage, VISUAL_BOARD_TYPE_META, VISUAL_BOARD_TYPE_ICON } from '../../lib/visualBoards'
 import { Lightbox } from '../ui/Lightbox'
 
-const TYPE_ICON: Record<VisualBoardType, typeof Shirt> = {
-  outfit: Shirt,
-  capsule: Layers,
-  packing: Luggage,
-  mood: Sparkles,
-  city: Building2,
-  other: ImageIcon,
-}
-
-const TYPE_ORDER: VisualBoardType[] = ['outfit', 'capsule', 'packing', 'mood', 'city', 'other']
+const TYPE_ORDER: VisualBoardType[] = ['outfit', 'capsule', 'packing', 'shoes', 'accessories', 'mood', 'city', 'other']
 
 const inputClass =
   'w-full rounded-xl border border-line bg-bg px-3 py-2.5 text-sm text-ink placeholder:text-gray focus:border-blue/50 focus:outline-none'
@@ -99,6 +91,22 @@ export function AddVisualBoardSheet({ trip }: { trip: Trip }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [step, editingBoard])
 
+  // saved/imageError are local state, so — unlike step/type/editingBoard
+  // in useVisualBoardUiStore — closing the sheet (close(), which only
+  // resets the store) doesn't clear them. Without this, openPicker()
+  // (the "Add visual" button) flips step back to 'picker', but the
+  // render below checks `saved` first, so the *previous* upload's
+  // "Saved" screen would reappear instead of the fresh type picker —
+  // uploading a second visual right after the first got stuck, only
+  // recoverable with a full page refresh. Reset on every fresh entry
+  // into the picker, the same fix already applied to AddItemSheet.
+  useEffect(() => {
+    if (step === 'picker') {
+      setSaved(false)
+      setImageError(null)
+    }
+  }, [step])
+
   if (step === 'closed') return null
 
   const set = <K extends keyof FormState>(key: K, value: FormState[K]) => setForm((f) => ({ ...f, [key]: value }))
@@ -156,7 +164,13 @@ export function AddVisualBoardSheet({ trip }: { trip: Trip }) {
 
   const isValid = Boolean(form.title.trim())
 
-  return (
+  // Rendered via portal straight to <body> — same reasoning as
+  // Lightbox: nesting this fixed-fullscreen sheet inside a page's own
+  // .animate-fade-in wrapper leaves it trapped inside that ancestor's
+  // (post-animation) containing block/stacking context instead of
+  // covering the true viewport, which both mispositions it and lets the
+  // fixed bottom nav render on top of its lower portion despite z-40.
+  return createPortal(
     <div className="fixed inset-0 z-40 flex items-end justify-center">
       <button aria-label="Close" className="absolute inset-0 bg-ink/40" onClick={close} />
       <div className="relative max-h-[88dvh] w-full max-w-md overflow-y-auto rounded-t-3xl bg-surface pb-[calc(1.25rem+env(safe-area-inset-bottom))] pt-3 shadow-2xl">
@@ -186,7 +200,7 @@ export function AddVisualBoardSheet({ trip }: { trip: Trip }) {
             <div className="space-y-2">
               {TYPE_ORDER.map((t) => {
                 const meta = VISUAL_BOARD_TYPE_META[t]
-                const Icon = TYPE_ICON[t]
+                const Icon = VISUAL_BOARD_TYPE_ICON[t]
                 return (
                   <button
                     key={t}
@@ -290,6 +304,7 @@ export function AddVisualBoardSheet({ trip }: { trip: Trip }) {
       {lightboxOpen && previewUrl && (
         <Lightbox src={previewUrl} alt="Visual board preview" onClose={() => setLightboxOpen(false)} />
       )}
-    </div>
+    </div>,
+    document.body
   )
 }

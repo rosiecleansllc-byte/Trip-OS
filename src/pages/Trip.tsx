@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { ChevronDown, CloudSun, Image as ImageIcon } from 'lucide-react'
 import { clsx } from 'clsx'
 import type { Trip, VisualBoard } from '../types/trip'
@@ -10,6 +11,7 @@ import { formatDateShort, formatTime, isSameISODate } from '../lib/date'
 import { useAppStore } from '../store/useAppStore'
 import { getEffectiveTrip } from '../lib/manualItems'
 import { findDayVisualBoard, useVisualBoardImage } from '../lib/visualBoards'
+import { getOutfitBoardsForDay } from '../lib/outfits'
 import {
   describeWeatherCode,
   forecastForDate,
@@ -122,6 +124,10 @@ export function TripPage({ trip }: { trip: Trip }) {
           const dayLocation = getWeatherLocationForDay(effectiveTrip, day.id)
           const dayForecast = dayLocation ? forecastForDate(weatherByLocation[dayLocation.id], day.date) : undefined
           const dayOutfitBoard = !shareMode ? findDayVisualBoard(visualBoards, trip.meta.id, day.id) : undefined
+          // Seeded looks (see lib/outfits.ts) are safe to show in Share
+          // mode too — same rule as Pack's master board, task 14 — while
+          // dayOutfitBoard above (a traveler upload) stays hidden there.
+          const seededDayLooks = getOutfitBoardsForDay(effectiveTrip, day)
 
           return (
             <li key={day.id} className="relative">
@@ -167,7 +173,17 @@ export function TripPage({ trip }: { trip: Trip }) {
 
                 {isOpen && (
                   <>
-                    {dayOutfitBoard && <DayOutfitThumb board={dayOutfitBoard} />}
+                    {seededDayLooks.length > 0 ? (
+                      <Link
+                        to="/pack"
+                        className="mt-3 inline-flex items-center gap-1.5 rounded-full border border-blue/30 bg-blue-tint px-3 py-1.5 text-xs font-medium text-blue"
+                      >
+                        <ImageIcon size={12} />
+                        {seededDayLooks.length > 1 ? `${seededDayLooks.length} outfit looks` : 'View outfit'}
+                      </Link>
+                    ) : (
+                      dayOutfitBoard && <DayOutfitThumb board={dayOutfitBoard} />
+                    )}
                     {day.weatherNote && (
                       <p className="mt-3 flex items-start gap-1.5 rounded-lg bg-blue-tint px-2.5 py-1.5 text-xs text-blue">
                         <CloudSun size={13} className="mt-0.5 shrink-0" />
