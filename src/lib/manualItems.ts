@@ -12,6 +12,7 @@ import type {
   TransportMode,
   Trip,
 } from '../types/trip'
+import { scheduleSortValue } from './date'
 
 // Converts a manually-created trip item into the same shapes seeded trip
 // data uses (Booking, Transport, ScheduleItem), so every page renders a
@@ -169,6 +170,16 @@ export function manualItemToScheduleItem(item: ManualTripItem): ScheduleItem {
   }
 }
 
+// A day's schedule mixes seeded context items (often untimed — "Pack /
+// checkout", "Breakfast at Hyatt House") with real timed bookings, both
+// seeded and manually-added. Sorting by `time` alone (untimed → always
+// last) works fine for a day with no manual items, but once a manual
+// item merges in, every untimed seeded item — even one that plainly
+// belongs at the *start* of the day — gets pushed after every timed one.
+// scheduleSortValue (lib/date.ts) lets seed data place an untimed item on
+// the same minutes-since-midnight scale as a real time via `sortOrder`,
+// without claiming a clock time it doesn't actually have.
+
 // Merges a trip's own seeded data with the traveler's manually-added
 // items and resolved-OpenItem overrides into one Trip-shaped object.
 // Every page renders this instead of the raw imported trip, so manual
@@ -193,7 +204,10 @@ export function getEffectiveTrip(
   const days = trip.days.map((day) => {
     const extra = scheduleByDate.get(day.date)
     if (!extra || extra.length === 0) return day
-    const merged = [...day.scheduleItems, ...extra].sort((a, b) => (a.time ?? '99:99').localeCompare(b.time ?? '99:99'))
+    const merged = [...day.scheduleItems, ...extra]
+      .map((item, index) => ({ item, index }))
+      .sort((a, b) => scheduleSortValue(a.item) - scheduleSortValue(b.item) || a.index - b.index)
+      .map(({ item }) => item)
     return { ...day, scheduleItems: merged }
   })
 
@@ -247,17 +261,34 @@ function hasRoundTripPair(items: ManualTripItem[]): boolean {
   )
 }
 
+// A single 'rental-car' item counts as its own round trip only when its
+// own dates prove it — kept from `date` through a real, later `endDate`,
+// i.e. picked up and dropped off on different days. That's genuine
+// evidence the traveler had the car for an outbound-and-back stretch, not
+// just a same-day booking. A rental with no endDate (or one equal to
+// date) proves nothing about a return and is held to the same standard
+// as any other one-way transport leg — it still needs a real
+// reverse-direction pair via hasRoundTripPair.
+function rentalCoversRoundTrip(item: ManualTripItem): boolean {
+  return item.transportMode === 'rental-car' && !!item.endDate && item.endDate > item.date
+}
+
 // For most OpenItems, a single qualifying manual item is enough evidence
 // to suggest resolving it. An OpenItem marked `requiresRoundTrip` (a
 // transport OpenItem representing a full there-and-back leg, not just one
-// direction) additionally needs two qualifying manual transport items that
-// form a round trip (see hasRoundTripPair) — a single one-way entry never
-// counts as covering it on its own.
+// direction) additionally needs either two qualifying manual transport
+// items that form a round trip (see hasRoundTripPair), or a single
+// multi-day 'rental-car' item (see rentalCoversRoundTrip) — a rental kept
+// across a real date span inherently covers both directions, so it never
+// needs a separate reverse-direction entry the way a one-way rideshare/
+// train/flight leg would. Any other single one-way entry — including a
+// one-day rental with no proven return — never counts as covering it on
+// its own.
 function openItemIsCoveredBy(trip: Trip, tripManualItems: ManualTripItem[], openItem: OpenItem): boolean {
   const qualifying = tripManualItems.filter((i) => manualItemQualifiesForOpenItem(trip, i, openItem))
   if (qualifying.length === 0) return false
   if (!openItem.requiresRoundTrip) return true
-  return hasRoundTripPair(qualifying)
+  return hasRoundTripPair(qualifying) || qualifying.some(rentalCoversRoundTrip)
 }
 
 // Which currently-open OpenItems a manual stay/transport item plausibly
@@ -313,7 +344,11 @@ export function findOpenItemsToUnresolve(
         (i) => i.relatedOpenItemId === oi.id && manualItemQualifiesForOpenItem(trip, i, oi)
       )
       if (!oi.requiresRoundTrip) return linkedAndQualifying.length === 0
-      return !hasRoundTripPair(linkedAndQualifying)
+      // Same rental-car exception as openItemIsCoveredBy above — editing
+      // a rental's dates down to a single day (or deleting its endDate)
+      // reopens the OpenItem exactly like deleting one leg of a pair.
+      const stillRoundTrip = hasRoundTripPair(linkedAndQualifying) || linkedAndQualifying.some(rentalCoversRoundTrip)
+      return !stillRoundTrip
     })
     .map((oi) => oi.id)
 }

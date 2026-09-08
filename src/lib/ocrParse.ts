@@ -141,6 +141,27 @@ export function extractTime(text: string): string | undefined {
   return undefined
 }
 
+// A time found near a specific label, rather than the first clock time
+// anywhere in the document — a hotel confirmation often mentions more
+// than one time (check-in, check-out, front-desk hours, a cancellation
+// deadline), and extractTime's "first match in the whole text" approach
+// can grab the wrong one if it isn't the first one printed. Only looks
+// within the rest of the same line as the label, so it never wanders
+// into an unrelated time elsewhere in the document.
+function extractLabeledTime(text: string, labels: string[]): string | undefined {
+  const lower = text.toLowerCase()
+  for (const label of labels) {
+    const idx = lower.indexOf(label)
+    if (idx === -1) continue
+    const restOfLine = text.slice(idx + label.length).split('\n')[0]
+    const time = extractTime(restOfLine)
+    if (time) return time
+  }
+  return undefined
+}
+
+const CHECK_IN_LABELS = ['check-in', 'check in', 'checkin']
+
 // All H:MM-ish matches in order, for pulling a depart+arrive or
 // start+end pair out of one screenshot.
 export function extractAllTimes(text: string): string[] {
@@ -406,7 +427,9 @@ export function parseFieldsForType(type: ManualItemType, text: string, tripStart
       title: guessTitle(text),
       date,
       endDate: rangeEnd,
-      time: extractTime(text),
+      // Prefer a time labeled "check-in" over the first clock time found
+      // anywhere in the confirmation — see extractLabeledTime.
+      time: extractLabeledTime(text, CHECK_IN_LABELS) ?? extractTime(text),
       address: extractAddress(text),
       phone,
       cost: cost.cost,

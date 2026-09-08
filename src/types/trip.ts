@@ -142,6 +142,14 @@ export interface TravelTiming {
 export interface ScheduleItem extends LinkActions, TravelTiming {
   id: string
   time?: string // HH:mm, omit for all-day items
+  // Position hint for an untimed item, on the same 0–1439 "minutes since
+  // midnight" scale as a parsed `time` — lets a day mix seeded context
+  // items (breakfast, pack/checkout) with real timed bookings without
+  // every untimed item collapsing to the end of the day once a manual
+  // item merges in. Only consulted when `time` is absent; an item with
+  // neither still sorts after everything else, in its original order —
+  // see getEffectiveTrip's day merge in lib/manualItems.ts.
+  sortOrder?: number
   label: string
   type: 'activity' | 'meal' | 'transport' | 'free' | 'lodging'
   location?: string
@@ -190,7 +198,10 @@ export interface OpenItem {
   // than a single direction — see lib/manualItems.ts openItemIsCoveredBy.
   // A single one-way manual transport entry never counts as resolving one
   // of these; two entries whose from/to are exact reverses of each other
-  // are required.
+  // are required — except a single 'rental-car' entry whose own dates
+  // (date -> a later endDate) prove it was kept across a real multi-day
+  // span, which inherently covers both directions on its own (see
+  // rentalCoversRoundTrip). A one-day or dateless rental doesn't qualify.
   requiresRoundTrip?: boolean
 }
 
@@ -327,7 +338,11 @@ export interface ManualTripItem {
   type: ManualItemType
   title: string // stay/restaurant/activity/other name; unused for transport, which derives its label from fromLocation/toLocation
   date: ISODate
-  endDate?: ISODate // stay checkout date
+  // Stay checkout date — or, for a 'rental-car' transport item, its
+  // return/drop-off date. A rental with a real endDate later than date
+  // is treated as proof of a genuine multi-day round trip on its own;
+  // see lib/manualItems.ts rentalCoversRoundTrip.
+  endDate?: ISODate
   time?: string // check-in / reservation / start / departure time
   endTime?: string // activity end time / transport arrival time
   location?: string // activity venue name
