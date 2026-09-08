@@ -172,16 +172,25 @@ export function generateAlerts({ trip, effectiveTrip, now, realNow, presentDocKe
   // (destination-local wall clock, not a real instant).
   for (const b of effectiveTrip.bookings) {
     if (!b.cancellationDeadline || b.status === 'cancelled') continue
-    const deadline = zonedTimeToUtc(b.cancellationDeadline, getTripTimeZone(trip, b.legId))
+    const timeZone = getTripTimeZone(trip, b.legId)
+    const deadline = zonedTimeToUtc(b.cancellationDeadline, timeZone)
     const hoursAway = (deadline.getTime() - realNow.getTime()) / 3_600_000
     if (hoursAway < 0 || hoursAway > 24 * 7) continue
+    // Display in the booking's own destination timezone, not the
+    // device's — Intl's 'short' timeZoneName degrades to a bare
+    // "GMT+2" for most zones (no reliable "CEST"-style abbreviation
+    // across browsers), so a plain "<city> time" label reads better
+    // and is exactly as unambiguous. Falls back to the trip's overall
+    // destination when the booking has no specific leg.
+    const leg = b.legId ? trip.legs.find((l) => l.id === b.legId) : undefined
+    const zoneLabel = leg?.name ?? trip.meta.destinationLabel
     alerts.push({
       id: `cancel:${b.id}`,
       type: 'cancellation-deadline',
       priority: hoursAway <= 24 ? 'critical' : 'important',
       group: hoursAway <= 24 ? 'now' : today && b.dateStart === today.date ? 'today' : 'upcoming',
       title: `${b.name} cancellation deadline`,
-      detail: deadline.toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }),
+      detail: `${deadline.toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', timeZone })} ${zoneLabel} time`,
       isPrivate: false,
     })
   }
