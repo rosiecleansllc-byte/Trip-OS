@@ -7,8 +7,18 @@ import { ALERT_TYPE_ICON, PRIORITY_BG, PRIORITY_TEXT } from './alertMeta'
 // one (alerts are already sorted Now > Today > Upcoming, then priority,
 // by useTripAlerts) — everything else stays in the Alert Center so
 // Today never turns into a stack of banners.
-export function TodayAlertBanner({ trip, effectiveTrip, now }: { trip: Trip; effectiveTrip: Trip; now: Date }) {
-  const { alerts } = useTripAlerts(trip, effectiveTrip, now)
+export function TodayAlertBanner({
+  trip,
+  effectiveTrip,
+  now,
+  realNow,
+}: {
+  trip: Trip
+  effectiveTrip: Trip
+  now: Date
+  realNow: Date
+}) {
+  const { alerts } = useTripAlerts(trip, effectiveTrip, now, realNow)
   const openPanel = useAlertCenterUiStore((s) => s.openPanel)
   const top = alerts[0]
   if (!top) return null

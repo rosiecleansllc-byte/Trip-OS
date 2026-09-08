@@ -73,10 +73,20 @@ function AlertRow({ trip, alert }: { trip: Trip; alert: TripAlert }) {
 // alert already" memory backing browser notifications below, and — same
 // as AddItemSheet — mounting once avoids losing local state (an open
 // snooze menu) on every render elsewhere in the tree.
-export function AlertCenter({ trip, effectiveTrip, now }: { trip: Trip; effectiveTrip: Trip; now: Date }) {
+export function AlertCenter({
+  trip,
+  effectiveTrip,
+  now,
+  realNow,
+}: {
+  trip: Trip
+  effectiveTrip: Trip
+  now: Date
+  realNow: Date
+}) {
   const open = useAlertCenterUiStore((s) => s.open)
   const close = useAlertCenterUiStore((s) => s.close)
-  const { alerts } = useTripAlerts(trip, effectiveTrip, now)
+  const { alerts } = useTripAlerts(trip, effectiveTrip, now, realNow)
   const setNotificationsRequested = useAppStore((s) => s.setNotificationsRequested)
   const [permission, setPermission] = useState<NotificationPermission | 'unsupported'>(
     typeof Notification === 'undefined' ? 'unsupported' : Notification.permission

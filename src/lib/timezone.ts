@@ -63,6 +63,46 @@ export function nowInZone(timeZone: string, reference: Date = new Date()): Date 
   }
 }
 
+// The inverse of nowInZone: given a naive local date-time string (no
+// offset, e.g. a Booking.cancellationDeadline like "2026-09-29T16:00")
+// that's meant to be read as wall-clock time IN `timeZone`, returns the
+// actual absolute instant (a real Date, safe to compare via getTime()
+// against Date.now() or another real timestamp) that wall-clock time
+// corresponds to. Without this, `new Date(localIso)` parses the string
+// in the *device's* current zone — so a Paris cancellation deadline
+// authored as "16:00" would silently mean 4pm Chicago time on a device
+// physically in the US, hours off from the real Paris deadline.
+//
+// Single-pass DST-unaware correction (guess the offset from one sample,
+// then apply it) — accurate everywhere except the rare case where the
+// deadline instant itself falls inside a DST transition, which is an
+// acceptable tradeoff for a cancellation deadline (unlike nowInZone,
+// this never runs against "right now", so there's no ticking clock to
+// visibly glitch across the transition).
+export function zonedTimeToUtc(localIso: string, timeZone: string): Date {
+  const [datePart, timePart = '00:00:00'] = localIso.split('T')
+  const [y, mo, d] = datePart.split('-').map(Number)
+  const [h = 0, mi = 0, s = 0] = timePart.split(':').map(Number)
+  // Guess: treat the wall-clock fields as if they were already UTC.
+  const guess = Date.UTC(y, mo - 1, d, h, mi, s)
+  // Read what that guessed instant actually looks like in `timeZone`.
+  const parts = new Intl.DateTimeFormat('en-US', {
+    timeZone,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hour12: false,
+  }).formatToParts(new Date(guess))
+  const get = (type: string) => Number(parts.find((p) => p.type === type)?.value)
+  const seenAsUtc = Date.UTC(get('year'), get('month') - 1, get('day'), get('hour') % 24, get('minute'), get('second'))
+  // The gap between what we intended (guess) and what `timeZone` reads
+  // at that instant (seenAsUtc) is exactly that zone's UTC offset.
+  return new Date(guess - (seenAsUtc - guess))
+}
+
 // A short zone label ("CDT", "CET") for display, e.g. next to a leave-by
 // time so it's unambiguous which clock it's in when the traveler is
 // reading it from a different timezone than the trip's own.

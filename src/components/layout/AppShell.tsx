@@ -10,6 +10,7 @@ import type { Trip } from '../../types/trip'
 import { useAppStore } from '../../store/useAppStore'
 import { getEffectiveTrip } from '../../lib/manualItems'
 import { getTripTimeZone, nowInZone } from '../../lib/timezone'
+import { useNow } from '../../lib/useNow'
 import { useTripAlerts } from '../alerts/useTripAlerts'
 
 export function AppShell({
@@ -21,8 +22,12 @@ export function AppShell({
   const manualItems = useAppStore((s) => s.manualItems)
   const resolvedOpenItemIds = useAppStore((s) => s.resolvedOpenItemIds)
   const effectiveTrip = getEffectiveTrip(trip, manualItems, resolvedOpenItemIds)
-  const now = nowInZone(getTripTimeZone(trip))
-  const { alerts } = useTripAlerts(trip, effectiveTrip, now)
+  // realNow ticks (lib/useNow.ts) so the badge count and Alert Center
+  // stay live without navigating away; `now` is derived from it as the
+  // destination-local wall clock for itinerary-time alert logic.
+  const realNow = useNow()
+  const now = nowInZone(getTripTimeZone(trip), realNow)
+  const { alerts } = useTripAlerts(trip, effectiveTrip, now, realNow)
 
   return (
     <div className="min-h-dvh bg-bg">
@@ -39,7 +44,7 @@ export function AppShell({
           <AddItemSheet trip={trip} />
         </>
       )}
-      <AlertCenter trip={trip} effectiveTrip={effectiveTrip} now={now} />
+      <AlertCenter trip={trip} effectiveTrip={effectiveTrip} now={now} realNow={realNow} />
       <UpdateBanner />
       <BottomNav pendingCount={pendingCount} />
     </div>

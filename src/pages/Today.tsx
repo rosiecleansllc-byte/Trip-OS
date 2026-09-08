@@ -35,6 +35,7 @@ import { computeReadiness } from '../lib/readiness'
 import { getEffectiveTrip } from '../lib/manualItems'
 import { computeLeaveBy } from '../lib/leaveBy'
 import { getTripTimeZone, nowInZone } from '../lib/timezone'
+import { useNow } from '../lib/useNow'
 import { findDayVisualBoard, useVisualBoardImage } from '../lib/visualBoards'
 import { buildWalletDocEntries, sortWalletEntries } from '../lib/walletDocs'
 import { getWeatherLocationForDay, isWithinForecastRange, useWeather } from '../lib/weather'
@@ -155,8 +156,12 @@ export function Today({ trip }: { trip: Trip }) {
   // lib/timezone.ts. nowInZone returns a Date whose local getters equal
   // the destination's wall clock, so it's a drop-in `now` for the
   // existing lib/date.ts helpers below without changing their signatures.
+  // realNow ticks (lib/useNow.ts) so Next Up, leave-by, and the alert
+  // banner all advance while the page stays open, not just on whatever
+  // unrelated re-render happens to catch a fresh `new Date()`.
   const tz = getTripTimeZone(trip)
-  const now = nowInZone(tz)
+  const realNow = useNow()
+  const now = nowInZone(tz, realNow)
   const phase = useMemo(() => tripPhase(trip.meta.startDate, trip.meta.endDate, now), [trip, now])
   const today = useMemo(() => findCurrentDay(effectiveTrip.days, now), [effectiveTrip, now])
   const upcoming = useMemo(() => findNextDay(effectiveTrip.days, now), [effectiveTrip, now])
@@ -214,7 +219,7 @@ export function Today({ trip }: { trip: Trip }) {
           <p className="mt-0.5 text-sm text-ink-soft">{formatDateLong(today.date)}</p>
         </div>
 
-        <TodayAlertBanner trip={trip} effectiveTrip={effectiveTrip} now={now} />
+        <TodayAlertBanner trip={trip} effectiveTrip={effectiveTrip} now={now} realNow={realNow} />
 
         {activeDayLocation && <WeatherCard label={activeDayLocation.name} weather={activeWeather} />}
 

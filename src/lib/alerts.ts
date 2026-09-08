@@ -1,6 +1,7 @@
 import type { Trip } from '../types/trip'
 import { daysUntil, formatTime, isSameISODate, tripPhase } from './date'
 import { computeLeaveBy } from './leaveBy'
+import { getTripTimeZone, zonedTimeToUtc } from './timezone'
 import { buildWalletDocEntries } from './walletDocs'
 
 // Trip Alerts, generated fresh from trip data every time Trip OS opens
@@ -44,11 +45,22 @@ function minutesBetween(now: Date, hh: number, mm: number): number {
 export interface GenerateAlertsInput {
   trip: Trip
   effectiveTrip: Trip
-  now: Date // already timezone-adjusted — see lib/timezone.ts nowInZone
+  // Destination-local wall clock (see lib/timezone.ts nowInZone) — use
+  // this for anything that means "what time/day is it at the trip",
+  // e.g. today's schedule, leave-by HH:mm math. Its getTime() is NOT a
+  // real instant and must never be compared against an absolute
+  // timestamp (an ISO string with real UTC meaning) — use realNow below
+  // for that instead.
+  now: Date
+  // The actual current instant (Date.now()) — use this for anything
+  // that means "how much real time until/since X", e.g. a cancellation
+  // deadline or a snooze expiry, both of which are genuine timestamps
+  // independent of which wall clock the traveler happens to be reading.
+  realNow: Date
   presentDocKeys: Set<string>
 }
 
-export function generateAlerts({ trip, effectiveTrip, now, presentDocKeys }: GenerateAlertsInput): TripAlert[] {
+export function generateAlerts({ trip, effectiveTrip, now, realNow, presentDocKeys }: GenerateAlertsInput): TripAlert[] {
   const alerts: TripAlert[] = []
   const phase = tripPhase(trip.meta.startDate, trip.meta.endDate, now)
   const today = effectiveTrip.days.find((d) => isSameISODate(d.date, now))
@@ -152,10 +164,16 @@ export function generateAlerts({ trip, effectiveTrip, now, presentDocKeys }: Gen
   }
 
   // Cancellation deadlines — existing Booking.cancellationDeadline data.
+  // The stored value is a naive local date-time (no offset) authored in
+  // the booking's own destination timezone, not the device's — resolve
+  // it with zonedTimeToUtc so a deadline in Paris still lands on the
+  // real correct instant when checked from a device in another zone,
+  // then compare against realNow (a genuine timestamp), never `now`
+  // (destination-local wall clock, not a real instant).
   for (const b of effectiveTrip.bookings) {
     if (!b.cancellationDeadline || b.status === 'cancelled') continue
-    const deadline = new Date(b.cancellationDeadline)
-    const hoursAway = (deadline.getTime() - now.getTime()) / 3_600_000
+    const deadline = zonedTimeToUtc(b.cancellationDeadline, getTripTimeZone(trip, b.legId))
+    const hoursAway = (deadline.getTime() - realNow.getTime()) / 3_600_000
     if (hoursAway < 0 || hoursAway > 24 * 7) continue
     alerts.push({
       id: `cancel:${b.id}`,
@@ -200,19 +218,23 @@ export function sortAlerts(alerts: TripAlert[]): TripAlert[] {
 // Applies the traveler's own dismissed/snoozed state (see useAppStore
 // alertOverrides) and, in Share mode, drops every isPrivate alert
 // outright — never rendered, never counted toward the bell badge.
+// snoozedUntil is a real ISO timestamp (see AlertCenter's
+// `new Date(Date.now() + ...).toISOString()`), so it must be compared
+// against realNow (the actual current instant), never against the
+// destination-local wall clock `now` used elsewhere in this file.
 export function visibleAlerts(
   alerts: TripAlert[],
   tripId: string,
   overrides: Record<string, { dismissed?: boolean; snoozedUntil?: string }>,
   shareMode: boolean,
-  now: Date
+  realNow: Date
 ): TripAlert[] {
   return alerts.filter((a) => {
     if (shareMode && a.isPrivate) return false
     const override = overrides[`${tripId}:${a.id}`]
     if (!override) return true
     if (override.dismissed) return false
-    if (override.snoozedUntil && new Date(override.snoozedUntil).getTime() > now.getTime()) return false
+    if (override.snoozedUntil && new Date(override.snoozedUntil).getTime() > realNow.getTime()) return false
     return true
   })
 }
