@@ -95,14 +95,14 @@ export const austinTrip: Trip = {
       id: 'd3',
       date: '2026-09-11',
       dayNumber: 3,
-      legId: 'austin',
-      title: 'Austin / lodging transition',
+      legId: 'waco',
+      title: 'Austin → Waco',
       outfitNote: 'Comfortable clothes for checkout and travel.',
       scheduleItems: [
         { id: 'd3-1', label: 'Breakfast at Hyatt House', type: 'meal' },
         { id: 'd3-2', label: 'Pack / checkout', type: 'free' },
         { id: 'd3-3', time: '11:00', label: 'Hyatt House checkout by 11:00 AM', type: 'lodging', location: 'Hyatt House Austin/Downtown, Austin' },
-        { id: 'd3-4', label: 'Lodging Sept. 11–13 TBD', type: 'free' },
+        { id: 'd3-4', label: 'Travel Austin → Waco', type: 'transport' },
       ],
     },
     {
@@ -113,7 +113,6 @@ export const austinTrip: Trip = {
       title: 'You × AI Summit / Waco',
       outfitNote: 'Summit outfit.',
       scheduleItems: [
-        { id: 'd4-1', label: 'Austin → Waco transportation TBD', type: 'transport' },
         { id: 'd4-2', label: 'Arrive for Summit', type: 'transport', location: 'The Performing Arts Community Center, Waco, TX' },
         {
           id: 'd4-3',
