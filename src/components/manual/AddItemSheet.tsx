@@ -669,6 +669,11 @@ export function AddItemSheet({ trip }: { trip: Trip }) {
                         ))}
                       </select>
                     </Field>
+                    {form.transportMode === 'rental-car' && (
+                      <Field label="Return date">
+                        <input type="date" className={inputClass} value={form.endDate} onChange={(e) => set('endDate', e.target.value)} placeholder="Optional — when you'll drop it off" />
+                      </Field>
+                    )}
                     <Field label="Provider / carrier">
                       <input className={inputClass} value={form.carrier} onChange={(e) => set('carrier', e.target.value)} placeholder="Optional" />
                     </Field>

@@ -198,8 +198,10 @@ export interface OpenItem {
   // than a single direction — see lib/manualItems.ts openItemIsCoveredBy.
   // A single one-way manual transport entry never counts as resolving one
   // of these; two entries whose from/to are exact reverses of each other
-  // are required — except a single 'rental-car' entry, which is kept for
-  // the whole stay and inherently covers both directions on its own.
+  // are required — except a single 'rental-car' entry whose own dates
+  // (date -> a later endDate) prove it was kept across a real multi-day
+  // span, which inherently covers both directions on its own (see
+  // rentalCoversRoundTrip). A one-day or dateless rental doesn't qualify.
   requiresRoundTrip?: boolean
 }
 
@@ -336,7 +338,11 @@ export interface ManualTripItem {
   type: ManualItemType
   title: string // stay/restaurant/activity/other name; unused for transport, which derives its label from fromLocation/toLocation
   date: ISODate
-  endDate?: ISODate // stay checkout date
+  // Stay checkout date — or, for a 'rental-car' transport item, its
+  // return/drop-off date. A rental with a real endDate later than date
+  // is treated as proof of a genuine multi-day round trip on its own;
+  // see lib/manualItems.ts rentalCoversRoundTrip.
+  endDate?: ISODate
   time?: string // check-in / reservation / start / departure time
   endTime?: string // activity end time / transport arrival time
   location?: string // activity venue name

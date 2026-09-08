@@ -261,20 +261,34 @@ function hasRoundTripPair(items: ManualTripItem[]): boolean {
   )
 }
 
+// A single 'rental-car' item counts as its own round trip only when its
+// own dates prove it — kept from `date` through a real, later `endDate`,
+// i.e. picked up and dropped off on different days. That's genuine
+// evidence the traveler had the car for an outbound-and-back stretch, not
+// just a same-day booking. A rental with no endDate (or one equal to
+// date) proves nothing about a return and is held to the same standard
+// as any other one-way transport leg — it still needs a real
+// reverse-direction pair via hasRoundTripPair.
+function rentalCoversRoundTrip(item: ManualTripItem): boolean {
+  return item.transportMode === 'rental-car' && !!item.endDate && item.endDate > item.date
+}
+
 // For most OpenItems, a single qualifying manual item is enough evidence
 // to suggest resolving it. An OpenItem marked `requiresRoundTrip` (a
 // transport OpenItem representing a full there-and-back leg, not just one
 // direction) additionally needs either two qualifying manual transport
 // items that form a round trip (see hasRoundTripPair), or a single
-// 'rental-car' item — a rental is kept for the whole stay and inherently
-// covers both directions, so it never needs a separate reverse-direction
-// entry the way a one-way rideshare/train/flight leg would. Any other
-// single one-way entry never counts as covering it on its own.
+// multi-day 'rental-car' item (see rentalCoversRoundTrip) — a rental kept
+// across a real date span inherently covers both directions, so it never
+// needs a separate reverse-direction entry the way a one-way rideshare/
+// train/flight leg would. Any other single one-way entry — including a
+// one-day rental with no proven return — never counts as covering it on
+// its own.
 function openItemIsCoveredBy(trip: Trip, tripManualItems: ManualTripItem[], openItem: OpenItem): boolean {
   const qualifying = tripManualItems.filter((i) => manualItemQualifiesForOpenItem(trip, i, openItem))
   if (qualifying.length === 0) return false
   if (!openItem.requiresRoundTrip) return true
-  return hasRoundTripPair(qualifying) || qualifying.some((i) => i.transportMode === 'rental-car')
+  return hasRoundTripPair(qualifying) || qualifying.some(rentalCoversRoundTrip)
 }
 
 // Which currently-open OpenItems a manual stay/transport item plausibly
@@ -330,9 +344,10 @@ export function findOpenItemsToUnresolve(
         (i) => i.relatedOpenItemId === oi.id && manualItemQualifiesForOpenItem(trip, i, oi)
       )
       if (!oi.requiresRoundTrip) return linkedAndQualifying.length === 0
-      // Same rental-car exception as openItemIsCoveredBy above.
-      const stillRoundTrip =
-        hasRoundTripPair(linkedAndQualifying) || linkedAndQualifying.some((i) => i.transportMode === 'rental-car')
+      // Same rental-car exception as openItemIsCoveredBy above — editing
+      // a rental's dates down to a single day (or deleting its endDate)
+      // reopens the OpenItem exactly like deleting one leg of a pair.
+      const stillRoundTrip = hasRoundTripPair(linkedAndQualifying) || linkedAndQualifying.some(rentalCoversRoundTrip)
       return !stillRoundTrip
     })
     .map((oi) => oi.id)

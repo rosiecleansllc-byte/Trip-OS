@@ -334,9 +334,10 @@ export const austinTrip: Trip = {
       // category + requiresRoundTrip alone. See openItemIsCoveredBy.
       //
       // A round trip: one direction alone (e.g. only "Austin → Waco") never
-      // resolves this on its own — unless it's a single rental-car item,
-      // which covers both directions inherently — see
-      // lib/manualItems.ts openItemIsCoveredBy.
+      // resolves this on its own — unless it's a single rental-car item
+      // whose own date -> endDate span proves a genuine multi-day rental
+      // (kept across pickup and drop-off), not just a one-day booking —
+      // see lib/manualItems.ts openItemIsCoveredBy / rentalCoversRoundTrip.
       requiresRoundTrip: true,
     },
     {
