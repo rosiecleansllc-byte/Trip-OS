@@ -28,6 +28,13 @@ export function VisualBoardCard({
   const [menuOpen, setMenuOpen] = useState(false)
   const [confirmingDelete, setConfirmingDelete] = useState(false)
   const [lightboxOpen, setLightboxOpen] = useState(false)
+  // Set when a Replace/Delete IndexedDB write actually failed — surfaced
+  // to the traveler rather than swallowed, since silently treating either
+  // as "done" would either show a stale image (Replace) or delete the
+  // board metadata while its image Blob is still sitting in IndexedDB
+  // with nothing left pointing at it (Delete) — an orphan with no way
+  // back into the UI, because imageKey only ever lived on this board.
+  const [actionError, setActionError] = useState<string | null>(null)
   const inputRef = useRef<HTMLInputElement>(null)
   const menuRef = useRef<HTMLDivElement>(null)
 
@@ -49,14 +56,38 @@ export function VisualBoardCard({
   const dayLabel = board.dayId ? trip.days.find((d) => d.id === board.dayId) : undefined
 
   const handleReplace = async (file: File) => {
-    await putVisualBoardImage(board.imageKey, file).catch(() => {})
-    setVersion((v) => v + 1)
+    setActionError(null)
+    try {
+      await putVisualBoardImage(board.imageKey, file)
+      setVersion((v) => v + 1)
+    } catch {
+      // The IndexedDB write failed, so the previous image blob is still
+      // intact under this key (a failed put never partially overwrites
+      // it) — no need to bump version, just tell the traveler the
+      // replace didn't take instead of quietly leaving the old photo
+      // showing as if nothing went wrong.
+      setActionError("Couldn't replace the image — the previous one is still saved. Try again.")
+    }
     setMenuOpen(false)
     setConfirmingDelete(false)
   }
 
   const handleDelete = async () => {
-    await deleteVisualBoardImage(board.imageKey).catch(() => {})
+    setActionError(null)
+    try {
+      await deleteVisualBoardImage(board.imageKey)
+    } catch {
+      // Deleting the board's metadata now would orphan its image blob in
+      // IndexedDB permanently — imageKey only ever lives on this board,
+      // so once the metadata is gone there is no remaining way for the
+      // UI to find and clean up that blob. Keep the board (and the
+      // retry path through its own menu) instead of pretending the
+      // delete succeeded.
+      setActionError("Couldn't delete the image, so this board wasn't removed. Try again.")
+      setMenuOpen(false)
+      setConfirmingDelete(false)
+      return
+    }
     deleteVisualBoard(board.id)
     setMenuOpen(false)
     setConfirmingDelete(false)
@@ -94,6 +125,7 @@ export function VisualBoardCard({
         <p className="truncate text-[11px] text-ink-soft">
           {dayLabel ? `Day ${dayLabel.dayNumber} · ${dayLabel.title}` : VISUAL_BOARD_TYPE_META[board.type].label}
         </p>
+        {actionError && <p className="mt-1 text-[10px] text-red">{actionError}</p>}
       </div>
 
       <div ref={menuRef} className="absolute right-2 top-2">
