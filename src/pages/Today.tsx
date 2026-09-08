@@ -29,7 +29,9 @@ import {
 } from '../lib/date'
 import { computeReadiness } from '../lib/readiness'
 import { getEffectiveTrip } from '../lib/manualItems'
+import { getWeatherLocationForDay, isWithinForecastRange, useWeather } from '../lib/weather'
 import { useAppStore } from '../store/useAppStore'
+import { WeatherCard } from '../components/ui/WeatherCard'
 
 const SCHEDULE_ICON: Record<string, string> = {
   activity: '◆',
@@ -110,6 +112,20 @@ export function Today({ trip }: { trip: Trip }) {
   const [lightboxSrc, setLightboxSrc] = useState<string | null>(null)
   const [showCompleted, setShowCompleted] = useState(false)
 
+  // Both weather hooks always run (Rules of Hooks) — only one location is
+  // ever defined depending on trip phase, so only one ever actually
+  // fetches. Active-trip weather refreshes more often than a pre-trip
+  // outlook, which doesn't need to feel live.
+  const activeDayLocation =
+    phase === 'active' && today ? getWeatherLocationForDay(effectiveTrip, today.id) : undefined
+  const activeWeather = useWeather(activeDayLocation, 45)
+
+  const firstDayId = effectiveTrip.days[0]?.id
+  const preTripLocation =
+    phase === 'pre' && firstDayId ? getWeatherLocationForDay(effectiveTrip, firstDayId) : undefined
+  const preTripInRange = Boolean(preTripLocation) && isWithinForecastRange(trip.meta.startDate)
+  const preTripWeather = useWeather(preTripInRange ? preTripLocation : undefined, 240)
+
   if (phase === 'active' && today) {
     const leg = trip.legs.find((l) => l.id === today.legId)
     const outfitBoard = trip.outfitBoards.find((b) => b.id === today.outfitBoardId)
@@ -127,6 +143,8 @@ export function Today({ trip }: { trip: Trip }) {
           <h1 className="font-display text-2xl text-ink">{today.title}</h1>
           <p className="mt-0.5 text-sm text-ink-soft">{formatDateLong(today.date)}</p>
         </div>
+
+        {activeDayLocation && <WeatherCard label={activeDayLocation.name} weather={activeWeather} />}
 
         {today.weatherNote && (
           <p className="flex items-start gap-2 rounded-xl bg-blue-tint px-3.5 py-2.5 text-xs text-blue">
@@ -347,6 +365,26 @@ export function Today({ trip }: { trip: Trip }) {
           </div>
         )}
       </Card>
+
+      <div>
+        <SectionHeader eyebrow="Get ready" title="Weather outlook" />
+        {preTripInRange && preTripLocation ? (
+          <>
+            <p className="mb-1.5 text-[11px] font-medium uppercase tracking-[0.14em] text-ink-soft">Live forecast</p>
+            <WeatherCard label={preTripLocation.name} weather={preTripWeather} />
+          </>
+        ) : (
+          <Card className="p-4">
+            <p className="text-sm text-ink-soft">Forecast available closer to departure</p>
+          </Card>
+        )}
+        {trip.meta.weatherDisclaimer && (
+          <div className="mt-3">
+            <p className="text-[11px] font-medium uppercase tracking-[0.14em] text-ink-soft">Typical conditions</p>
+            <p className="mt-1 text-xs text-ink-soft">{trip.meta.weatherDisclaimer}</p>
+          </div>
+        )}
+      </div>
 
       {nextDay && (
         <div>

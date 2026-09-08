@@ -21,11 +21,19 @@ export const austinTrip: Trip = {
     homeCurrency: 'USD',
     tripCurrency: 'USD',
     status: 'upcoming',
+    coverImageUrl: '/images/trip-covers/austin-waco-2026.webp',
+    coverAlt: 'Austin, Texas cowgirl poster pointing toward a map of Texas',
+    coverPosition: 'center 20%',
   },
 
   legs: [
     { id: 'austin', name: 'Austin', order: 1 },
     { id: 'waco', name: 'Waco', order: 2 },
+  ],
+
+  weatherLocations: [
+    { id: 'wx-austin', name: 'Austin', city: 'Austin', country: 'US', latitude: 30.2672, longitude: -97.7431, relatedLegId: 'austin' },
+    { id: 'wx-waco', name: 'Waco', city: 'Waco', country: 'US', latitude: 31.5493, longitude: -97.1467, relatedLegId: 'waco' },
   ],
 
   days: [

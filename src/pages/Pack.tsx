@@ -6,7 +6,9 @@ import { Card } from '../components/ui/Card'
 import { SectionHeader } from '../components/ui/SectionHeader'
 import { ImagePlaceholder } from '../components/ui/ImagePlaceholder'
 import { Lightbox } from '../components/ui/Lightbox'
+import { WeatherCard } from '../components/ui/WeatherCard'
 import { formatDateCompact } from '../lib/date'
+import { getWeatherLocationForDay, isWithinForecastRange, useWeather } from '../lib/weather'
 import { useAppStore } from '../store/useAppStore'
 
 const CATEGORY_LABELS: Record<CapsuleCategory, string> = {
@@ -93,12 +95,21 @@ export function Pack({ trip }: { trip: Trip }) {
   const [tab, setTab] = useState<(typeof tabs)[number]>(tabs[0])
   const [lightbox, setLightbox] = useState<{ src: string; alt: string } | null>(null)
 
+  // Context only — this never rewrites the packing list or outfits, it
+  // just gives Cecilia a sense of what to expect before she reads the
+  // checklist below.
+  const location = getWeatherLocationForDay(trip, trip.days[0]?.id ?? '')
+  const inRange = Boolean(location) && isWithinForecastRange(trip.meta.startDate)
+  const weather = useWeather(inRange ? location : undefined, 240)
+
   return (
     <div className="animate-fade-in space-y-6">
       <div>
         <p className="text-[11px] font-medium uppercase tracking-[0.14em] text-ink-soft">What to bring</p>
         <h1 className="font-display text-2xl text-ink">Pack</h1>
       </div>
+
+      {location && inRange && <WeatherCard label={`${location.name} outlook`} weather={weather} compact />}
 
       {trip.meta.outfitBoardImageUrl && (
         <button

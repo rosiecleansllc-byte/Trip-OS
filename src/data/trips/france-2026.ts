@@ -31,6 +31,8 @@ export const franceTrip: Trip = {
     budgetNote:
       'Cash lodging subtotal is ~$2,916 (Hôtel Vert and the Moxy were rebooked with points). Beyond that: food, Paris local transit/taxis/Bolt, rental-car fuel/tolls/parking, Riviera local transit, and incidentals — a sensible remaining allowance for all three is roughly $1,800–$2,500.',
     outfitBoardImageUrl: '/images/outfits/france-2026-master-board.webp',
+    coverImageUrl: '/images/trip-covers/france-2026.webp',
+    coverAlt: 'France 2026 vintage travel stamp illustration of the Eiffel Tower and a hot air balloon',
   },
 
   legs: [
@@ -39,6 +41,37 @@ export const franceTrip: Trip = {
     { id: 'paris-2', name: 'Paris (return)', order: 3 },
     { id: 'riviera', name: 'Riviera / Nice', order: 4 },
     { id: 'departure', name: 'Departure', order: 5 },
+  ],
+
+  weatherLocations: [
+    {
+      id: 'wx-paris',
+      name: 'Paris',
+      city: 'Paris',
+      country: 'FR',
+      latitude: 48.8566,
+      longitude: 2.3522,
+      // The return-to-Paris and departure legs share Paris's weather too.
+      relatedLegId: ['paris-1', 'paris-2', 'departure'],
+    },
+    {
+      id: 'wx-msm',
+      name: 'Mont-Saint-Michel',
+      city: 'Mont-Saint-Michel',
+      country: 'FR',
+      latitude: 48.636,
+      longitude: -1.5115,
+      relatedLegId: 'msm',
+    },
+    {
+      id: 'wx-nice',
+      name: 'Nice',
+      city: 'Nice',
+      country: 'FR',
+      latitude: 43.7102,
+      longitude: 7.262,
+      relatedLegId: 'riviera',
+    },
   ],
 
   days: [
