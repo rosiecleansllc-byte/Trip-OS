@@ -38,6 +38,10 @@ import { useNow } from '../lib/useNow'
 import { findDayVisualBoards, useVisualBoardImage } from '../lib/visualBoards'
 import { getOutfitBoardsForDay } from '../lib/outfits'
 import { OutfitBoardLookCard } from '../components/visuals/OutfitBoardSection'
+import { getOutfitsForDay, resolveOutfitItems } from '../lib/wardrobeOutfits'
+import { useOutfitDetailUiStore } from '../store/useOutfitDetailUiStore'
+import { WardrobeItemThumb } from '../components/wardrobe/WardrobeItemThumb'
+import type { Outfit } from '../types/trip'
 import { buildWalletDocEntries, sortWalletEntries } from '../lib/walletDocs'
 import { getWeatherLocationForDay, isWithinForecastRange, useWeather } from '../lib/weather'
 import { useAppStore } from '../store/useAppStore'
@@ -139,11 +143,49 @@ function LaterRow({ item }: { item: ScheduleItem }) {
   )
 }
 
+// The current, reference-based equivalent of OutfitBoardLookCard, for a
+// trip's Outfits (e.g. Austin) rather than its older OutfitBoards
+// (France). Tapping the card opens that exact outfit's detail via the
+// globally-mounted OutfitDetailSheet — never just a Pack navigation.
+function TodayOutfitCard({
+  outfit,
+  trip,
+  eyebrow,
+  shareMode,
+  onOpenItem,
+}: {
+  outfit: Outfit
+  trip: Trip
+  eyebrow: string
+  shareMode: boolean
+  onOpenItem: (src: string, alt: string) => void
+}) {
+  const openDetail = useOutfitDetailUiStore((s) => s.open)
+  const items = resolveOutfitItems(trip, outfit)
+  return (
+    <Card className="overflow-hidden">
+      <button type="button" onClick={() => openDetail(outfit.id)} className="block w-full p-4 text-left">
+        <p className="text-[11px] font-medium uppercase tracking-[0.14em] text-blue">{eyebrow}</p>
+        <p className="mt-0.5 text-sm font-medium text-ink">{outfit.name}</p>
+        {outfit.notes && <p className="mt-1 text-xs text-ink-soft">{outfit.notes}</p>}
+      </button>
+      {items.length > 0 && (
+        <div className="flex gap-2.5 overflow-x-auto px-4 pb-4">
+          {items.map((item) => (
+            <WardrobeItemThumb key={item.id} item={item} trip={trip} shareMode={shareMode} size={64} onOpen={onOpenItem} />
+          ))}
+        </div>
+      )}
+    </Card>
+  )
+}
+
 export function Today({ trip }: { trip: Trip }) {
   const manualItems = useAppStore((s) => s.manualItems)
   const resolvedOpenItemIds = useAppStore((s) => s.resolvedOpenItemIds)
   const shareMode = useAppStore((s) => s.shareMode)
   const visualBoards = useAppStore((s) => s.visualBoards)
+  const storeOutfits = useAppStore((s) => s.outfits)
   const effectiveTrip = useMemo(
     () => getEffectiveTrip(trip, manualItems, resolvedOpenItemIds),
     [trip, manualItems, resolvedOpenItemIds]
@@ -180,9 +222,19 @@ export function Today({ trip }: { trip: Trip }) {
   // missing photo hiding the rest. Only when a trip has no seeded
   // structure at all for today does an uploaded 'outfit' visual stand in
   // on its own, full-bleed, as before.
-  const todaysSeededLooks = phase === 'active' && today ? getOutfitBoardsForDay(effectiveTrip, today) : []
+  // Current, reference-based Outfits (e.g. Austin) take priority; the
+  // OutfitBoard/VisualBoard fallbacks below only ever apply when a day
+  // has none (every France day, today). Traveler-created outfits are
+  // zeroed out in Share mode — same "zero the array" pattern used
+  // everywhere else on this page.
+  const todaysOutfits =
+    phase === 'active' && today ? getOutfitsForDay(effectiveTrip, shareMode ? [] : storeOutfits, today.id) : []
+  const todaysSeededLooks =
+    todaysOutfits.length === 0 && phase === 'active' && today ? getOutfitBoardsForDay(effectiveTrip, today) : []
   const todaysUploadedLooks =
-    !shareMode && phase === 'active' && today ? findDayVisualBoards(visualBoards, trip.meta.id, today.id) : []
+    todaysOutfits.length === 0 && !shareMode && phase === 'active' && today
+      ? findDayVisualBoards(visualBoards, trip.meta.id, today.id)
+      : []
   const fallbackUploadedBoard = todaysSeededLooks.length === 0 ? todaysUploadedLooks[0] : undefined
   const { url: fallbackUploadedUrl } = useVisualBoardImage(fallbackUploadedBoard?.imageKey)
   // Zeroed out in Share mode so OutfitBoardLookCard's item-chip matching
@@ -249,7 +301,40 @@ export function Today({ trip }: { trip: Trip }) {
           </div>
         )}
 
-        {todaysSeededLooks.length > 0 ? (
+        {todaysOutfits.length > 0 ? (
+          <div className="space-y-2.5">
+            <TodayOutfitCard
+              outfit={todaysOutfits[0]}
+              trip={trip}
+              eyebrow="Today's outfit"
+              shareMode={shareMode}
+              onOpenItem={(src) => setLightboxSrc(src)}
+            />
+            {todaysOutfits.length > 1 && (
+              <button
+                type="button"
+                onClick={() => setShowMoreLooks((v) => !v)}
+                className="w-full rounded-full border border-blue/30 bg-blue-tint py-2 text-xs font-medium text-blue"
+              >
+                {showMoreLooks ? 'Hide other looks' : `${todaysOutfits.length} looks today — see the other one`}
+              </button>
+            )}
+            {showMoreLooks &&
+              todaysOutfits.slice(1).map((outfit) => (
+                <TodayOutfitCard
+                  key={outfit.id}
+                  outfit={outfit}
+                  trip={trip}
+                  eyebrow="Also today"
+                  shareMode={shareMode}
+                  onOpenItem={(src) => setLightboxSrc(src)}
+                />
+              ))}
+            <Link to="/pack" className="inline-flex items-center gap-1 text-xs font-medium text-blue">
+              <Luggage size={13} /> Full outfit board in Pack
+            </Link>
+          </div>
+        ) : todaysSeededLooks.length > 0 ? (
           <div className="space-y-2.5">
             <OutfitBoardLookCard
               board={todaysSeededLooks[0]}

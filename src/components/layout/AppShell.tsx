@@ -6,6 +6,8 @@ import { UpdateBanner } from './UpdateBanner'
 import { AddItemFab } from '../manual/AddItemFab'
 import { AddItemSheet } from '../manual/AddItemSheet'
 import { AlertCenter } from '../alerts/AlertCenter'
+import { OutfitDetailSheet } from '../wardrobe/OutfitDetailSheet'
+import { AddOutfitSheet } from '../wardrobe/AddOutfitSheet'
 import type { Trip } from '../../types/trip'
 import { useAppStore } from '../../store/useAppStore'
 import { getEffectiveTrip } from '../../lib/manualItems'
@@ -42,8 +44,13 @@ export function AppShell({
         <>
           <AddItemFab />
           <AddItemSheet trip={trip} />
+          <AddOutfitSheet trip={trip} />
         </>
       )}
+      {/* Mounted globally (not just on Pack) so Trip.tsx — and any other
+          page — can open a specific outfit's detail via
+          useOutfitDetailUiStore without navigating to Pack first. */}
+      <OutfitDetailSheet trip={trip} />
       <AlertCenter trip={trip} effectiveTrip={effectiveTrip} now={now} realNow={realNow} />
       <UpdateBanner />
       <BottomNav pendingCount={pendingCount} />

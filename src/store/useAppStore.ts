@@ -1,7 +1,7 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import { defaultTripId } from '../data/tripsIndex'
-import type { ManualTripItem, OutfitLook, VisualBoard } from '../types/trip'
+import type { ManualTripItem, Outfit, VisualBoard } from '../types/trip'
 
 interface AppState {
   currentTripId: string
@@ -28,12 +28,11 @@ interface AppState {
   // items' private documents: this only ever holds metadata, the image
   // itself lives in IndexedDB (lib/visualBoards.ts), never here.
   visualBoards: VisualBoard[]
-  // Traveler-curated groupings of her own uploaded VisualBoards into a
-  // named "look" (see types/trip.ts OutfitLook) — same storage shape as
-  // visualBoards: metadata only, a flat cross-trip array filtered by
-  // tripId, never seeded. Each visualBoardIds entry just points at an
-  // existing VisualBoard; no image data lives here.
-  outfitLooks: OutfitLook[]
+  // Traveler-created outfits (see types/trip.ts Outfit) — same storage
+  // shape as visualBoards: metadata only, a flat cross-trip array
+  // filtered by tripId, never seeded. Each itemIds entry just points at
+  // an existing CapsuleItem; no image data lives here.
+  outfits: Outfit[]
   // Trip Alerts are generated fresh from trip data every time Trip OS
   // opens/resumes (see lib/alerts.ts) — nothing about an alert itself is
   // ever persisted, only what the traveler did with it, keyed by
@@ -62,9 +61,9 @@ interface AppState {
   addVisualBoard: (board: VisualBoard) => void
   updateVisualBoard: (id: string, patch: Partial<VisualBoard>) => void
   deleteVisualBoard: (id: string) => void
-  addOutfitLook: (look: OutfitLook) => void
-  updateOutfitLook: (id: string, patch: Partial<OutfitLook>) => void
-  deleteOutfitLook: (id: string) => void
+  addOutfit: (outfit: Outfit) => void
+  updateOutfit: (id: string, patch: Partial<Outfit>) => void
+  deleteOutfit: (id: string) => void
   dismissAlert: (tripId: string, alertId: string) => void
   snoozeAlert: (tripId: string, alertId: string, untilISO: string) => void
   setNotificationsRequested: (value: boolean) => void
@@ -79,7 +78,7 @@ export const useAppStore = create<AppState>()(
       manualItems: [],
       resolvedOpenItemIds: {},
       visualBoards: [],
-      outfitLooks: [],
+      outfits: [],
       alertOverrides: {},
       notificationsRequested: false,
       setCurrentTripId: (id) => set({ currentTripId: id }),
@@ -118,13 +117,12 @@ export const useAppStore = create<AppState>()(
         })),
       deleteVisualBoard: (id) =>
         set((s) => ({ visualBoards: s.visualBoards.filter((b) => b.id !== id) })),
-      addOutfitLook: (look) => set((s) => ({ outfitLooks: [...s.outfitLooks, look] })),
-      updateOutfitLook: (id, patch) =>
+      addOutfit: (outfit) => set((s) => ({ outfits: [...s.outfits, outfit] })),
+      updateOutfit: (id, patch) =>
         set((s) => ({
-          outfitLooks: s.outfitLooks.map((l) => (l.id === id ? { ...l, ...patch } : l)),
+          outfits: s.outfits.map((o) => (o.id === id ? { ...o, ...patch } : o)),
         })),
-      deleteOutfitLook: (id) =>
-        set((s) => ({ outfitLooks: s.outfitLooks.filter((l) => l.id !== id) })),
+      deleteOutfit: (id) => set((s) => ({ outfits: s.outfits.filter((o) => o.id !== id) })),
       dismissAlert: (tripId, alertId) =>
         set((s) => ({
           alertOverrides: { ...s.alertOverrides, [`${tripId}:${alertId}`]: { dismissed: true } },

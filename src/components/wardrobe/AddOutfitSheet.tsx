@@ -1,43 +1,43 @@
 import { useEffect, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { clsx } from 'clsx'
-import { Check, ImageIcon, X } from 'lucide-react'
-import type { OutfitLook, Trip, VisualBoard } from '../../types/trip'
+import { Check, X } from 'lucide-react'
+import type { CapsuleItem, Outfit, Trip } from '../../types/trip'
 import { useAppStore } from '../../store/useAppStore'
-import { useOutfitLookUiStore } from '../../store/useOutfitLookUiStore'
-import { useVisualBoardImage } from '../../lib/visualBoards'
+import { useOutfitUiStore } from '../../store/useOutfitUiStore'
+import { WARDROBE_CATEGORY_LABELS, WARDROBE_CATEGORY_ORDER } from '../../lib/wardrobeOutfits'
+import { WardrobeItemThumb } from './WardrobeItemThumb'
 
 const inputClass =
   'w-full rounded-xl border border-line bg-bg px-3 py-2.5 text-sm text-ink placeholder:text-gray focus:border-blue/50 focus:outline-none'
 const labelClass = 'mb-1 block text-xs font-medium text-ink-soft'
 
 interface FormState {
-  title: string
+  name: string
   dayId: string
   notes: string
-  visualBoardIds: string[]
+  itemIds: string[]
 }
 
 function emptyForm(): FormState {
-  return { title: '', dayId: '', notes: '', visualBoardIds: [] }
+  return { name: '', dayId: '', notes: '', itemIds: [] }
 }
 
-function formFromLook(look: OutfitLook): FormState {
-  return { title: look.title, dayId: look.dayId ?? '', notes: look.notes ?? '', visualBoardIds: [...look.visualBoardIds] }
+function formFromOutfit(outfit: Outfit): FormState {
+  return { name: outfit.name, dayId: outfit.dayId ?? '', notes: outfit.notes ?? '', itemIds: [...outfit.itemIds] }
 }
 
-// One selectable row in the "link photos" list — its own hook call for
-// the thumbnail, same as every other VisualBoard-thumbnail call site.
 function PickRow({
-  board,
+  item,
+  trip,
   selected,
   onToggle,
 }: {
-  board: VisualBoard
+  item: CapsuleItem
+  trip: Trip
   selected: boolean
   onToggle: () => void
 }) {
-  const { url } = useVisualBoardImage(board.imageKey)
   return (
     <button
       type="button"
@@ -47,10 +47,8 @@ function PickRow({
         selected ? 'border-blue bg-blue-tint/40' : 'border-line'
       )}
     >
-      <span className="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-bg-soft">
-        {url ? <img src={url} alt="" className="h-full w-full object-cover" /> : <ImageIcon size={16} className="text-ink-soft" />}
-      </span>
-      <span className="min-w-0 flex-1 truncate text-sm text-ink">{board.title}</span>
+      <WardrobeItemThumb item={item} trip={trip} shareMode={false} size={44} />
+      <span className="min-w-0 flex-1 truncate text-sm text-ink">{item.name}</span>
       {selected && (
         <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-blue text-white">
           <Check size={12} strokeWidth={3} />
@@ -60,70 +58,66 @@ function PickRow({
   )
 }
 
-// Composes several of the traveler's own already-uploaded visuals (a
-// shoes photo, an accessories photo, a top photo, ...) into one named
-// look — see types/trip.ts OutfitLook. Unlike AddVisualBoardSheet, there
-// is no image picker here at all: an OutfitLook never owns a photo of
-// its own, it only links to ones that already exist as VisualBoards.
-export function AddOutfitLookSheet({ trip }: { trip: Trip }) {
-  const step = useOutfitLookUiStore((s) => s.step)
-  const editingLook = useOutfitLookUiStore((s) => s.editingLook)
-  const close = useOutfitLookUiStore((s) => s.close)
+// Create/edit a traveler-created Outfit — selects existing wardrobe
+// items (trip.capsule), grouped by category, names the outfit, and
+// optionally assigns it to a trip day. No image picker of its own: an
+// Outfit never owns a photo, it only references CapsuleItems whose own
+// images (seeded or privately uploaded — see WardrobeItemThumb) are the
+// only place a picture lives.
+export function AddOutfitSheet({ trip }: { trip: Trip }) {
+  const step = useOutfitUiStore((s) => s.step)
+  const editingOutfit = useOutfitUiStore((s) => s.editingOutfit)
+  const close = useOutfitUiStore((s) => s.close)
 
-  const visualBoards = useAppStore((s) => s.visualBoards)
-  const outfitLooks = useAppStore((s) => s.outfitLooks)
-  const addOutfitLook = useAppStore((s) => s.addOutfitLook)
-  const updateOutfitLook = useAppStore((s) => s.updateOutfitLook)
+  const storeOutfits = useAppStore((s) => s.outfits)
+  const addOutfit = useAppStore((s) => s.addOutfit)
+  const updateOutfit = useAppStore((s) => s.updateOutfit)
 
   const [form, setForm] = useState<FormState>(() => emptyForm())
   const [saving, setSaving] = useState(false)
 
   useEffect(() => {
     if (step === 'form') {
-      setForm(editingLook ? formFromLook(editingLook) : emptyForm())
+      setForm(editingOutfit ? formFromOutfit(editingOutfit) : emptyForm())
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [step, editingLook])
+  }, [step, editingOutfit])
 
   if (step === 'closed') return null
 
   const set = <K extends keyof FormState>(key: K, value: FormState[K]) => setForm((f) => ({ ...f, [key]: value }))
-  const toggleBoard = (id: string) =>
+  const toggleItem = (id: string) =>
     setForm((f) => ({
       ...f,
-      visualBoardIds: f.visualBoardIds.includes(id)
-        ? f.visualBoardIds.filter((x) => x !== id)
-        : [...f.visualBoardIds, id],
+      itemIds: f.itemIds.includes(id) ? f.itemIds.filter((x) => x !== id) : [...f.itemIds, id],
     }))
 
-  const tripBoards = visualBoards.filter((b) => b.tripId === trip.meta.id)
-  const isValid = Boolean(form.title.trim())
+  const isValid = Boolean(form.name.trim())
 
   const handleSave = () => {
     setSaving(true)
     const selectedDay = form.dayId ? trip.days.find((d) => d.id === form.dayId) : undefined
     const patch = {
       tripId: trip.meta.id,
-      title: form.title.trim(),
+      name: form.name.trim(),
       dayId: selectedDay?.id,
       notes: form.notes.trim() || undefined,
-      visualBoardIds: form.visualBoardIds,
+      itemIds: form.itemIds,
     }
-    if (editingLook) {
-      updateOutfitLook(editingLook.id, patch)
+    if (editingOutfit) {
+      updateOutfit(editingOutfit.id, patch)
     } else {
-      const tripLooks = outfitLooks.filter((l) => l.tripId === trip.meta.id)
-      addOutfitLook({ id: `look-${crypto.randomUUID()}`, sortOrder: tripLooks.length, ...patch })
+      const tripOutfits = storeOutfits.filter((o) => o.tripId === trip.meta.id)
+      addOutfit({ id: `outfit-${crypto.randomUUID()}`, sortOrder: tripOutfits.length, ...patch })
     }
     setSaving(false)
     close()
   }
 
-  // Rendered via portal straight to <body> — see AddVisualBoardSheet for
-  // why: nested inside a page's .animate-fade-in wrapper, this sheet's
-  // "fixed inset-0" would otherwise be trapped inside that ancestor's
-  // post-animation containing block/stacking context instead of the
-  // true viewport.
+  // Portal to <body> — see AddVisualBoardSheet for
+  // why: escapes the host page's .animate-fade-in ancestor, which would
+  // otherwise trap this "fixed inset-0" sheet inside its own
+  // post-animation containing block instead of the true viewport.
   return createPortal(
     <div className="fixed inset-0 z-40 flex items-end justify-center">
       <button aria-label="Close" className="absolute inset-0 bg-ink/40" onClick={close} />
@@ -131,7 +125,7 @@ export function AddOutfitLookSheet({ trip }: { trip: Trip }) {
         <div className="mx-auto mb-2 h-1 w-10 rounded-full bg-line" />
         <div className="px-5 pt-2">
           <div className="mb-3 flex items-center justify-between">
-            <p className="font-display text-lg text-ink">{editingLook ? 'Edit look' : 'Add look'}</p>
+            <p className="font-display text-lg text-ink">{editingOutfit ? 'Edit outfit' : 'Create outfit'}</p>
             <button aria-label="Close" onClick={close} className="text-ink-soft">
               <X size={18} />
             </button>
@@ -139,11 +133,11 @@ export function AddOutfitLookSheet({ trip }: { trip: Trip }) {
 
           <div className="space-y-3">
             <div>
-              <label className={labelClass}>Title</label>
+              <label className={labelClass}>Name</label>
               <input
                 className={inputClass}
-                value={form.title}
-                onChange={(e) => set('title', e.target.value)}
+                value={form.name}
+                onChange={(e) => set('name', e.target.value)}
                 placeholder="e.g. Franklin's BBQ"
               />
             </div>
@@ -171,21 +165,35 @@ export function AddOutfitLookSheet({ trip }: { trip: Trip }) {
             </div>
 
             <div>
-              <label className={labelClass}>Photos in this look</label>
-              {tripBoards.length === 0 ? (
+              <label className={labelClass}>Wardrobe items</label>
+              {trip.capsule.length === 0 ? (
                 <p className="rounded-xl border border-dashed border-line bg-bg-soft px-3 py-4 text-center text-xs text-ink-soft">
-                  Upload a visual in Pack first, then link it here.
+                  This trip has no wardrobe items yet.
                 </p>
               ) : (
-                <div className="space-y-1.5">
-                  {tripBoards.map((board) => (
-                    <PickRow
-                      key={board.id}
-                      board={board}
-                      selected={form.visualBoardIds.includes(board.id)}
-                      onToggle={() => toggleBoard(board.id)}
-                    />
-                  ))}
+                <div className="space-y-4">
+                  {WARDROBE_CATEGORY_ORDER.map((cat) => {
+                    const items = trip.capsule.filter((c) => c.category === cat)
+                    if (items.length === 0) return null
+                    return (
+                      <div key={cat}>
+                        <p className="mb-1.5 text-[11px] font-medium uppercase tracking-[0.1em] text-ink-soft">
+                          {WARDROBE_CATEGORY_LABELS[cat]}
+                        </p>
+                        <div className="space-y-1.5">
+                          {items.map((item) => (
+                            <PickRow
+                              key={item.id}
+                              item={item}
+                              trip={trip}
+                              selected={form.itemIds.includes(item.id)}
+                              onToggle={() => toggleItem(item.id)}
+                            />
+                          ))}
+                        </div>
+                      </div>
+                    )
+                  })}
                 </div>
               )}
             </div>
@@ -197,7 +205,7 @@ export function AddOutfitLookSheet({ trip }: { trip: Trip }) {
             onClick={handleSave}
             className="mt-5 w-full rounded-full bg-blue py-3 text-sm font-medium text-white disabled:opacity-40"
           >
-            {saving ? 'Saving…' : editingLook ? 'Save changes' : 'Add look'}
+            {saving ? 'Saving…' : editingOutfit ? 'Save changes' : 'Create outfit'}
           </button>
         </div>
       </div>

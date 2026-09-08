@@ -2,16 +2,19 @@ import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { ChevronDown, CloudSun, Image as ImageIcon } from 'lucide-react'
 import { clsx } from 'clsx'
-import type { Trip, VisualBoard } from '../types/trip'
+import type { Outfit, Trip, VisualBoard } from '../types/trip'
 import { ActionRow } from '../components/ui/ActionRow'
 import { Card } from '../components/ui/Card'
 import { Lightbox } from '../components/ui/Lightbox'
 import { ManualItemMenu } from '../components/manual/ManualItemMenu'
+import { WardrobeItemThumb } from '../components/wardrobe/WardrobeItemThumb'
 import { formatDateShort, formatTime, isSameISODate } from '../lib/date'
 import { useAppStore } from '../store/useAppStore'
+import { useOutfitDetailUiStore } from '../store/useOutfitDetailUiStore'
 import { getEffectiveTrip } from '../lib/manualItems'
 import { findDayVisualBoard, useVisualBoardImage } from '../lib/visualBoards'
 import { getOutfitBoardsForDay } from '../lib/outfits'
+import { getOutfitsForDay, resolveOutfitItems } from '../lib/wardrobeOutfits'
 import {
   describeWeatherCode,
   forecastForDate,
@@ -45,11 +48,42 @@ function DayOutfitThumb({ board }: { board: VisualBoard }) {
   )
 }
 
+// The current, reference-based equivalent of DayOutfitThumb — a
+// compact row naming a specific Outfit, previewed with its first
+// wardrobe item's photo (if any). Tapping it opens that exact outfit's
+// detail via the globally-mounted OutfitDetailSheet (see AppShell.tsx)
+// — never a generic navigation to Pack. A day with more than one
+// outfit (e.g. Austin's Sept 9) just renders one row per outfit.
+function DayOutfitRow({ outfit, trip, shareMode }: { outfit: Outfit; trip: Trip; shareMode: boolean }) {
+  const open = useOutfitDetailUiStore((s) => s.open)
+  const items = resolveOutfitItems(trip, outfit)
+  const previewItem = items[0]
+  return (
+    <button
+      type="button"
+      onClick={() => open(outfit.id)}
+      className="mt-2 flex items-center gap-2 rounded-xl border border-line bg-bg-soft p-2 text-left"
+    >
+      {previewItem ? (
+        <WardrobeItemThumb item={previewItem} trip={trip} shareMode={shareMode} size={40} />
+      ) : (
+        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-bg-soft">
+          <ImageIcon size={14} className="text-ink-soft" />
+        </span>
+      )}
+      <span className="flex items-center gap-1 text-xs font-medium text-blue">
+        <ImageIcon size={12} /> {outfit.name}
+      </span>
+    </button>
+  )
+}
+
 export function TripPage({ trip }: { trip: Trip }) {
   const shareMode = useAppStore((s) => s.shareMode)
   const manualItems = useAppStore((s) => s.manualItems)
   const resolvedOpenItemIds = useAppStore((s) => s.resolvedOpenItemIds)
   const visualBoards = useAppStore((s) => s.visualBoards)
+  const storeOutfits = useAppStore((s) => s.outfits)
   const effectiveTrip = getEffectiveTrip(trip, manualItems, resolvedOpenItemIds)
   const manualItemsById = new Map(manualItems.filter((i) => i.tripId === trip.meta.id).map((i) => [i.id, i]))
   const [openDay, setOpenDay] = useState<string | null>(
@@ -128,6 +162,14 @@ export function TripPage({ trip }: { trip: Trip }) {
           // mode too — same rule as Pack's master board, task 14 — while
           // dayOutfitBoard above (a traveler upload) stays hidden there.
           const seededDayLooks = getOutfitBoardsForDay(effectiveTrip, day)
+          // Current, reference-based Outfits for this day (e.g. Austin) —
+          // checked first; the older OutfitBoard/dayOutfitBoard paths
+          // above only ever apply when this is empty (France still has
+          // no seeded Outfits, so it falls straight through unchanged).
+          // Traveler-created outfits are zeroed out in Share mode, same
+          // "zero the array" pattern as visualBoards above, so only
+          // seeded ones can ever show there.
+          const dayOutfits = getOutfitsForDay(effectiveTrip, shareMode ? [] : storeOutfits, day.id)
 
           return (
             <li key={day.id} className="relative">
@@ -173,7 +215,13 @@ export function TripPage({ trip }: { trip: Trip }) {
 
                 {isOpen && (
                   <>
-                    {seededDayLooks.length > 0 ? (
+                    {dayOutfits.length > 0 ? (
+                      <div>
+                        {dayOutfits.map((outfit) => (
+                          <DayOutfitRow key={outfit.id} outfit={outfit} trip={trip} shareMode={shareMode} />
+                        ))}
+                      </div>
+                    ) : seededDayLooks.length > 0 ? (
                       <Link
                         to="/pack"
                         className="mt-3 inline-flex items-center gap-1.5 rounded-full border border-blue/30 bg-blue-tint px-3 py-1.5 text-xs font-medium text-blue"

@@ -1,38 +1,34 @@
 import { useEffect, useRef, useState } from 'react'
-import { ImageIcon, MoreHorizontal } from 'lucide-react'
-import type { OutfitLook, Trip, VisualBoard } from '../../types/trip'
+import { MoreHorizontal } from 'lucide-react'
+import type { Outfit, Trip } from '../../types/trip'
 import { useAppStore } from '../../store/useAppStore'
-import { useOutfitLookUiStore } from '../../store/useOutfitLookUiStore'
-import { useVisualBoardImage } from '../../lib/visualBoards'
-import { Lightbox } from '../ui/Lightbox'
+import { useOutfitUiStore } from '../../store/useOutfitUiStore'
+import { resolveOutfitItems, outfitDayLabel } from '../../lib/wardrobeOutfits'
+import { WardrobeItemThumb } from './WardrobeItemThumb'
 
-function LookThumb({ board, onOpen }: { board: VisualBoard; onOpen: (url: string) => void }) {
-  const { url } = useVisualBoardImage(board.imageKey)
-  return (
-    <button
-      type="button"
-      onClick={() => url && onOpen(url)}
-      disabled={!url}
-      className="flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-bg-soft"
-    >
-      {url ? <img src={url} alt={board.title} className="h-full w-full object-cover" /> : <ImageIcon size={16} className="text-ink-soft" />}
-    </button>
-  )
-}
-
-// One traveler-composed OutfitLook, rendered in Pack's Outfit Board
-// section. A look never owns image data itself — it's purely a
-// title/day/notes plus an ordered list of existing VisualBoard ids, so
-// this component's own state is just UI chrome (the ••• menu, the
-// lightbox), with no upload/replace logic of its own — that all still
-// lives on VisualBoardCard, the one place a photo is actually managed.
-export function OutfitLookCard({ look, trip }: { look: OutfitLook; trip: Trip }) {
-  const visualBoards = useAppStore((s) => s.visualBoards)
-  const deleteOutfitLook = useAppStore((s) => s.deleteOutfitLook)
-  const openEdit = useOutfitLookUiStore((s) => s.openEdit)
+// Compact card for one Outfit — used in Pack's outfit list and reused
+// wherever a trip day previews its assigned outfit(s). Tapping the card
+// body opens the shared OutfitDetailSheet (via onOpen, provided by the
+// caller so both Pack and Trip can wire it to the same global
+// useOutfitDetailUiStore). The ••• menu (edit/delete) only ever renders
+// for a traveler-created outfit — seeded ones (editable=false) are
+// read-only here, same as OutfitBoard always was.
+export function OutfitCard({
+  outfit,
+  trip,
+  editable,
+  onOpen,
+}: {
+  outfit: Outfit
+  trip: Trip
+  editable: boolean
+  onOpen: () => void
+}) {
+  const shareMode = useAppStore((s) => s.shareMode)
+  const deleteOutfit = useAppStore((s) => s.deleteOutfit)
+  const openEdit = useOutfitUiStore((s) => s.openEdit)
   const [menuOpen, setMenuOpen] = useState(false)
   const [confirmingDelete, setConfirmingDelete] = useState(false)
-  const [lightboxSrc, setLightboxSrc] = useState<string | null>(null)
   const menuRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -47,21 +43,37 @@ export function OutfitLookCard({ look, trip }: { look: OutfitLook; trip: Trip })
     return () => document.removeEventListener('pointerdown', onPointerDown)
   }, [menuOpen])
 
-  const day = look.dayId ? trip.days.find((d) => d.id === look.dayId) : undefined
-  const boards = look.visualBoardIds
-    .map((id) => visualBoards.find((b) => b.id === id))
-    .filter((b): b is VisualBoard => Boolean(b))
+  const items = resolveOutfitItems(trip, outfit)
+  const dayLabel = outfitDayLabel(trip, outfit.dayId) ?? 'Whole trip'
 
   return (
     <div className="relative rounded-2xl border border-line bg-surface p-3.5">
-      <div className="flex items-start justify-between gap-2">
-        <div className="min-w-0">
-          <p className="truncate text-sm font-medium text-ink">{look.title}</p>
-          <p className="truncate text-[11px] text-ink-soft">
-            {day ? `Day ${day.dayNumber} · ${day.title}` : 'Whole trip'}
-          </p>
+      <button type="button" onClick={onOpen} className="block w-full text-left">
+        <div className="flex items-start justify-between gap-2 pr-7">
+          <div className="min-w-0">
+            <p className="truncate text-sm font-medium text-ink">{outfit.name}</p>
+            <p className="truncate text-[11px] text-ink-soft">{dayLabel}</p>
+          </div>
         </div>
-        <div ref={menuRef} className="relative shrink-0">
+        {outfit.notes && <p className="mt-1.5 text-xs text-ink-soft">{outfit.notes}</p>}
+        {items.length > 0 ? (
+          <div className="mt-3 flex gap-2 overflow-x-auto pb-1">
+            {items.map((item) => (
+              // No onOpen here — thumbnails are just a preview inside the
+              // card's own tap target (opens the detail sheet); a nested
+              // per-item lightbox button would make this an invalid
+              // button-inside-button. Tap-to-zoom on a specific item
+              // lives in OutfitDetailSheet instead.
+              <WardrobeItemThumb key={item.id} item={item} trip={trip} shareMode={shareMode} size={56} />
+            ))}
+          </div>
+        ) : (
+          <p className="mt-3 text-xs text-ink-soft">No wardrobe items yet.</p>
+        )}
+      </button>
+
+      {editable && (
+        <div ref={menuRef} className="absolute right-3 top-3">
           <button
             type="button"
             onClick={() => {
@@ -77,7 +89,7 @@ export function OutfitLookCard({ look, trip }: { look: OutfitLook; trip: Trip })
             <div className="absolute right-0 top-full z-10 mt-1 w-36 overflow-hidden rounded-xl border border-line bg-surface shadow-lg">
               {confirmingDelete ? (
                 <div className="p-2.5">
-                  <p className="text-xs text-ink">Delete this look?</p>
+                  <p className="text-xs text-ink">Delete this outfit?</p>
                   <div className="mt-2 flex gap-1.5">
                     <button
                       type="button"
@@ -89,7 +101,7 @@ export function OutfitLookCard({ look, trip }: { look: OutfitLook; trip: Trip })
                     <button
                       type="button"
                       onClick={() => {
-                        deleteOutfitLook(look.id)
+                        deleteOutfit(outfit.id)
                         setMenuOpen(false)
                         setConfirmingDelete(false)
                       }}
@@ -105,11 +117,11 @@ export function OutfitLookCard({ look, trip }: { look: OutfitLook; trip: Trip })
                     type="button"
                     onClick={() => {
                       setMenuOpen(false)
-                      openEdit(look)
+                      openEdit(outfit)
                     }}
                     className="block w-full px-3 py-2 text-left text-xs font-medium text-blue hover:bg-bg-soft"
                   >
-                    Edit look
+                    Edit outfit
                   </button>
                   <button
                     type="button"
@@ -123,21 +135,7 @@ export function OutfitLookCard({ look, trip }: { look: OutfitLook; trip: Trip })
             </div>
           )}
         </div>
-      </div>
-
-      {look.notes && <p className="mt-1.5 text-xs text-ink-soft">{look.notes}</p>}
-
-      {boards.length > 0 ? (
-        <div className="mt-3 flex gap-2 overflow-x-auto pb-1">
-          {boards.map((b) => (
-            <LookThumb key={b.id} board={b} onOpen={setLightboxSrc} />
-          ))}
-        </div>
-      ) : (
-        <p className="mt-3 text-xs text-ink-soft">No photos linked yet — edit this look to add some.</p>
       )}
-
-      {lightboxSrc && <Lightbox src={lightboxSrc} alt={look.title} onClose={() => setLightboxSrc(null)} />}
     </div>
   )
 }
