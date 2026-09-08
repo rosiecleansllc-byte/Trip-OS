@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { clsx } from 'clsx'
 import { Check, ImageIcon, Maximize2, Plus } from 'lucide-react'
-import type { CapsuleCategory, Trip, VisualBoardType } from '../types/trip'
+import type { Trip, VisualBoardType } from '../types/trip'
 import { Card } from '../components/ui/Card'
 import { SectionHeader } from '../components/ui/SectionHeader'
 import { ImagePlaceholder } from '../components/ui/ImagePlaceholder'
@@ -9,33 +9,23 @@ import { Lightbox } from '../components/ui/Lightbox'
 import { WeatherCard } from '../components/ui/WeatherCard'
 import { AddVisualBoardSheet } from '../components/visuals/AddVisualBoardSheet'
 import { VisualBoardCard } from '../components/visuals/VisualBoardCard'
-import { AddOutfitLookSheet } from '../components/visuals/AddOutfitLookSheet'
-import { OutfitLookCard } from '../components/visuals/OutfitLookCard'
 import { OutfitBoardSection } from '../components/visuals/OutfitBoardSection'
 import { CapsuleItemImage } from '../components/pack/CapsuleItemImage'
+import { OutfitCard } from '../components/wardrobe/OutfitCard'
+import { WardrobeOutfitBoardSection } from '../components/wardrobe/WardrobeOutfitBoardSection'
 import { getWeatherLocationForDay, isWithinForecastRange, useWeather } from '../lib/weather'
 import { sortVisualBoards } from '../lib/visualBoards'
-import { sortOutfitLooks } from '../lib/outfits'
+import { WARDROBE_CATEGORY_LABELS, WARDROBE_CATEGORY_ORDER, allSeededOutfitsInOrder, sortOutfits } from '../lib/wardrobeOutfits'
 import { useAppStore } from '../store/useAppStore'
 import { useVisualBoardUiStore } from '../store/useVisualBoardUiStore'
-import { useOutfitLookUiStore } from '../store/useOutfitLookUiStore'
+import { useOutfitUiStore } from '../store/useOutfitUiStore'
+import { useOutfitDetailUiStore } from '../store/useOutfitDetailUiStore'
 
 const OUTFIT_TIER: VisualBoardType[] = ['outfit']
 const CAPSULE_TIER: VisualBoardType[] = ['capsule', 'packing']
 const SHOES_TIER: VisualBoardType[] = ['shoes']
 const ACCESSORIES_TIER: VisualBoardType[] = ['accessories']
 const OTHER_TIER: VisualBoardType[] = ['mood', 'city', 'other']
-
-const CATEGORY_LABELS: Record<CapsuleCategory, string> = {
-  outerwear: 'Outerwear',
-  top: 'Tops',
-  bottom: 'Bottoms',
-  dress: 'Dresses',
-  shoes: 'Shoes',
-  accessory: 'Accessories',
-}
-
-const CATEGORY_ORDER: CapsuleCategory[] = ['outerwear', 'top', 'bottom', 'dress', 'shoes', 'accessory']
 
 function PackingChecklist({ trip }: { trip: Trip }) {
   const packedItems = useAppStore((s) => s.packedItems)
@@ -132,15 +122,17 @@ export function Pack({ trip }: { trip: Trip }) {
   const [lightbox, setLightbox] = useState<{ src: string; alt: string } | null>(null)
   const visualBoards = useAppStore((s) => s.visualBoards)
   const openPicker = useVisualBoardUiStore((s) => s.openPicker)
-  const outfitLooks = useAppStore((s) => s.outfitLooks)
-  const openNewLook = useOutfitLookUiStore((s) => s.openNew)
+  const outfits = useAppStore((s) => s.outfits)
+  const openNewOutfit = useOutfitUiStore((s) => s.openNew)
+  const openOutfitDetail = useOutfitDetailUiStore((s) => s.open)
   const tripVisualBoards = sortVisualBoards(visualBoards.filter((b) => b.tripId === trip.meta.id))
   const outfitBoards = tripVisualBoards.filter((b) => OUTFIT_TIER.includes(b.type))
   const capsulePackingBoards = tripVisualBoards.filter((b) => CAPSULE_TIER.includes(b.type))
   const shoesBoards = tripVisualBoards.filter((b) => SHOES_TIER.includes(b.type))
   const accessoriesBoards = tripVisualBoards.filter((b) => ACCESSORIES_TIER.includes(b.type))
   const otherBoards = tripVisualBoards.filter((b) => OTHER_TIER.includes(b.type))
-  const tripOutfitLooks = sortOutfitLooks(outfitLooks.filter((l) => l.tripId === trip.meta.id))
+  const tripCustomOutfits = sortOutfits(outfits.filter((o) => o.tripId === trip.meta.id))
+  const hasSeededOutfits = allSeededOutfitsInOrder(trip).length > 0
 
   // Context only — this never rewrites the packing list or outfits, it
   // just gives Cecilia a sense of what to expect before she reads the
@@ -180,9 +172,9 @@ export function Pack({ trip }: { trip: Trip }) {
               )}
             >
               {key === 'capsule'
-                ? 'Capsule wardrobe'
+                ? 'Wardrobe'
                 : key === 'outfits'
-                  ? 'Outfit boards'
+                  ? 'Outfits'
                   : key === 'visuals'
                     ? 'Visuals'
                     : 'Checklist'}
@@ -195,12 +187,12 @@ export function Pack({ trip }: { trip: Trip }) {
 
       {activeTab === 'capsule' && (
         <div className="space-y-6">
-          {CATEGORY_ORDER.map((cat) => {
+          {WARDROBE_CATEGORY_ORDER.map((cat) => {
             const items = trip.capsule.filter((c) => c.category === cat)
             if (items.length === 0) return null
             return (
               <div key={cat}>
-                <SectionHeader eyebrow={`${items.length} items`} title={CATEGORY_LABELS[cat]} accent="red" />
+                <SectionHeader eyebrow={`${items.length} items`} title={WARDROBE_CATEGORY_LABELS[cat]} accent="red" />
                 <div className="grid grid-cols-2 gap-3">
                   {items.map((item) => (
                     <Card key={item.id} className="overflow-hidden">
@@ -224,36 +216,55 @@ export function Pack({ trip }: { trip: Trip }) {
 
       {activeTab === 'outfits' && (
         <div className="space-y-6">
+          {/* The trip's own curated outfit board — whichever system this
+              trip is seeded on. WardrobeOutfitBoardSection (real
+              wardrobe-item references, e.g. Austin) and OutfitBoardSection
+              (the older itemNames text scaffold matched against loose
+              uploads, e.g. France) each render nothing when their trip
+              has no matching seed data, so exactly one ever actually
+              shows content for a given trip today. */}
+          {hasSeededOutfits && (
+            <div>
+              <SectionHeader eyebrow="Outfit board" title={`${trip.meta.name} Outfit Board`} accent="red" />
+              <WardrobeOutfitBoardSection trip={trip} shareMode={shareMode} />
+            </div>
+          )}
           <OutfitBoardSection trip={trip} />
 
-          {/* Freely-editable custom looks (see types/trip.ts OutfitLook) —
-              never seeded, purely traveler-created by linking whatever
-              they've already uploaded above. Hidden entirely in Share
-              mode along with the control to add one, same as every other
-              uploaded/private surface in Pack. */}
+          {/* Freely-editable custom outfits (see types/trip.ts Outfit) —
+              never seeded, built by picking from this trip's own wardrobe
+              items. Hidden entirely in Share mode along with the control
+              to add one, same as every other private/edit surface in
+              Pack. */}
           {!shareMode && (
             <div>
               <SectionHeader
-                eyebrow={`${tripOutfitLooks.length} look${tripOutfitLooks.length === 1 ? '' : 's'}`}
-                title="Your outfit looks"
+                eyebrow={`${tripCustomOutfits.length} outfit${tripCustomOutfits.length === 1 ? '' : 's'}`}
+                title="Your outfits"
                 accent="red"
               />
               <button
                 type="button"
-                onClick={openNewLook}
+                onClick={openNewOutfit}
                 className="mb-3 flex w-full items-center justify-center gap-2 rounded-full border border-blue/30 bg-blue-tint py-2.5 text-sm font-medium text-blue"
               >
                 <Plus size={15} />
-                Add look
+                Create outfit
               </button>
-              {tripOutfitLooks.length === 0 ? (
+              {tripCustomOutfits.length === 0 ? (
                 <p className="rounded-2xl border border-dashed border-line px-6 py-8 text-center text-xs text-ink-soft">
-                  Group a few uploaded visuals into a named look, e.g. "Franklin's BBQ" or "Summit day."
+                  Build an outfit from this trip's wardrobe items, e.g. "Franklin's BBQ" or "Summit day."
                 </p>
               ) : (
                 <div className="space-y-2.5">
-                  {tripOutfitLooks.map((look) => (
-                    <OutfitLookCard key={look.id} look={look} trip={trip} />
+                  {tripCustomOutfits.map((outfit) => (
+                    <OutfitCard
+                      key={outfit.id}
+                      outfit={outfit}
+                      trip={trip}
+                      editable
+                      onOpen={() => openOutfitDetail(outfit.id)}
+                    />
                   ))}
                 </div>
               )}
@@ -352,7 +363,6 @@ export function Pack({ trip }: { trip: Trip }) {
 
       {lightbox && <Lightbox src={lightbox.src} alt={lightbox.alt} onClose={() => setLightbox(null)} />}
       {!shareMode && <AddVisualBoardSheet trip={trip} />}
-      {!shareMode && <AddOutfitLookSheet trip={trip} />}
     </div>
   )
 }

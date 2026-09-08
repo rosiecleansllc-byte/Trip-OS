@@ -6,6 +6,9 @@ import { UpdateBanner } from './UpdateBanner'
 import { AddItemFab } from '../manual/AddItemFab'
 import { AddItemSheet } from '../manual/AddItemSheet'
 import { AlertCenter } from '../alerts/AlertCenter'
+import { OutfitDetailSheet } from '../wardrobe/OutfitDetailSheet'
+import { AddOutfitSheet } from '../wardrobe/AddOutfitSheet'
+import { useAutoLinkWardrobeVisuals } from '../wardrobe/useAutoLinkWardrobeVisuals'
 import type { Trip } from '../../types/trip'
 import { useAppStore } from '../../store/useAppStore'
 import { getEffectiveTrip } from '../../lib/manualItems'
@@ -28,6 +31,11 @@ export function AppShell({
   const realNow = useNow()
   const now = nowInZone(getTripTimeZone(trip), realNow)
   const { alerts } = useTripAlerts(trip, effectiveTrip, now, realNow)
+  // Reconciles wardrobe items against already-uploaded VisualBoards once
+  // per item (see lib/wardrobeOutfits.ts + useAutoLinkWardrobeVisuals) —
+  // mounted here, not per-page, so every surface that shows a wardrobe
+  // item's photo (Outfit Board, Trip, Today) sees the same resolved links.
+  useAutoLinkWardrobeVisuals(trip)
 
   return (
     <div className="min-h-dvh bg-bg">
@@ -42,8 +50,13 @@ export function AppShell({
         <>
           <AddItemFab />
           <AddItemSheet trip={trip} />
+          <AddOutfitSheet trip={trip} />
         </>
       )}
+      {/* Mounted globally (not just on Pack) so Trip.tsx — and any other
+          page — can open a specific outfit's detail via
+          useOutfitDetailUiStore without navigating to Pack first. */}
+      <OutfitDetailSheet trip={trip} />
       <AlertCenter trip={trip} effectiveTrip={effectiveTrip} now={now} realNow={realNow} />
       <UpdateBanner />
       <BottomNav pendingCount={pendingCount} />

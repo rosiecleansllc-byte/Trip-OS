@@ -258,13 +258,21 @@ export interface Transport extends LinkActions, TravelTiming {
   location?: string // directions target, e.g. the departure station
 }
 
+// A single wardrobe piece — the atomic unit outfits are built from (see
+// Outfit below). "CapsuleItem"/"CapsuleCategory" are the wardrobe-item
+// types; kept under their original name since every seed file and
+// existing component (Pack's capsule tab, CapsuleItemImage) already
+// uses them — "wardrobe" is the vocabulary the UI presents, this is the
+// data underneath it.
 export type CapsuleCategory =
   | 'outerwear'
   | 'top'
   | 'bottom'
   | 'dress'
   | 'shoes'
+  | 'bag'
   | 'accessory'
+  | 'other'
 
 export interface CapsuleItem {
   id: string
@@ -416,23 +424,29 @@ export interface VisualBoard {
   primaryForDay?: boolean
 }
 
-// A traveler-curated group of her own already-uploaded visuals — e.g. a
-// shoes photo + an accessories photo + a top photo assembled into one
-// named "look" (as opposed to a single VisualBoard, which is one photo).
-// Purely additive and generic like VisualBoard: stored client-side in
-// useAppStore as a flat array filtered by tripId, never seeded, never
-// duplicating an image blob — each id in visualBoardIds just points at
-// an existing VisualBoard, whose own imageKey is the only place the
-// actual picture lives. Deleting a linked VisualBoard doesn't delete the
-// look; that slot's thumbnail just stops resolving (rendered as a
-// placeholder, same as a slot that was never linked).
-export interface OutfitLook {
+// A real outfit — a named, referenced group of actual wardrobe pieces
+// (CapsuleItem ids), as opposed to OutfitBoard's older "itemNames" text
+// scaffold matched fuzzily against loose photo uploads. Each id in
+// itemIds points at an existing CapsuleItem; that item's own image (a
+// seeded public photo, or a private one the traveler uploaded under the
+// `capsule-${tripId}-${itemId}` IndexedDB key — see
+// components/wardrobe/WardrobeItemThumb.tsx) is the only place its
+// picture lives, so an outfit never owns or duplicates image data of
+// its own. Used two ways with the same shape: seeded directly on
+// Trip.outfits (e.g. Austin's six looks — safe to seed since it's pure
+// text/id references, no image blobs), or traveler-created via the
+// "Create outfit" flow and stored in useAppStore's flat, tripId-filtered
+// outfits array, exactly like every other client-side-only entity
+// (ManualTripItem, VisualBoard). A day can carry more than one outfit
+// (e.g. Austin's Sept 9 has two) simply by more than one Outfit sharing
+// the same dayId — no plural-field workaround needed.
+export interface Outfit {
   id: string
   tripId: string
-  title: string
-  dayId?: string
+  name: string
+  dayId?: string // omitted means "not assigned to a specific day"
   sortOrder: number
-  visualBoardIds: string[]
+  itemIds: string[]
   notes?: string
   primaryForDay?: boolean
 }
@@ -445,6 +459,11 @@ export interface Trip {
   transport: Transport[]
   capsule: CapsuleItem[]
   outfitBoards: OutfitBoard[]
+  // Seeded Outfits (see Outfit above) — the current, reference-based way
+  // to author a trip's known outfits. Optional/empty for trips (like
+  // France) still on the older OutfitBoard/itemNames scaffold, which
+  // keeps rendering unchanged wherever this is absent.
+  outfits?: Outfit[]
   openItems: OpenItem[]
   packingList?: PackingItem[] // a plain checklist, for trips without a styled capsule wardrobe
   resources?: TravelResource[] // public reference links, e.g. an official transit map

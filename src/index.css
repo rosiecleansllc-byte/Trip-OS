@@ -51,7 +51,7 @@ body {
    for as long as the animation effect stays attached (including its
    filled end state — `transform: none` in a later keyframe does NOT
    undo this once the property has been animated at all). Every page
-   nests its fullscreen sheets (AddVisualBoardSheet, AddOutfitLookSheet)
+   nests its fullscreen sheets (AddVisualBoardSheet, AddOutfitSheet)
    inside this same .animate-fade-in wrapper, so the original
    translateY(4px)→translateY(0) version silently reparented those
    sheets' "fixed inset-0" from the real viewport to this wrapper's own

@@ -46,8 +46,9 @@ export const austinTrip: Trip = {
       title: 'Travel to Austin',
       outfitNote: 'Comfortable travel clothes for the flight.',
       // Two looks today — the flight outfit, then a bottoms swap for
-      // Franklin's BBQ after arriving — see outfitBoards below.
-      outfitBoardIds: ['ob1-travel', 'ob1-franklin'],
+      // Franklin's BBQ after arriving — see the seeded outfits array
+      // below (each entry sets its own dayId: 'd1', no cross-reference
+      // needed here).
       scheduleItems: [
         // No real time for the drive to the airport — sortOrder just
         // keeps it at the top of the day once a manual item (which
@@ -106,7 +107,6 @@ export const austinTrip: Trip = {
       legId: 'austin',
       title: 'Austin',
       outfitNote: 'Casual Austin exploring.',
-      outfitBoardId: 'ob2-exploring',
       // None of these have a real time yet, but each still gets a
       // sortOrder (lib/date.ts scheduleSortValue) so they hold their
       // correct relative order — instead of all sinking to the end,
@@ -126,7 +126,6 @@ export const austinTrip: Trip = {
       legId: 'waco',
       title: 'Austin → Waco',
       outfitNote: 'Comfortable clothes for checkout and travel.',
-      outfitBoardId: 'ob3-waco',
       // The actual Austin → Waco transition is a real transportation item
       // the traveler adds herself (see lib/manualItems.ts) — no seeded
       // placeholder here to avoid ever showing both a real timed leg and
@@ -144,7 +143,6 @@ export const austinTrip: Trip = {
       legId: 'waco',
       title: 'You × AI Summit / Waco',
       outfitNote: 'Summit outfit.',
-      outfitBoardId: 'ob4-summit',
       // A full Waco day — Fairfield Inn by Marriott Waco (a real,
       // manually-added stay, not seeded here) covers the night of the
       // 12th, so this day never returns to Austin.
@@ -178,7 +176,6 @@ export const austinTrip: Trip = {
       legId: 'austin',
       title: 'Return home',
       outfitNote: 'Comfortable clothes for the flight home.',
-      outfitBoardId: 'ob5-return',
       // Departs from Waco, then returns toward AUS for the flight home —
       // if a manual transport/rental-car item exists for the Waco → AUS
       // leg, it merges in ahead of these by time when it has one; see
@@ -306,9 +303,10 @@ export const austinTrip: Trip = {
   // are the traveler's own clothes, and per Trip OS's privacy rules a
   // private photo can only ever live on-device in IndexedDB (see
   // lib/visualBoards.ts), never committed to git or the JS bundle. The
-  // traveler attaches her own photos via Pack's Visuals tab; this list
-  // exists so those uploads have a consistent name to title themselves
-  // after, and so the outfitBoards below can reference something real.
+  // traveler attaches her own photos via Pack's Wardrobe tab
+  // (CapsuleItemImage); the outfits below reference these items by id,
+  // so a photo uploaded once here shows up everywhere that outfit is
+  // shown, with no separate re-upload.
   capsule: [
     { id: 'c1', category: 'outerwear', name: 'Navy Blazer' },
     { id: 'c2', category: 'top', name: 'White Button-Down' },
@@ -320,65 +318,76 @@ export const austinTrip: Trip = {
     { id: 'c8', category: 'shoes', name: 'White Sneakers' },
     { id: 'c9', category: 'shoes', name: 'Black Pointed Heels' },
     { id: 'c10', category: 'shoes', name: 'Blush/Nude Sandals' },
-    { id: 'c11', category: 'accessory', name: 'Black Shoulder Bag', note: 'Structured, gold-tone hardware.' },
+    { id: 'c11', category: 'bag', name: 'Black Shoulder Bag', note: 'Structured, gold-tone hardware.' },
     { id: 'c12', category: 'accessory', name: 'Black Oval Sunglasses' },
     { id: 'c13', category: 'accessory', name: 'Neck Scarf' },
   ],
 
-  // Six looks across the five days (Sept. 9 has two — see d1's
-  // outfitBoardIds). Text/metadata only, same as capsule above — no
-  // imageUrl, since there's no committed public asset to point at. The
-  // dynamic "Outfit Board" section in Pack composes the traveler's own
-  // uploaded photos against these itemNames at render time.
-  outfitBoards: [
+  // Kept empty — Austin is fully migrated to the reference-based Outfit
+  // system below; OutfitBoardSection renders nothing when this is empty,
+  // so France's older text-scaffold rendering is unaffected.
+  outfitBoards: [],
+
+  // Six looks across the five days (Sept. 9 has two — Travel Day +
+  // Franklin's BBQ, both dayId: 'd1', disambiguated only by having two
+  // separate Outfit entries — no plural-field workaround needed). Each
+  // itemIds entry references an id from capsule above; no imageUrl or
+  // itemNames text here at all — WardrobeOutfitBoardSection resolves
+  // every item's photo (seeded or privately uploaded) at render time.
+  outfits: [
     {
-      id: 'ob1-travel',
+      id: 'outfit-travel-day',
+      tripId: 'austin-2026',
+      name: 'Travel Day to Austin',
       dayId: 'd1',
-      label: 'Travel Day to Austin',
-      itemNames: ['White Button-Down', 'Red Leggings', 'White Sneakers'],
-      note: 'Comfortable airport/flight outfit.',
+      sortOrder: 0,
+      itemIds: ['c2', 'c3', 'c8'],
+      notes: 'Comfortable airport/flight outfit.',
     },
     {
-      id: 'ob1-franklin',
+      id: 'outfit-franklins-bbq',
+      tripId: 'austin-2026',
+      name: "Franklin's BBQ",
       dayId: 'd1',
-      label: "Franklin's BBQ",
-      itemNames: ['White Button-Down', 'Mini Denim Skirt', 'White Sneakers'],
-      note: "Same shirt and sneakers as the flight — only the bottoms change, from red leggings to a mini denim skirt, for Franklin's BBQ right after arriving.",
+      sortOrder: 1,
+      itemIds: ['c2', 'c4', 'c8'],
+      notes: "Same shirt and sneakers as the flight — only the bottoms change, from red leggings to a mini denim skirt, for Franklin's BBQ right after arriving.",
     },
     {
-      id: 'ob2-exploring',
+      id: 'outfit-austin-exploring',
+      tripId: 'austin-2026',
+      name: 'Austin Exploring',
       dayId: 'd2',
-      label: 'Austin Exploring',
-      itemNames: ['Short Floral Summer Sundress', 'White Sneakers', 'Neck Scarf'],
-      note: 'Casual Austin daytime look.',
+      sortOrder: 0,
+      itemIds: ['c5', 'c8', 'c13'],
+      notes: 'Casual Austin daytime look.',
     },
     {
-      id: 'ob3-waco',
+      id: 'outfit-magnolia-waco',
+      tripId: 'austin-2026',
+      name: 'Magnolia + Dinner in Waco',
       dayId: 'd3',
-      label: 'Magnolia + Dinner in Waco',
-      itemNames: ['Long Sage Floral Dress', 'Blush/Nude Sandals'],
-      note: 'One look for the whole day — the Austin → Waco travel, Magnolia Silos, and dinner in Waco.',
+      sortOrder: 0,
+      itemIds: ['c6', 'c10'],
+      notes: 'One look for the whole day — the Austin → Waco travel, Magnolia Silos, and dinner in Waco.',
     },
     {
-      id: 'ob4-summit',
+      id: 'outfit-summit',
+      tripId: 'austin-2026',
+      name: 'You × AI Summit',
       dayId: 'd4',
-      label: 'You × AI Summit',
-      itemNames: [
-        'Navy Blazer',
-        'Light-Wash Wide-Leg Jeans',
-        'White Button-Down',
-        'Black Pointed Heels',
-        'Black Shoulder Bag',
-        'Black Oval Sunglasses',
-      ],
-      note: 'Swap the heels for sneakers any time from Pack — this look is editable, not fixed.',
+      sortOrder: 0,
+      itemIds: ['c1', 'c7', 'c2', 'c9', 'c11', 'c12'],
+      notes: 'Swap the heels for sneakers any time — create a new outfit for Summit day to try a different combo.',
     },
     {
-      id: 'ob5-return',
+      id: 'outfit-return-day',
+      tripId: 'austin-2026',
+      name: 'Return Travel Day',
       dayId: 'd5',
-      label: 'Return Travel Day',
-      itemNames: ['White Button-Down', 'Red Leggings', 'White Sneakers'],
-      note: 'Same core outfit as the outbound travel day.',
+      sortOrder: 0,
+      itemIds: ['c2', 'c3', 'c8'],
+      notes: 'Same core outfit as the outbound travel day.',
     },
   ],
 

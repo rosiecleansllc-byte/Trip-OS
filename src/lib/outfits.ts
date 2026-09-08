@@ -1,4 +1,4 @@
-import type { DayPlan, OutfitBoard, OutfitLook, Trip, VisualBoard } from '../types/trip'
+import type { DayPlan, OutfitBoard, Trip, VisualBoard } from '../types/trip'
 
 // Generic multi-outfit-per-day support, layered on top of the existing
 // seeded OutfitBoard/DayPlan.outfitBoardId shapes without changing them —
@@ -81,15 +81,4 @@ export function matchWholeOutfitVisualForLook(
     titleMatches.find((b) => !b.dayId) ??
     titleMatches[0]
   )
-}
-
-export function sortOutfitLooks(looks: OutfitLook[]): OutfitLook[] {
-  return [...looks].sort((a, b) => {
-    if (Boolean(a.primaryForDay) !== Boolean(b.primaryForDay)) return a.primaryForDay ? -1 : 1
-    return a.sortOrder - b.sortOrder
-  })
-}
-
-export function outfitLooksForDay(looks: OutfitLook[], tripId: string, dayId: string): OutfitLook[] {
-  return sortOutfitLooks(looks.filter((l) => l.tripId === tripId && l.dayId === dayId))
 }
