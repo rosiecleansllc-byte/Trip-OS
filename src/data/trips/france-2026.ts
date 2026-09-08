@@ -18,6 +18,7 @@ export const franceTrip: Trip = {
     destinationLabel: 'Paris → Mont-Saint-Michel → the Riviera → Paris',
     startDate: '2026-09-26',
     endDate: '2026-10-07',
+    timeZone: 'Europe/Paris',
     travelers: [
       { id: 't1', name: 'You' },
       { id: 't2', name: 'Blake' },
@@ -136,7 +137,7 @@ export const franceTrip: Trip = {
         { id: 'd4-3', label: 'Transilien Line N to Versailles-Chantiers', type: 'transport', websiteUrl: 'https://www.sncf-connect.com/en-en', tip: '~25 minute ride; allow 50–60 minutes door-to-door from the hotel.' },
         { id: 'd4-4', time: '13:30', label: 'Palace of Versailles + gardens', type: 'activity', location: 'Palace of Versailles', websiteUrl: 'https://en.chateauversailles.fr/', ticketUrl: 'https://en.chateauversailles.fr/plan-your-visit/tickets-and-prices', tip: 'Ticket covers timed palace entry, gardens, park, Trianon Estate, temporary exhibitions, Royal Tennis Court, and the Gallery of Coaches when open. Spend 3–3½ hours rather than trying to see everything.', privateDocumentKey: 'versailles-ticket', privateDocumentType: 'ticket' },
         { id: 'd4-5', label: 'Return to Paris', type: 'transport', notes: 'Aim to be back around 6:00–6:30 PM.' },
-        { id: 'd4-6', time: '19:30', label: 'Dinner: Joséphine Chez Dumonet', type: 'meal', location: 'Joséphine Chez Dumonet, Paris', websiteUrl: 'https://www.josephinechezdumonet.fr/', phone: '+33 1 45 48 52 40', notes: '€75 card hold — decision deadline is 4:00 PM Paris time today. Reminder is already scheduled so you can cancel if Versailles runs long.', privateDocumentKey: 'josephine-dumonet-ticket', privateDocumentType: 'ticket' },
+        { id: 'd4-6', time: '19:30', label: 'Dinner: Joséphine Chez Dumonet', type: 'meal', location: 'Joséphine Chez Dumonet, Paris', websiteUrl: 'https://www.josephinechezdumonet.fr/', phone: '+33 1 45 48 52 40', notes: '€75 card hold — decision deadline is 4:00 PM Paris time today. Reminder is already scheduled so you can cancel if Versailles runs long.', privateDocumentKey: 'josephine-dumonet-ticket', privateDocumentType: 'ticket', travelMinutes: 20, arrivalBufferMinutes: 10 },
       ],
       deadlines: [{ id: 'd4-dl1', label: 'Joséphine Chez Dumonet — confirm or cancel by 4:00 PM Paris time', datetime: '2026-09-29T16:00' }],
       outfitBoardId: 'ob4',
@@ -443,6 +444,8 @@ export const franceTrip: Trip = {
       privateDocumentType: 'ticket',
       notes: '€75 card hold. Decision deadline: 4:00 PM Paris time on Sept. 29 — cancel by then if Versailles runs long or you want an earlier meal.',
       cancellationDeadline: '2026-09-29T16:00',
+      travelMinutes: 20,
+      arrivalBufferMinutes: 10,
     },
     {
       id: 'bk-ticket-louvre',

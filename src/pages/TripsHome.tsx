@@ -3,6 +3,7 @@ import { CalendarDays, MapPin } from 'lucide-react'
 import { clsx } from 'clsx'
 import { trips } from '../data/tripsIndex'
 import { ImagePlaceholder } from '../components/ui/ImagePlaceholder'
+import { InstallButton } from '../components/layout/InstallButton'
 import { daysUntil, formatDateCompact, tripPhase } from '../lib/date'
 import { computeReadiness } from '../lib/readiness'
 import { useAppStore } from '../store/useAppStore'
@@ -98,6 +99,10 @@ export function TripsHome() {
               </button>
             )
           })}
+        </div>
+
+        <div className="mt-6 flex justify-center">
+          <InstallButton />
         </div>
       </div>
     </div>
