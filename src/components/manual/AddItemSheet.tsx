@@ -18,7 +18,7 @@ import {
 import type { ManualItemStatus, ManualItemType, ManualTransportMode, ManualTripItem, OpenItem, Trip } from '../../types/trip'
 import { useAppStore } from '../../store/useAppStore'
 import { useManualItemUiStore } from '../../store/useManualItemUiStore'
-import { createManualItem, findOpenItemsToUnresolve, findResolvableOpenItems } from '../../lib/manualItems'
+import { createManualItem, findManualItemsForOpenItem, findOpenItemsToUnresolve, findResolvableOpenItems } from '../../lib/manualItems'
 import { OCR_MIN_CONFIDENCE, recognizeImage } from '../../lib/ocr'
 import { parseFieldsForType, type ParsedFields } from '../../lib/ocrParse'
 import { putPrivateDoc } from '../../lib/privateDocs'
@@ -171,7 +171,15 @@ export function AddItemSheet({ trip }: { trip: Trip }) {
 
   const [form, setForm] = useState<FormState>(() => emptyForm(trip))
   const [resolveCandidates, setResolveCandidates] = useState<OpenItem[] | null>(null)
-  const [savedItemId, setSavedItemId] = useState<string | null>(null)
+  // The manual items list as of the save that produced resolveCandidates
+  // — includes the just-created/edited item, unlike the manualItems value
+  // above, which is whatever the store held when this component last
+  // rendered *before* that save (a plain closed-over variable, not
+  // re-read reactively inside handleSave). The "Mark resolved" button on
+  // the post-save screen reads this instead, so linking relatedOpenItemId
+  // — including a round-trip OpenItem's second leg — always sees the item
+  // that was just saved.
+  const [postSaveManualItems, setPostSaveManualItems] = useState<ManualTripItem[]>([])
   const [saving, setSaving] = useState(false)
   // Set only when the item itself saved fine but writing its screenshot
   // into the private-document wallet failed (see handleSave) — the
@@ -231,7 +239,6 @@ export function AddItemSheet({ trip }: { trip: Trip }) {
       setPendingScreenshot(null)
       setOcrNotice(null)
       setResolveCandidates(null)
-      setSavedItemId(null)
       setScreenshotError(null)
     }
   }, [step, editingItem])
@@ -245,7 +252,6 @@ export function AddItemSheet({ trip }: { trip: Trip }) {
     setPendingScreenshot(null)
     setOcrNotice(null)
     setResolveCandidates(null)
-    setSavedItemId(null)
     setScreenshotError(null)
     pickType(t)
   }
@@ -342,6 +348,7 @@ export function AddItemSheet({ trip }: { trip: Trip }) {
     // read at the top of this render, so candidates are filtered against
     // this local copy instead of the (now stale) closed-over one.
     const effectiveResolvedIds = { ...resolvedOpenItemIds }
+    let nextManualItems: ManualTripItem[]
 
     if (editingItem) {
       updateManualItem(editingItem.id, base)
@@ -350,7 +357,7 @@ export function AddItemSheet({ trip }: { trip: Trip }) {
       // longer covers an OpenItem it previously justified resolving —
       // reconcile against the list with the edit already applied and flip
       // anything now-unjustified back to open.
-      const nextManualItems = manualItems.map((i) => (i.id === saved.id ? saved : i))
+      nextManualItems = manualItems.map((i) => (i.id === saved.id ? saved : i))
       for (const openItemId of findOpenItemsToUnresolve(trip, nextManualItems, resolvedOpenItemIds)) {
         unresolveOpenItem(trip.meta.id, openItemId)
         delete effectiveResolvedIds[`${trip.meta.id}:${openItemId}`]
@@ -358,6 +365,7 @@ export function AddItemSheet({ trip }: { trip: Trip }) {
     } else {
       saved = createManualItem(base)
       addManualItem(saved)
+      nextManualItems = [...manualItems, saved]
     }
 
     // The screenshot only ever gets written to the private-document
@@ -385,10 +393,10 @@ export function AddItemSheet({ trip }: { trip: Trip }) {
     setScreenshotError(screenshotErrorMessage)
 
     // Only offer to resolve OpenItems that aren't already resolved.
-    const candidates = findResolvableOpenItems(trip, saved).filter(
+    const candidates = findResolvableOpenItems(trip, nextManualItems, saved).filter(
       (oi) => !effectiveResolvedIds[`${trip.meta.id}:${oi.id}`]
     )
-    setSavedItemId(saved.id)
+    setPostSaveManualItems(nextManualItems)
     setSaving(false)
     if (candidates.length > 0 || screenshotErrorMessage) {
       setResolveCandidates(candidates)
@@ -443,11 +451,19 @@ export function AddItemSheet({ trip }: { trip: Trip }) {
                     type="button"
                     onClick={() => {
                       resolveOpenItem(trip.meta.id, oi.id)
-                      // Record the relationship explicitly (see
-                      // lib/manualItems.ts findOpenItemsToUnresolve) so
-                      // deleting or editing this item later can reopen
-                      // the OpenItem if nothing else still covers it.
-                      if (savedItemId) updateManualItem(savedItemId, { relatedOpenItemId: oi.id })
+                      // Record the relationship explicitly for every
+                      // qualifying manual item (see lib/manualItems.ts
+                      // findOpenItemsToUnresolve), not just the one just
+                      // saved — a round-trip OpenItem needs both legs
+                      // linked so deleting or editing either one can
+                      // reopen it if nothing else still covers it. Reads
+                      // postSaveManualItems (captured at save time), not
+                      // the plain manualItems closure above, which is
+                      // stale relative to the item this very screen is
+                      // about.
+                      findManualItemsForOpenItem(trip, postSaveManualItems, oi).forEach((mi) =>
+                        updateManualItem(mi.id, { relatedOpenItemId: oi.id })
+                      )
                       setResolveCandidates((c) => (c ? c.filter((x) => x.id !== oi.id) : c))
                     }}
                     className="shrink-0 rounded-full bg-blue px-3 py-1.5 text-xs font-medium text-white"

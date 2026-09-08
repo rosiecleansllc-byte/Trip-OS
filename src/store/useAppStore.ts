@@ -16,9 +16,11 @@ interface AppState {
   // document attached to one still goes through the IndexedDB wallet, not
   // this store; see lib/manualItems.ts.
   manualItems: ManualTripItem[]
-  // Which seeded OpenItems have been marked resolved by the traveler,
-  // keyed by `${tripId}:${openItemId}`. Kept separate from the trip's own
-  // (static, imported) OpenItem array rather than mutating it.
+  // Explicit traveler overrides of a seeded OpenItem's status, keyed by
+  // `${tripId}:${openItemId}` — true means "resolved", false means
+  // "reopened". A key's absence means "use whatever the seed data says".
+  // Kept separate from the trip's own (static, imported) OpenItem array
+  // rather than mutating it.
   resolvedOpenItemIds: Record<string, boolean>
   setCurrentTripId: (id: string) => void
   toggleShareMode: () => void
@@ -58,12 +60,16 @@ export const useAppStore = create<AppState>()(
         set((s) => ({
           resolvedOpenItemIds: { ...s.resolvedOpenItemIds, [`${tripId}:${openItemId}`]: true },
         })),
+      // Explicitly records "the traveler reopened this" rather than just
+      // deleting the override — an OpenItem can start already resolved in
+      // its own seed data (e.g. a decision made before the app modeled it
+      // as a live checklist item), so reverting to "whatever the seed
+      // said" isn't always the same as "open". getEffectiveTrip reads this
+      // same key both ways: true forces done, false forces open.
       unresolveOpenItem: (tripId, openItemId) =>
-        set((s) => {
-          const next = { ...s.resolvedOpenItemIds }
-          delete next[`${tripId}:${openItemId}`]
-          return { resolvedOpenItemIds: next }
-        }),
+        set((s) => ({
+          resolvedOpenItemIds: { ...s.resolvedOpenItemIds, [`${tripId}:${openItemId}`]: false },
+        })),
     }),
     { name: 'trip-os-app-state' }
   )
