@@ -5,6 +5,7 @@ import {
   CheckCircle2,
   Circle,
   CloudSun,
+  ImageIcon,
   Luggage,
   Maximize2,
   MapPin,
@@ -29,6 +30,7 @@ import {
 } from '../lib/date'
 import { computeReadiness } from '../lib/readiness'
 import { getEffectiveTrip } from '../lib/manualItems'
+import { findDayVisualBoard, useVisualBoardImage } from '../lib/visualBoards'
 import { getWeatherLocationForDay, isWithinForecastRange, useWeather } from '../lib/weather'
 import { useAppStore } from '../store/useAppStore'
 import { WeatherCard } from '../components/ui/WeatherCard'
@@ -98,6 +100,8 @@ function ScheduleCard({
 export function Today({ trip }: { trip: Trip }) {
   const manualItems = useAppStore((s) => s.manualItems)
   const resolvedOpenItemIds = useAppStore((s) => s.resolvedOpenItemIds)
+  const shareMode = useAppStore((s) => s.shareMode)
+  const visualBoards = useAppStore((s) => s.visualBoards)
   const effectiveTrip = useMemo(
     () => getEffectiveTrip(trip, manualItems, resolvedOpenItemIds),
     [trip, manualItems, resolvedOpenItemIds]
@@ -111,6 +115,17 @@ export function Today({ trip }: { trip: Trip }) {
   const upcoming = useMemo(() => findNextDay(effectiveTrip.days), [effectiveTrip])
   const [lightboxSrc, setLightboxSrc] = useState<string | null>(null)
   const [showCompleted, setShowCompleted] = useState(false)
+
+  // A traveler-uploaded outfit board takes precedence over the seeded one
+  // for today's active-day display (but never deletes/hides the seeded
+  // one — Pack still shows both). Computed unconditionally, like the
+  // weather hooks below, so useVisualBoardImage's own hook call stays
+  // outside the phase==='active' branch.
+  const uploadedOutfitBoard =
+    !shareMode && phase === 'active' && today
+      ? findDayVisualBoard(visualBoards, trip.meta.id, today.id)
+      : undefined
+  const { url: uploadedOutfitUrl } = useVisualBoardImage(uploadedOutfitBoard?.imageKey)
 
   // Both weather hooks always run (Rules of Hooks) — only one location is
   // ever defined depending on trip phase, so only one ever actually
@@ -164,35 +179,67 @@ export function Today({ trip }: { trip: Trip }) {
           </div>
         )}
 
-        {outfitBoard && (
+        {uploadedOutfitBoard ? (
           <Card className="overflow-hidden">
             <div className="relative">
-              <ImagePlaceholder
-                label="Today's outfit"
-                imageUrl={outfitBoard.imageUrl}
-                className="h-72 w-full"
-                onClick={outfitBoard.imageUrl ? () => setLightboxSrc(outfitBoard.imageUrl!) : undefined}
-              />
-              {outfitBoard.imageUrl && (
+              <button
+                type="button"
+                onClick={() => uploadedOutfitUrl && setLightboxSrc(uploadedOutfitUrl)}
+                disabled={!uploadedOutfitUrl}
+                className="flex h-72 w-full items-center justify-center bg-bg-soft"
+              >
+                {uploadedOutfitUrl ? (
+                  <img src={uploadedOutfitUrl} alt="Today's outfit" className="h-full w-full object-contain" />
+                ) : (
+                  <ImageIcon size={22} className="text-ink-soft" />
+                )}
+              </button>
+              {uploadedOutfitUrl && (
                 <span className="pointer-events-none absolute right-2.5 top-2.5 flex h-7 w-7 items-center justify-center rounded-full bg-ink/60 text-white">
                   <Maximize2 size={13} />
                 </span>
               )}
             </div>
             <div className="p-4">
-              <p className="text-sm text-ink">{today.outfitNote}</p>
-              <div className="mt-3 flex flex-wrap gap-1.5">
-                {outfitBoard.itemNames.map((item) => (
-                  <span key={item} className="rounded-full border border-line bg-bg px-2.5 py-1 text-xs text-ink-soft">
-                    {item}
-                  </span>
-                ))}
-              </div>
+              <p className="text-[11px] font-medium uppercase tracking-[0.14em] text-blue">Today's outfit</p>
+              <p className="mt-0.5 text-sm font-medium text-ink">{uploadedOutfitBoard.title}</p>
+              {uploadedOutfitBoard.notes && <p className="mt-1 text-xs text-ink-soft">{uploadedOutfitBoard.notes}</p>}
               <Link to="/pack" className="mt-3 inline-flex items-center gap-1 text-xs font-medium text-blue">
-                <Luggage size={13} /> Full capsule in Pack
+                <Luggage size={13} /> More visuals in Pack
               </Link>
             </div>
           </Card>
+        ) : (
+          outfitBoard && (
+            <Card className="overflow-hidden">
+              <div className="relative">
+                <ImagePlaceholder
+                  label="Today's outfit"
+                  imageUrl={outfitBoard.imageUrl}
+                  className="h-72 w-full"
+                  onClick={outfitBoard.imageUrl ? () => setLightboxSrc(outfitBoard.imageUrl!) : undefined}
+                />
+                {outfitBoard.imageUrl && (
+                  <span className="pointer-events-none absolute right-2.5 top-2.5 flex h-7 w-7 items-center justify-center rounded-full bg-ink/60 text-white">
+                    <Maximize2 size={13} />
+                  </span>
+                )}
+              </div>
+              <div className="p-4">
+                <p className="text-sm text-ink">{today.outfitNote}</p>
+                <div className="mt-3 flex flex-wrap gap-1.5">
+                  {outfitBoard.itemNames.map((item) => (
+                    <span key={item} className="rounded-full border border-line bg-bg px-2.5 py-1 text-xs text-ink-soft">
+                      {item}
+                    </span>
+                  ))}
+                </div>
+                <Link to="/pack" className="mt-3 inline-flex items-center gap-1 text-xs font-medium text-blue">
+                  <Luggage size={13} /> Full capsule in Pack
+                </Link>
+              </div>
+            </Card>
+          )
         )}
 
         {next && (

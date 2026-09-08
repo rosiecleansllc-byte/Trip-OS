@@ -1,7 +1,7 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import { defaultTripId } from '../data/tripsIndex'
-import type { ManualTripItem } from '../types/trip'
+import type { ManualTripItem, VisualBoard } from '../types/trip'
 
 interface AppState {
   currentTripId: string
@@ -22,6 +22,12 @@ interface AppState {
   // Kept separate from the trip's own (static, imported) OpenItem array
   // rather than mutating it.
   resolvedOpenItemIds: Record<string, boolean>
+  // Traveler-uploaded visual boards (see types/trip.ts VisualBoard). Same
+  // shape of storage as manualItems — a flat array across all trips,
+  // filtered by tripId at read time — and the same split as manual
+  // items' private documents: this only ever holds metadata, the image
+  // itself lives in IndexedDB (lib/visualBoards.ts), never here.
+  visualBoards: VisualBoard[]
   setCurrentTripId: (id: string) => void
   toggleShareMode: () => void
   setShareMode: (value: boolean) => void
@@ -31,6 +37,9 @@ interface AppState {
   deleteManualItem: (id: string) => void
   resolveOpenItem: (tripId: string, openItemId: string) => void
   unresolveOpenItem: (tripId: string, openItemId: string) => void
+  addVisualBoard: (board: VisualBoard) => void
+  updateVisualBoard: (id: string, patch: Partial<VisualBoard>) => void
+  deleteVisualBoard: (id: string) => void
 }
 
 export const useAppStore = create<AppState>()(
@@ -41,6 +50,7 @@ export const useAppStore = create<AppState>()(
       packedItems: {},
       manualItems: [],
       resolvedOpenItemIds: {},
+      visualBoards: [],
       setCurrentTripId: (id) => set({ currentTripId: id }),
       toggleShareMode: () => set((s) => ({ shareMode: !s.shareMode })),
       setShareMode: (value) => set({ shareMode: value }),
@@ -70,6 +80,13 @@ export const useAppStore = create<AppState>()(
         set((s) => ({
           resolvedOpenItemIds: { ...s.resolvedOpenItemIds, [`${tripId}:${openItemId}`]: false },
         })),
+      addVisualBoard: (board) => set((s) => ({ visualBoards: [...s.visualBoards, board] })),
+      updateVisualBoard: (id, patch) =>
+        set((s) => ({
+          visualBoards: s.visualBoards.map((b) => (b.id === id ? { ...b, ...patch } : b)),
+        })),
+      deleteVisualBoard: (id) =>
+        set((s) => ({ visualBoards: s.visualBoards.filter((b) => b.id !== id) })),
     }),
     { name: 'trip-os-app-state' }
   )

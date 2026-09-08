@@ -1,13 +1,15 @@
 import { useEffect, useMemo, useState } from 'react'
-import { ChevronDown, CloudSun } from 'lucide-react'
+import { ChevronDown, CloudSun, Image as ImageIcon } from 'lucide-react'
 import { clsx } from 'clsx'
-import type { Trip } from '../types/trip'
+import type { Trip, VisualBoard } from '../types/trip'
 import { ActionRow } from '../components/ui/ActionRow'
 import { Card } from '../components/ui/Card'
+import { Lightbox } from '../components/ui/Lightbox'
 import { ManualItemMenu } from '../components/manual/ManualItemMenu'
 import { formatDateShort, formatTime, isSameISODate } from '../lib/date'
 import { useAppStore } from '../store/useAppStore'
 import { getEffectiveTrip } from '../lib/manualItems'
+import { findDayVisualBoard, useVisualBoardImage } from '../lib/visualBoards'
 import {
   describeWeatherCode,
   forecastForDate,
@@ -16,10 +18,36 @@ import {
   type WeatherSnapshot,
 } from '../lib/weather'
 
+// A small read-only "View outfit" thumbnail for a day that has a
+// traveler-uploaded outfit board — Trip's timeline never gets full
+// View/Replace/Edit/Delete controls (those live only in Pack's Visuals
+// tab, via VisualBoardCard); this just opens a Lightbox.
+function DayOutfitThumb({ board }: { board: VisualBoard }) {
+  const { url } = useVisualBoardImage(board.imageKey)
+  const [open, setOpen] = useState(false)
+  if (!url) return null
+  return (
+    <>
+      <button
+        type="button"
+        onClick={() => setOpen(true)}
+        className="mt-3 flex items-center gap-2 rounded-xl border border-line bg-bg-soft p-2 text-left"
+      >
+        <img src={url} alt={board.title} className="h-10 w-10 shrink-0 rounded-lg object-cover" />
+        <span className="flex items-center gap-1 text-xs font-medium text-blue">
+          <ImageIcon size={12} /> View outfit
+        </span>
+      </button>
+      {open && <Lightbox src={url} alt={board.title} onClose={() => setOpen(false)} />}
+    </>
+  )
+}
+
 export function TripPage({ trip }: { trip: Trip }) {
   const shareMode = useAppStore((s) => s.shareMode)
   const manualItems = useAppStore((s) => s.manualItems)
   const resolvedOpenItemIds = useAppStore((s) => s.resolvedOpenItemIds)
+  const visualBoards = useAppStore((s) => s.visualBoards)
   const effectiveTrip = getEffectiveTrip(trip, manualItems, resolvedOpenItemIds)
   const manualItemsById = new Map(manualItems.filter((i) => i.tripId === trip.meta.id).map((i) => [i.id, i]))
   const [openDay, setOpenDay] = useState<string | null>(
@@ -93,6 +121,7 @@ export function TripPage({ trip }: { trip: Trip }) {
           const hasOpenDeadline = (day.deadlines ?? []).some((d) => !d.done)
           const dayLocation = getWeatherLocationForDay(effectiveTrip, day.id)
           const dayForecast = dayLocation ? forecastForDate(weatherByLocation[dayLocation.id], day.date) : undefined
+          const dayOutfitBoard = !shareMode ? findDayVisualBoard(visualBoards, trip.meta.id, day.id) : undefined
 
           return (
             <li key={day.id} className="relative">
@@ -138,6 +167,7 @@ export function TripPage({ trip }: { trip: Trip }) {
 
                 {isOpen && (
                   <>
+                    {dayOutfitBoard && <DayOutfitThumb board={dayOutfitBoard} />}
                     {day.weatherNote && (
                       <p className="mt-3 flex items-start gap-1.5 rounded-lg bg-blue-tint px-2.5 py-1.5 text-xs text-blue">
                         <CloudSun size={13} className="mt-0.5 shrink-0" />
