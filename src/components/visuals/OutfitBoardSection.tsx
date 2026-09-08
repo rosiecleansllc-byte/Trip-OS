@@ -5,7 +5,7 @@ import { Card } from '../ui/Card'
 import { ImagePlaceholder } from '../ui/ImagePlaceholder'
 import { Lightbox } from '../ui/Lightbox'
 import { formatDateCompact } from '../../lib/date'
-import { allOutfitBoardsInOrder, matchVisualBoardForItemName } from '../../lib/outfits'
+import { allOutfitBoardsInOrder, matchVisualBoardForItemName, matchWholeOutfitVisualForLook } from '../../lib/outfits'
 import { useVisualBoardImage } from '../../lib/visualBoards'
 import { useAppStore } from '../../store/useAppStore'
 
@@ -55,20 +55,33 @@ export function OutfitBoardLookCard({
   tripVisualBoards: VisualBoard[]
   onOpen: (src: string, alt: string) => void
 }) {
+  // A traveler-uploaded whole-outfit photo (see matchWholeOutfitVisualForLook)
+  // outranks the per-item collage below — a look is complete the moment
+  // ONE such photo exists, no individual garment uploads required. The
+  // seeded board.imageUrl (France's own composed photos) still wins when
+  // present, so nothing changes there.
+  const wholeOutfitMatch = matchWholeOutfitVisualForLook(tripVisualBoards, board.dayId, board.label)
+  const { url: wholeOutfitUrl } = useVisualBoardImage(wholeOutfitMatch?.imageKey)
+  const heroUrl = board.imageUrl ?? wholeOutfitUrl
+  const heroAlt = board.label ?? dayLabel
+
   return (
     <Card className="overflow-hidden">
-      {board.imageUrl && (
+      {heroUrl && (
         <ImagePlaceholder
-          label={board.label ?? dayLabel}
-          imageUrl={board.imageUrl}
+          label={heroAlt}
+          imageUrl={heroUrl}
           className="h-56 w-full"
-          onClick={() => onOpen(board.imageUrl!, board.label ?? dayLabel)}
+          onClick={() => onOpen(heroUrl, heroAlt)}
         />
       )}
       <div className="p-4">
         <p className="text-xs font-medium text-gray">{dayLabel}</p>
         <p className="text-sm font-medium text-ink">{board.label ?? dayLabel}</p>
         <p className="mt-1 text-xs text-ink-soft">{board.note}</p>
+        {/* Component/item photos are always shown underneath when they
+            exist — additive, never required for the look to read as
+            complete once a whole-outfit photo is showing above. */}
         <div className="mt-3 flex gap-2.5 overflow-x-auto pb-1">
           {board.itemNames.map((name) => (
             <ItemChip key={name} itemName={name} match={matchVisualBoardForItemName(tripVisualBoards, name)} onOpen={onOpen} />

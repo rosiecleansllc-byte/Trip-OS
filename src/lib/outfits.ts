@@ -48,6 +48,41 @@ export function matchVisualBoardForItemName(boards: VisualBoard[], itemName: str
   })
 }
 
+// Best-effort match between a seeded look's own label (e.g. "Franklin's
+// BBQ") and a traveler-uploaded whole-outfit visual — an 'outfit'-type
+// VisualBoard the traveler photographed/uploaded as a complete look,
+// rather than a single garment. This takes priority over per-item
+// matching (matchVisualBoardForItemName) so a look renders complete as
+// soon as ONE outfit photo exists for it, without requiring every
+// individual piece to also be uploaded and titled to match.
+//
+// Same case-insensitive substring matching as matchVisualBoardForItemName
+// (title vs. label may each be the more specific string), scoped to
+// type==='outfit'. dayId disambiguates when both sides have one — needed
+// since a day can carry more than one look (e.g. Sept 9's Travel Day +
+// Franklin's BBQ share a dayId, so title is what tells them apart); an
+// upload the traveler left on "Whole trip (no specific day)" still
+// matches by title alone, on any day.
+export function matchWholeOutfitVisualForLook(
+  boards: VisualBoard[],
+  dayId: string | undefined,
+  lookLabel: string | undefined
+): VisualBoard | undefined {
+  const needle = (lookLabel ?? '').trim().toLowerCase()
+  if (!needle) return undefined
+  const titleMatches = boards.filter((b) => {
+    if (b.type !== 'outfit') return false
+    const hay = b.title.trim().toLowerCase()
+    return hay.length > 0 && (hay.includes(needle) || needle.includes(hay))
+  })
+  if (titleMatches.length === 0) return undefined
+  return (
+    titleMatches.find((b) => dayId && b.dayId === dayId) ??
+    titleMatches.find((b) => !b.dayId) ??
+    titleMatches[0]
+  )
+}
+
 export function sortOutfitLooks(looks: OutfitLook[]): OutfitLook[] {
   return [...looks].sort((a, b) => {
     if (Boolean(a.primaryForDay) !== Boolean(b.primaryForDay)) return a.primaryForDay ? -1 : 1

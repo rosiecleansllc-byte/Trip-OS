@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { clsx } from 'clsx'
 import { ImageIcon, X } from 'lucide-react'
 import type { Trip, VisualBoard, VisualBoardType } from '../../types/trip'
@@ -163,7 +164,13 @@ export function AddVisualBoardSheet({ trip }: { trip: Trip }) {
 
   const isValid = Boolean(form.title.trim())
 
-  return (
+  // Rendered via portal straight to <body> — same reasoning as
+  // Lightbox: nesting this fixed-fullscreen sheet inside a page's own
+  // .animate-fade-in wrapper leaves it trapped inside that ancestor's
+  // (post-animation) containing block/stacking context instead of
+  // covering the true viewport, which both mispositions it and lets the
+  // fixed bottom nav render on top of its lower portion despite z-40.
+  return createPortal(
     <div className="fixed inset-0 z-40 flex items-end justify-center">
       <button aria-label="Close" className="absolute inset-0 bg-ink/40" onClick={close} />
       <div className="relative max-h-[88dvh] w-full max-w-md overflow-y-auto rounded-t-3xl bg-surface pb-[calc(1.25rem+env(safe-area-inset-bottom))] pt-3 shadow-2xl">
@@ -297,6 +304,7 @@ export function AddVisualBoardSheet({ trip }: { trip: Trip }) {
       {lightboxOpen && previewUrl && (
         <Lightbox src={previewUrl} alt="Visual board preview" onClose={() => setLightboxOpen(false)} />
       )}
-    </div>
+    </div>,
+    document.body
   )
 }

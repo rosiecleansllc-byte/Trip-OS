@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { clsx } from 'clsx'
 import { Check, ImageIcon, X } from 'lucide-react'
 import type { OutfitLook, Trip, VisualBoard } from '../../types/trip'
@@ -118,7 +119,12 @@ export function AddOutfitLookSheet({ trip }: { trip: Trip }) {
     close()
   }
 
-  return (
+  // Rendered via portal straight to <body> — see AddVisualBoardSheet for
+  // why: nested inside a page's .animate-fade-in wrapper, this sheet's
+  // "fixed inset-0" would otherwise be trapped inside that ancestor's
+  // post-animation containing block/stacking context instead of the
+  // true viewport.
+  return createPortal(
     <div className="fixed inset-0 z-40 flex items-end justify-center">
       <button aria-label="Close" className="absolute inset-0 bg-ink/40" onClick={close} />
       <div className="relative max-h-[88dvh] w-full max-w-md overflow-y-auto rounded-t-3xl bg-surface pb-[calc(1.25rem+env(safe-area-inset-bottom))] pt-3 shadow-2xl">
@@ -195,6 +201,7 @@ export function AddOutfitLookSheet({ trip }: { trip: Trip }) {
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   )
 }
