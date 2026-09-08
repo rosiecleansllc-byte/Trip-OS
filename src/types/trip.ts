@@ -331,6 +331,29 @@ export interface ManualTripItem {
   createdAt: string // ISO timestamp
 }
 
+// A traveler-uploaded visual reference — a daily outfit photo, a capsule/
+// packing flat-lay, a mood/inspiration collage, a city or neighborhood
+// screenshot, or anything else worth keeping alongside the trip. Works
+// for any trip generically (never hardcodes a trip id), the same way
+// ManualTripItem does: stored client-side in useAppStore as a flat array
+// filtered by tripId, converted to nothing else — this is purely user
+// content, never merged into a trip's seeded OutfitBoard/CapsuleItem
+// arrays. The image itself lives in IndexedDB (see lib/visualBoards.ts),
+// never localStorage/git/public — only this metadata is persisted here.
+export type VisualBoardType = 'outfit' | 'capsule' | 'packing' | 'mood' | 'city' | 'other'
+
+export interface VisualBoard {
+  id: string
+  tripId: string
+  type: VisualBoardType
+  title: string
+  dayId?: string // ties it to a DayPlan.id — omitted means "the trip generally"
+  date?: ISODate // mirrors the chosen day's date, for sorting/display without a days[] lookup
+  imageKey: string // storage key into lib/visualBoards.ts's IndexedDB wallet
+  notes?: string
+  createdAt: string // ISO timestamp
+}
+
 export interface Trip {
   meta: TripMeta
   legs: Leg[]

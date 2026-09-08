@@ -1,15 +1,23 @@
 import { useState } from 'react'
 import { clsx } from 'clsx'
-import { Check, Maximize2 } from 'lucide-react'
-import type { CapsuleCategory, Trip } from '../types/trip'
+import { Check, ImageIcon, Maximize2, Plus } from 'lucide-react'
+import type { CapsuleCategory, Trip, VisualBoardType } from '../types/trip'
 import { Card } from '../components/ui/Card'
 import { SectionHeader } from '../components/ui/SectionHeader'
 import { ImagePlaceholder } from '../components/ui/ImagePlaceholder'
 import { Lightbox } from '../components/ui/Lightbox'
 import { WeatherCard } from '../components/ui/WeatherCard'
+import { AddVisualBoardSheet } from '../components/visuals/AddVisualBoardSheet'
+import { VisualBoardCard } from '../components/visuals/VisualBoardCard'
 import { formatDateCompact } from '../lib/date'
 import { getWeatherLocationForDay, isWithinForecastRange, useWeather } from '../lib/weather'
+import { sortVisualBoards } from '../lib/visualBoards'
 import { useAppStore } from '../store/useAppStore'
+import { useVisualBoardUiStore } from '../store/useVisualBoardUiStore'
+
+const OUTFIT_TIER: VisualBoardType[] = ['outfit']
+const CAPSULE_TIER: VisualBoardType[] = ['capsule', 'packing']
+const OTHER_TIER: VisualBoardType[] = ['mood', 'city', 'other']
 
 const CATEGORY_LABELS: Record<CapsuleCategory, string> = {
   outerwear: 'Outerwear',
@@ -88,12 +96,24 @@ function PackingChecklist({ trip }: { trip: Trip }) {
 export function Pack({ trip }: { trip: Trip }) {
   const hasCapsule = trip.capsule.length > 0
   const hasChecklist = (trip.packingList?.length ?? 0) > 0
+  const shareMode = useAppStore((s) => s.shareMode)
+  // "Visuals" is always present — Austin has no seeded capsule/outfit data
+  // at all, and every trip (seeded or not) should still be able to hold
+  // traveler-uploaded boards. Hidden entirely in Share mode, same as the
+  // per-board Add/Edit/Replace/Delete controls it hosts.
   const tabs = [
     ...(hasCapsule ? (['capsule', 'outfits'] as const) : []),
     ...(hasChecklist ? (['checklist'] as const) : []),
+    ...(shareMode ? [] : (['visuals'] as const)),
   ]
   const [tab, setTab] = useState<(typeof tabs)[number]>(tabs[0])
   const [lightbox, setLightbox] = useState<{ src: string; alt: string } | null>(null)
+  const visualBoards = useAppStore((s) => s.visualBoards)
+  const openPicker = useVisualBoardUiStore((s) => s.openPicker)
+  const tripVisualBoards = sortVisualBoards(visualBoards.filter((b) => b.tripId === trip.meta.id))
+  const outfitBoards = tripVisualBoards.filter((b) => OUTFIT_TIER.includes(b.type))
+  const capsulePackingBoards = tripVisualBoards.filter((b) => CAPSULE_TIER.includes(b.type))
+  const otherBoards = tripVisualBoards.filter((b) => OTHER_TIER.includes(b.type))
 
   // Context only — this never rewrites the packing list or outfits, it
   // just gives Cecilia a sense of what to expect before she reads the
@@ -132,7 +152,13 @@ export function Pack({ trip }: { trip: Trip }) {
                 tab === key ? 'bg-blue text-white' : 'text-ink-soft'
               )}
             >
-              {key === 'capsule' ? 'Capsule wardrobe' : key === 'outfits' ? 'Outfit boards' : 'Checklist'}
+              {key === 'capsule'
+                ? 'Capsule wardrobe'
+                : key === 'outfits'
+                  ? 'Outfit boards'
+                  : key === 'visuals'
+                    ? 'Visuals'
+                    : 'Checklist'}
             </button>
           ))}
         </div>
@@ -201,7 +227,68 @@ export function Pack({ trip }: { trip: Trip }) {
         </div>
       )}
 
+      {tab === 'visuals' && (
+        <div className="space-y-6">
+          <button
+            type="button"
+            onClick={openPicker}
+            className="flex w-full items-center justify-center gap-2 rounded-full border border-blue/30 bg-blue-tint py-2.5 text-sm font-medium text-blue"
+          >
+            <Plus size={15} />
+            Add visual
+          </button>
+
+          {tripVisualBoards.length === 0 ? (
+            <div className="flex flex-col items-center gap-2 rounded-2xl border border-dashed border-line px-6 py-12 text-center">
+              <ImageIcon size={22} className="text-ink-soft" />
+              <p className="text-sm font-medium text-ink">Add a visual board</p>
+              <p className="max-w-[240px] text-xs text-ink-soft">
+                Outfit photos, capsule flat-lays, mood boards — upload anything worth keeping alongside this trip.
+              </p>
+            </div>
+          ) : (
+            <>
+              {outfitBoards.length > 0 && (
+                <div>
+                  <SectionHeader eyebrow={`${outfitBoards.length} board${outfitBoards.length === 1 ? '' : 's'}`} title="Outfit boards" accent="red" />
+                  <div className="grid grid-cols-2 gap-3">
+                    {outfitBoards.map((board) => (
+                      <VisualBoardCard key={board.id} board={board} trip={trip} />
+                    ))}
+                  </div>
+                </div>
+              )}
+              {capsulePackingBoards.length > 0 && (
+                <div>
+                  <SectionHeader
+                    eyebrow={`${capsulePackingBoards.length} board${capsulePackingBoards.length === 1 ? '' : 's'}`}
+                    title="Capsule & packing boards"
+                    accent="red"
+                  />
+                  <div className="grid grid-cols-2 gap-3">
+                    {capsulePackingBoards.map((board) => (
+                      <VisualBoardCard key={board.id} board={board} trip={trip} />
+                    ))}
+                  </div>
+                </div>
+              )}
+              {otherBoards.length > 0 && (
+                <div>
+                  <SectionHeader eyebrow={`${otherBoards.length} board${otherBoards.length === 1 ? '' : 's'}`} title="Inspiration boards" accent="red" />
+                  <div className="grid grid-cols-2 gap-3">
+                    {otherBoards.map((board) => (
+                      <VisualBoardCard key={board.id} board={board} trip={trip} aspect="wide" />
+                    ))}
+                  </div>
+                </div>
+              )}
+            </>
+          )}
+        </div>
+      )}
+
       {lightbox && <Lightbox src={lightbox.src} alt={lightbox.alt} onClose={() => setLightbox(null)} />}
+      {!shareMode && <AddVisualBoardSheet trip={trip} />}
     </div>
   )
 }
