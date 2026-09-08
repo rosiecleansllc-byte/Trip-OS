@@ -191,9 +191,11 @@ export function getEffectiveTrip(
     return { ...day, scheduleItems: merged }
   })
 
-  const openItems = trip.openItems.map((oi) =>
-    resolvedOpenItemIds[`${trip.meta.id}:${oi.id}`] ? { ...oi, status: 'done' as const } : oi
-  )
+  const openItems = trip.openItems.map((oi) => {
+    const key = `${trip.meta.id}:${oi.id}`
+    if (!(key in resolvedOpenItemIds)) return oi
+    return { ...oi, status: resolvedOpenItemIds[key] ? ('done' as const) : ('open' as const) }
+  })
 
   return {
     ...trip,
@@ -222,11 +224,49 @@ export function manualItemQualifiesForOpenItem(trip: Trip, item: ManualTripItem,
   return day.date >= start && day.date <= end
 }
 
+// Whether any two of the given manual items form a real round trip — one
+// leg's from/to is the exact reverse of another's. Same pairing rule
+// lib/readiness.ts already uses to recognize a confirmed round-trip from
+// Transport entries.
+function hasRoundTripPair(items: ManualTripItem[]): boolean {
+  return items.some((a) =>
+    items.some(
+      (b) =>
+        b.id !== a.id &&
+        a.fromLocation &&
+        a.toLocation &&
+        b.fromLocation === a.toLocation &&
+        b.toLocation === a.fromLocation
+    )
+  )
+}
+
+// For most OpenItems, a single qualifying manual item is enough evidence
+// to suggest resolving it. An OpenItem marked `requiresRoundTrip` (a
+// transport OpenItem representing a full there-and-back leg, not just one
+// direction) additionally needs two qualifying manual transport items that
+// form a round trip (see hasRoundTripPair) — a single one-way entry never
+// counts as covering it on its own.
+function openItemIsCoveredBy(trip: Trip, tripManualItems: ManualTripItem[], openItem: OpenItem): boolean {
+  const qualifying = tripManualItems.filter((i) => manualItemQualifiesForOpenItem(trip, i, openItem))
+  if (qualifying.length === 0) return false
+  if (!openItem.requiresRoundTrip) return true
+  return hasRoundTripPair(qualifying)
+}
+
 // Which currently-open OpenItems a manual stay/transport item plausibly
-// resolves. Callers show these as "Mark resolved" suggestions; nothing
-// here auto-resolves anything.
-export function findResolvableOpenItems(trip: Trip, item: ManualTripItem): OpenItem[] {
-  return trip.openItems.filter((oi) => oi.status === 'open' && manualItemQualifiesForOpenItem(trip, item, oi))
+// resolves, given the full current set of the trip's manual items (needed
+// so a round-trip OpenItem can see both legs, not just the one just
+// saved/edited). Callers show these as "Mark resolved" suggestions;
+// nothing here auto-resolves anything.
+export function findResolvableOpenItems(trip: Trip, manualItems: ManualTripItem[], item: ManualTripItem): OpenItem[] {
+  const tripManualItems = manualItems.filter((i) => i.tripId === trip.meta.id)
+  return trip.openItems.filter(
+    (oi) =>
+      oi.status === 'open' &&
+      manualItemQualifiesForOpenItem(trip, item, oi) &&
+      openItemIsCoveredBy(trip, tripManualItems, oi)
+  )
 }
 
 // The reverse lookup — given one open OpenItem, which of the traveler's
@@ -245,8 +285,12 @@ export function findManualItemsForOpenItem(
 // OpenItems may no longer be justified. An OpenItem stays resolved only
 // as long as at least one manual item both (a) explicitly claims credit
 // for it via relatedOpenItemId — set when the traveler taps "Mark
-// resolved" — and (b) still qualifies under the same category+date-range
-// check used to offer that button in the first place. Returns the ids of
+// resolved" or checks its checklist box — and (b) still qualifies under
+// the same category+date-range check used to offer that button in the
+// first place. A `requiresRoundTrip` OpenItem additionally needs its
+// linked items to still form a round trip (see hasRoundTripPair) — losing
+// just one of two linked legs breaks the round trip even though the other
+// leg is still individually linked and qualifying. Returns the ids of
 // OpenItems that should flip back to open, given the manual items list
 // *after* the delete/edit already applied. Never infers a relationship
 // after the fact from label text or any other heuristic.
@@ -258,11 +302,12 @@ export function findOpenItemsToUnresolve(
   const tripManualItems = manualItems.filter((i) => i.tripId === trip.meta.id)
   return trip.openItems
     .filter((oi) => resolvedOpenItemIds[`${trip.meta.id}:${oi.id}`])
-    .filter(
-      (oi) =>
-        !tripManualItems.some(
-          (i) => i.relatedOpenItemId === oi.id && manualItemQualifiesForOpenItem(trip, i, oi)
-        )
-    )
+    .filter((oi) => {
+      const linkedAndQualifying = tripManualItems.filter(
+        (i) => i.relatedOpenItemId === oi.id && manualItemQualifiesForOpenItem(trip, i, oi)
+      )
+      if (!oi.requiresRoundTrip) return linkedAndQualifying.length === 0
+      return !hasRoundTripPair(linkedAndQualifying)
+    })
     .map((oi) => oi.id)
 }

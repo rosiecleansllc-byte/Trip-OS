@@ -50,7 +50,12 @@ export const austinTrip: Trip = {
           privateDocumentType: 'confirmation',
         },
         { id: 'd1-4', time: '17:48', label: 'Arrive Austin (AUS)', type: 'transport', location: 'Austin-Bergstrom International Airport (AUS)' },
-        { id: 'd1-5', label: 'AUS → Hyatt House transportation TBD', type: 'transport' },
+        {
+          id: 'd1-5',
+          label: 'Uber: AUS → Hyatt House',
+          type: 'transport',
+          location: 'Austin-Bergstrom International Airport (AUS)',
+        },
         {
           id: 'd1-6',
           label: 'Check in at Hyatt House Austin/Downtown',
@@ -207,6 +212,17 @@ export const austinTrip: Trip = {
       privateDocumentKey: 'austin-frontier-return-confirmation',
       privateDocumentType: 'confirmation',
     },
+    {
+      id: 'tr-uber-aus-hyatt',
+      mode: 'local',
+      from: 'AUS',
+      to: 'Hyatt House Austin/Downtown',
+      date: '2026-09-09',
+      carrier: 'Uber',
+      status: 'confirmed',
+      cost: null,
+      location: 'Austin-Bergstrom International Airport (AUS)',
+    },
   ],
 
   capsule: [],
@@ -254,6 +270,9 @@ export const austinTrip: Trip = {
       status: 'open',
       detail: 'Rental car, drive, rideshare, or overnight in Waco — not yet decided.',
       relatedDayId: 'd4',
+      // A round trip: one direction alone (e.g. only "Austin → Waco") never
+      // resolves this — see lib/manualItems.ts openItemIsCoveredBy.
+      requiresRoundTrip: true,
     },
     {
       id: 'open-atl-airport-transport',
@@ -268,7 +287,12 @@ export const austinTrip: Trip = {
       tripId: 'austin-2026',
       label: 'Decide AUS airport → Hyatt House transportation',
       category: 'transport',
-      status: 'open',
+      // Decided: Uber (see tr-uber-aus-hyatt in transport, and d1-5 in the
+      // Sep 9 schedule) — modeled as already-resolved seed data rather
+      // than left in the unresolved list. Still a real, toggleable
+      // checklist item: getEffectiveTrip lets the traveler reopen it via
+      // the checklist if the plan changes.
+      status: 'done',
       relatedDayId: 'd1',
     },
     {

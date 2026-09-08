@@ -13,6 +13,7 @@ import {
 import type { ManualTripItem, ScheduleItem, Trip } from '../types/trip'
 import { ActionRow } from '../components/ui/ActionRow'
 import { Card } from '../components/ui/Card'
+import { OpenItemToggle } from '../components/ui/OpenItemToggle'
 import { SectionHeader } from '../components/ui/SectionHeader'
 import { ImagePlaceholder } from '../components/ui/ImagePlaceholder'
 import { Lightbox } from '../components/ui/Lightbox'
@@ -107,6 +108,7 @@ export function Today({ trip }: { trip: Trip }) {
   const today = useMemo(() => findCurrentDay(effectiveTrip.days), [effectiveTrip])
   const upcoming = useMemo(() => findNextDay(effectiveTrip.days), [effectiveTrip])
   const [lightboxSrc, setLightboxSrc] = useState<string | null>(null)
+  const [showCompleted, setShowCompleted] = useState(false)
 
   if (phase === 'active' && today) {
     const leg = trip.legs.find((l) => l.id === today.legId)
@@ -262,6 +264,7 @@ export function Today({ trip }: { trip: Trip }) {
   // is safe to show in Share mode too, same as the rest of the app's
   // "hide specific private fields, not whole sections" rule.
   const { percent, readyLines, openItems } = computeReadiness(effectiveTrip)
+  const completedOpenItems = effectiveTrip.openItems.filter((i) => i.status === 'done')
 
   return (
     <div className="animate-fade-in space-y-6">
@@ -314,11 +317,33 @@ export function Today({ trip }: { trip: Trip }) {
           <div className="mt-4 space-y-1.5 border-t border-line pt-3">
             <p className="text-[11px] font-medium uppercase tracking-[0.14em] text-ink-soft">Still needed</p>
             {openItems.map((item) => (
-              <p key={item.id} className="flex items-start gap-2 text-xs text-ink">
-                <Circle size={14} className={`mt-0.5 shrink-0 ${item.priority === 'high' ? 'text-red' : 'text-gray'}`} />
-                {item.label}
-              </p>
+              <div key={item.id} className="flex items-center gap-2">
+                <OpenItemToggle trip={trip} item={item} size={16} />
+                <p className="flex-1 text-xs text-ink">{item.label}</p>
+              </div>
             ))}
+          </div>
+        )}
+
+        {completedOpenItems.length > 0 && (
+          <div className="mt-3 border-t border-line pt-2.5">
+            <button
+              type="button"
+              onClick={() => setShowCompleted((v) => !v)}
+              className="text-[11px] font-medium uppercase tracking-[0.14em] text-ink-soft"
+            >
+              Completed ({completedOpenItems.length})
+            </button>
+            {showCompleted && (
+              <div className="mt-1.5 space-y-1.5">
+                {completedOpenItems.map((item) => (
+                  <div key={item.id} className="flex items-center gap-2">
+                    <OpenItemToggle trip={trip} item={item} size={16} />
+                    <p className="flex-1 text-xs text-ink-soft line-through">{item.label}</p>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         )}
       </Card>

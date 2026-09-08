@@ -1,7 +1,8 @@
-import { AlertTriangle, Award, Bed, Circle, ClipboardList, Ticket, UtensilsCrossed } from 'lucide-react'
+import { AlertTriangle, Award, Bed, CheckCircle2, ClipboardList, Ticket, UtensilsCrossed } from 'lucide-react'
 import type { Booking, BookingCategory, ManualTripItem, Trip } from '../types/trip'
 import { ActionRow } from '../components/ui/ActionRow'
 import { Card } from '../components/ui/Card'
+import { OpenItemToggle } from '../components/ui/OpenItemToggle'
 import { SectionHeader } from '../components/ui/SectionHeader'
 import { StatusTag } from '../components/ui/StatusTag'
 import { ManualItemMenu } from '../components/manual/ManualItemMenu'
@@ -9,7 +10,7 @@ import { formatDateCompact, formatDateTimeCompact } from '../lib/date'
 import { formatMoney } from '../lib/money'
 import { useAppStore } from '../store/useAppStore'
 import { redactBooking } from '../lib/share'
-import { findManualItemsForOpenItem, getEffectiveTrip } from '../lib/manualItems'
+import { getEffectiveTrip } from '../lib/manualItems'
 
 const CATEGORY_META: Record<BookingCategory, { label: string; icon: typeof Bed }> = {
   hotel: { label: 'Stays', icon: Bed },
@@ -93,8 +94,6 @@ export function Bookings({ trip }: { trip: Trip }) {
   const shareMode = useAppStore((s) => s.shareMode)
   const manualItems = useAppStore((s) => s.manualItems)
   const resolvedOpenItemIds = useAppStore((s) => s.resolvedOpenItemIds)
-  const resolveOpenItem = useAppStore((s) => s.resolveOpenItem)
-  const updateManualItem = useAppStore((s) => s.updateManualItem)
   const effectiveTrip = getEffectiveTrip(trip, manualItems, resolvedOpenItemIds)
   const manualItemsById = new Map(manualItems.filter((i) => i.tripId === trip.meta.id).map((i) => [i.id, i]))
 
@@ -107,6 +106,7 @@ export function Bookings({ trip }: { trip: Trip }) {
   const openItems = effectiveTrip.openItems
     .filter((i) => i.status === 'open')
     .sort((a, b) => (a.priority === 'high' ? 0 : 1) - (b.priority === 'high' ? 0 : 1))
+  const completedItems = effectiveTrip.openItems.filter((i) => i.status === 'done')
 
   return (
     <div className="animate-fade-in space-y-7">
@@ -138,35 +138,29 @@ export function Bookings({ trip }: { trip: Trip }) {
         <div>
           <SectionHeader title="Still open" action={<ClipboardList size={16} className="text-blue" />} />
           <div className="space-y-2.5">
-            {openItems.map((item) => {
-              const resolvableBy = shareMode ? [] : findManualItemsForOpenItem(trip, manualItems, item)
-              return (
-                <Card key={item.id} className="flex items-start gap-2.5 p-3.5">
-                  <Circle size={15} className={`mt-0.5 shrink-0 ${item.priority === 'high' ? 'text-red' : 'text-gray'}`} />
-                  <div className="min-w-0 flex-1">
-                    <p className="text-sm text-ink">{item.label}</p>
-                    {item.detail && <p className="mt-0.5 text-xs text-ink-soft">{item.detail}</p>}
-                  </div>
-                  {resolvableBy.length > 0 && (
-                    <button
-                      type="button"
-                      onClick={() => {
-                        resolveOpenItem(trip.meta.id, item.id)
-                        // Record which manual item(s) justify this
-                        // resolution (lib/manualItems.ts
-                        // findOpenItemsToUnresolve reads this back) so
-                        // deleting or editing one of them later can
-                        // reopen the item if nothing else still covers it.
-                        resolvableBy.forEach((mi) => updateManualItem(mi.id, { relatedOpenItemId: item.id }))
-                      }}
-                      className="shrink-0 rounded-full bg-blue px-2.5 py-1 text-xs font-medium text-white"
-                    >
-                      Mark resolved
-                    </button>
-                  )}
-                </Card>
-              )
-            })}
+            {openItems.map((item) => (
+              <Card key={item.id} className="flex items-start gap-2.5 p-3.5">
+                <OpenItemToggle trip={trip} item={item} />
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm text-ink">{item.label}</p>
+                  {item.detail && <p className="mt-0.5 text-xs text-ink-soft">{item.detail}</p>}
+                </div>
+              </Card>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {completedItems.length > 0 && (
+        <div>
+          <SectionHeader title="Completed" action={<CheckCircle2 size={16} className="text-blue" />} />
+          <div className="space-y-2.5">
+            {completedItems.map((item) => (
+              <Card key={item.id} className="flex items-start gap-2.5 p-3.5 opacity-70">
+                <OpenItemToggle trip={trip} item={item} />
+                <p className="min-w-0 flex-1 text-sm text-ink-soft line-through">{item.label}</p>
+              </Card>
+            ))}
           </div>
         </div>
       )}

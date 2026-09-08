@@ -167,6 +167,12 @@ export interface OpenItem {
   dueDate?: ISODate
   relatedDayId?: string // ties it to a DayPlan.id, so Today can surface it on that day
   relatedBookingId?: string // ties it to a Booking.id or Transport.id
+  // A transport OpenItem that represents a full there-and-back leg rather
+  // than a single direction — see lib/manualItems.ts openItemIsCoveredBy.
+  // A single one-way manual transport entry never counts as resolving one
+  // of these; two entries whose from/to are exact reverses of each other
+  // are required.
+  requiresRoundTrip?: boolean
 }
 
 // One line in a packing checklist. Deliberately separate from the France
