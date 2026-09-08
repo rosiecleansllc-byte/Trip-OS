@@ -93,20 +93,35 @@ function PackingChecklist({ trip }: { trip: Trip }) {
   )
 }
 
+type PackTab = 'capsule' | 'outfits' | 'checklist' | 'visuals'
+
 export function Pack({ trip }: { trip: Trip }) {
   const hasCapsule = trip.capsule.length > 0
   const hasChecklist = (trip.packingList?.length ?? 0) > 0
   const shareMode = useAppStore((s) => s.shareMode)
-  // "Visuals" is always present — Austin has no seeded capsule/outfit data
-  // at all, and every trip (seeded or not) should still be able to hold
-  // traveler-uploaded boards. Hidden entirely in Share mode, same as the
-  // per-board Add/Edit/Replace/Delete controls it hosts.
-  const tabs = [
+  // "Visuals" is always present outside Share mode — Austin has no seeded
+  // capsule/outfit data at all, and every trip (seeded or not) should
+  // still be able to hold traveler-uploaded boards. Hidden entirely in
+  // Share mode, same as the per-board Add/Edit/Replace/Delete controls it
+  // hosts.
+  const tabs: PackTab[] = [
     ...(hasCapsule ? (['capsule', 'outfits'] as const) : []),
     ...(hasChecklist ? (['checklist'] as const) : []),
     ...(shareMode ? [] : (['visuals'] as const)),
   ]
-  const [tab, setTab] = useState<(typeof tabs)[number]>(tabs[0])
+  const [tab, setTab] = useState<PackTab>(tabs[0])
+  // The selected tab is stored as plain state, but never trusted directly
+  // for rendering — Share mode can turn on while 'visuals' is selected,
+  // which would otherwise keep rendering private uploaded boards even
+  // though the tab button itself has disappeared from `tabs`. Deriving
+  // the effective tab at render time (falling back to the first still-
+  // valid tab) closes that gap without an effect: there's nothing to
+  // synchronize, just a value that's only ever used when it's still
+  // actually selectable. If Share mode later turns back off, `tab` is
+  // still 'visuals' underneath, so the traveler's original selection
+  // naturally comes back — this only ever hides content, never forgets
+  // a private-mode-safe choice.
+  const activeTab: PackTab | undefined = tabs.includes(tab) ? tab : tabs[0]
   const [lightbox, setLightbox] = useState<{ src: string; alt: string } | null>(null)
   const visualBoards = useAppStore((s) => s.visualBoards)
   const openPicker = useVisualBoardUiStore((s) => s.openPicker)
@@ -149,7 +164,7 @@ export function Pack({ trip }: { trip: Trip }) {
               onClick={() => setTab(key)}
               className={clsx(
                 'flex-1 rounded-full py-2 text-sm font-medium transition-colors',
-                tab === key ? 'bg-blue text-white' : 'text-ink-soft'
+                activeTab === key ? 'bg-blue text-white' : 'text-ink-soft'
               )}
             >
               {key === 'capsule'
@@ -164,9 +179,9 @@ export function Pack({ trip }: { trip: Trip }) {
         </div>
       )}
 
-      {tab === 'checklist' && <PackingChecklist trip={trip} />}
+      {activeTab === 'checklist' && <PackingChecklist trip={trip} />}
 
-      {tab === 'capsule' && (
+      {activeTab === 'capsule' && (
         <div className="space-y-6">
           {CATEGORY_ORDER.map((cat) => {
             const items = trip.capsule.filter((c) => c.category === cat)
@@ -191,7 +206,7 @@ export function Pack({ trip }: { trip: Trip }) {
         </div>
       )}
 
-      {tab === 'outfits' && (
+      {activeTab === 'outfits' && (
         <div className="space-y-4">
           {trip.outfitBoards.map((board) => {
             const day = trip.days.find((d) => d.id === board.dayId)
@@ -227,7 +242,11 @@ export function Pack({ trip }: { trip: Trip }) {
         </div>
       )}
 
-      {tab === 'visuals' && (
+      {/* Belt-and-suspenders on top of the activeTab derivation above: even
+          if something else ever slips 'visuals' back into an active tab
+          while shareMode is true, this condition alone still keeps every
+          uploaded board — image, title, notes — out of the DOM. */}
+      {!shareMode && activeTab === 'visuals' && (
         <div className="space-y-6">
           <button
             type="button"
