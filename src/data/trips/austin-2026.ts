@@ -47,26 +47,38 @@ export const austinTrip: Trip = {
       outfitNote: 'Comfortable travel clothes for the flight.',
       scheduleItems: [
         { id: 'd1-1', label: 'Travel to ATL', type: 'transport' },
-        { id: 'd1-2', label: 'Airport / security', type: 'transport', location: 'Hartsfield-Jackson Atlanta International Airport (ATL)' },
         {
-          id: 'd1-3',
+          id: 'd1-2',
           time: '16:19',
           label: 'Frontier ATL → AUS',
           type: 'transport',
-          notes: 'Direct, 2h 29m, economy.',
+          location: 'Hartsfield-Jackson Atlanta International Airport (ATL)',
+          // Airport/security context lives here rather than as its own
+          // standalone schedule row — it's part of getting on this
+          // flight, not a separate itinerary stop.
+          notes: 'Arrive with time for ATL airport security. Direct, 2h 29m, economy.',
           websiteUrl: 'https://www.flyfrontier.com',
           privateDocumentKey: 'austin-frontier-outbound-confirmation',
           privateDocumentType: 'confirmation',
         },
-        { id: 'd1-4', time: '17:48', label: 'Arrive Austin (AUS)', type: 'transport', location: 'Austin-Bergstrom International Airport (AUS)' },
+        { id: 'd1-3', time: '17:48', label: 'Arrive Austin (AUS)', type: 'transport', location: 'Austin-Bergstrom International Airport (AUS)' },
         {
-          id: 'd1-5',
-          label: 'Uber: AUS → Hyatt House',
+          id: 'd1-4',
+          label: 'Uber: AUS → Franklin Barbecue',
           type: 'transport',
           location: 'Austin-Bergstrom International Airport (AUS)',
+          sortOrder: 1075, // just after the 17:48 arrival
         },
+        { id: 'd1-5', label: 'Franklin Barbecue', type: 'meal', location: 'Franklin Barbecue, Austin, TX', sortOrder: 1090 },
         {
           id: 'd1-6',
+          label: 'Uber: Franklin Barbecue → Hyatt House Austin/Downtown',
+          type: 'transport',
+          location: 'Franklin Barbecue, Austin, TX',
+          sortOrder: 1110,
+        },
+        {
+          id: 'd1-7',
           label: 'Check in at Hyatt House Austin/Downtown',
           type: 'lodging',
           location: 'Hyatt House Austin/Downtown, 901 Neches Street, Austin, TX 78701',
@@ -74,8 +86,9 @@ export const austinTrip: Trip = {
           notes: 'King Room, 2 adults, breakfast included. Covers Sept. 9–11 only — booked via Booking.com.',
           privateDocumentKey: 'austin-hyatt-booking-confirmation',
           privateDocumentType: 'confirmation',
+          sortOrder: 1130,
         },
-        { id: 'd1-7', label: 'Easy dinner / settle in', type: 'meal' },
+        { id: 'd1-8', label: 'Easy dinner / settle in', type: 'meal', sortOrder: 1200 },
       ],
     },
     {
@@ -99,11 +112,14 @@ export const austinTrip: Trip = {
       legId: 'waco',
       title: 'Austin → Waco',
       outfitNote: 'Comfortable clothes for checkout and travel.',
+      // The actual Austin → Waco transition is a real transportation item
+      // the traveler adds herself (see lib/manualItems.ts) — no seeded
+      // placeholder here to avoid ever showing both a real timed leg and
+      // an untimed "Travel Austin → Waco" stand-in on the same day.
       scheduleItems: [
-        { id: 'd3-1', label: 'Breakfast at Hyatt House', type: 'meal' },
-        { id: 'd3-2', label: 'Pack / checkout', type: 'free' },
+        { id: 'd3-1', label: 'Breakfast at Hyatt House', type: 'meal', sortOrder: 480 },
+        { id: 'd3-2', label: 'Pack / checkout', type: 'free', sortOrder: 600 },
         { id: 'd3-3', time: '11:00', label: 'Hyatt House checkout by 11:00 AM', type: 'lodging', location: 'Hyatt House Austin/Downtown, Austin' },
-        { id: 'd3-4', label: 'Travel Austin → Waco', type: 'transport' },
       ],
     },
     {
@@ -113,8 +129,17 @@ export const austinTrip: Trip = {
       legId: 'waco',
       title: 'You × AI Summit / Waco',
       outfitNote: 'Summit outfit.',
+      // A full Waco day — Fairfield Inn by Marriott Waco (a real,
+      // manually-added stay, not seeded here) covers the night of the
+      // 12th, so this day never returns to Austin.
       scheduleItems: [
-        { id: 'd4-2', label: 'Arrive for Summit', type: 'transport', location: 'The Performing Arts Community Center, Waco, TX' },
+        {
+          id: 'd4-2',
+          label: 'Arrive for Summit',
+          type: 'transport',
+          location: 'The Performing Arts Community Center, Waco, TX',
+          sortOrder: 450, // ahead of the 08:00 Summit start
+        },
         {
           id: 'd4-3',
           time: '08:00',
@@ -127,8 +152,7 @@ export const austinTrip: Trip = {
           travelMinutes: 15,
           arrivalBufferMinutes: 15,
         },
-        { id: 'd4-4', label: 'Event day', type: 'free' },
-        { id: 'd4-5', label: 'Waco → Austin / lodging plan TBD', type: 'transport' },
+        { id: 'd4-4', label: 'Event day', type: 'free', sortOrder: 900 },
       ],
     },
     {
@@ -138,10 +162,15 @@ export const austinTrip: Trip = {
       legId: 'austin',
       title: 'Return home',
       outfitNote: 'Comfortable clothes for the flight home.',
+      // Departs from Waco, then returns toward AUS for the flight home —
+      // if a manual transport/rental-car item exists for the Waco → AUS
+      // leg, it merges in ahead of these by time when it has one; see
+      // ScheduleItem.sortOrder for how these place themselves without a
+      // real time of their own.
       scheduleItems: [
-        { id: 'd5-1', label: 'Morning / early afternoon flexible', type: 'free' },
-        { id: 'd5-2', label: 'Head to AUS', type: 'transport', location: 'Austin-Bergstrom International Airport (AUS)' },
-        { id: 'd5-3', label: 'Airport / security', type: 'transport' },
+        { id: 'd5-1', label: 'Morning / early afternoon flexible', type: 'free', sortOrder: 600 },
+        { id: 'd5-2', label: 'Head to AUS', type: 'transport', location: 'Austin-Bergstrom International Airport (AUS)', sortOrder: 900 },
+        { id: 'd5-3', label: 'Airport / security', type: 'transport', sortOrder: 960 },
         {
           id: 'd5-4',
           time: '18:33',
@@ -205,7 +234,7 @@ export const austinTrip: Trip = {
       carrier: 'Frontier Airlines',
       status: 'confirmed',
       cost: null,
-      notes: 'Direct, 2h 29m, economy.',
+      notes: 'Arrive with time for ATL airport security. Direct, 2h 29m, economy.',
       websiteUrl: 'https://www.flyfrontier.com',
       privateDocumentKey: 'austin-frontier-outbound-confirmation',
       privateDocumentType: 'confirmation',
@@ -229,15 +258,29 @@ export const austinTrip: Trip = {
       arrivalBufferMinutes: 120,
     },
     {
-      id: 'tr-uber-aus-hyatt',
+      // Replaces the old direct AUS → Hyatt House Uber — the real Sept.
+      // 9 arrival flow is two separate legs with a Franklin Barbecue stop
+      // between them.
+      id: 'tr-uber-aus-franklin',
       mode: 'local',
-      from: 'AUS',
-      to: 'Hyatt House Austin/Downtown',
+      from: 'Austin-Bergstrom International Airport (AUS)',
+      to: 'Franklin Barbecue',
       date: '2026-09-09',
       carrier: 'Uber',
       status: 'confirmed',
       cost: null,
       location: 'Austin-Bergstrom International Airport (AUS)',
+    },
+    {
+      id: 'tr-uber-franklin-hyatt',
+      mode: 'local',
+      from: 'Franklin Barbecue',
+      to: 'Hyatt House Austin/Downtown',
+      date: '2026-09-09',
+      carrier: 'Uber',
+      status: 'confirmed',
+      cost: null,
+      location: 'Franklin Barbecue, Austin, TX',
     },
   ],
 
@@ -285,9 +328,15 @@ export const austinTrip: Trip = {
       priority: 'high',
       status: 'open',
       detail: 'Rental car, drive, rideshare, or overnight in Waco — not yet decided.',
-      relatedDayId: 'd4',
+      // No relatedDayId: the outbound leg is Sept. 11 (d3) and the return
+      // is Sept. 13 (d5) — a round trip spanning two different days can
+      // never satisfy a single day-anchored check, so this is scoped by
+      // category + requiresRoundTrip alone. See openItemIsCoveredBy.
+      //
       // A round trip: one direction alone (e.g. only "Austin → Waco") never
-      // resolves this — see lib/manualItems.ts openItemIsCoveredBy.
+      // resolves this on its own — unless it's a single rental-car item,
+      // which covers both directions inherently — see
+      // lib/manualItems.ts openItemIsCoveredBy.
       requiresRoundTrip: true,
     },
     {
@@ -301,13 +350,15 @@ export const austinTrip: Trip = {
     {
       id: 'open-aus-hotel-transport',
       tripId: 'austin-2026',
-      label: 'Decide AUS airport → Hyatt House transportation',
+      label: 'Austin arrival ground transportation',
       category: 'transport',
-      // Decided: Uber (see tr-uber-aus-hyatt in transport, and d1-5 in the
-      // Sep 9 schedule) — modeled as already-resolved seed data rather
-      // than left in the unresolved list. Still a real, toggleable
-      // checklist item: getEffectiveTrip lets the traveler reopen it via
-      // the checklist if the plan changes.
+      // Decided: Uber AUS → Franklin Barbecue → Hyatt House (see
+      // tr-uber-aus-franklin/tr-uber-franklin-hyatt in transport, and
+      // d1-4/d1-6 in the Sep 9 schedule) — modeled as already-resolved
+      // seed data rather than left in the unresolved list. Still a real,
+      // toggleable checklist item: getEffectiveTrip lets the traveler
+      // reopen it via the checklist if the plan changes.
+      detail: 'Uber AUS → Franklin Barbecue → Hyatt House',
       status: 'done',
       relatedDayId: 'd1',
     },

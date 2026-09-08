@@ -65,13 +65,29 @@ export function findNextDay(days: DayPlan[], now: Date = new Date()): DayPlan | 
   return [...days].sort((a, b) => a.date.localeCompare(b.date)).find((d) => daysUntil(d.date, now) >= 0)
 }
 
+// A schedule item's position on a 0–1439 "minutes since midnight" scale:
+// its real `time` when it has one, else its `sortOrder` placeholder (see
+// types/trip.ts ScheduleItem), else Infinity for an item with neither —
+// shared by findNextScheduleItem below and getEffectiveTrip's day merge
+// (lib/manualItems.ts) so "what counts as having happened already" and
+// "what order does the day render in" never disagree with each other.
+export function scheduleSortValue(item: ScheduleItem): number {
+  if (item.time) {
+    const [h, m] = item.time.split(':').map(Number)
+    return h * 60 + m
+  }
+  if (item.sortOrder != null) return item.sortOrder
+  return Number.POSITIVE_INFINITY
+}
+
 // Which schedule item is "next" right now, and which comes after it — so
 // Today can lead with a single upcoming item instead of the whole day's
 // list. Items are assumed to already be authored in chronological order;
-// this just finds the last timed item that has already passed and treats
-// whatever follows it as next. Untimed items (no `time`) never count as
-// "passed" on their own, so a run of untimed items after the last timed
-// one all remain eligible — the first of them is "next".
+// this just finds the last item (by scheduleSortValue) that has already
+// passed and treats whatever follows it as next. An item with neither a
+// real `time` nor a `sortOrder` never counts as "passed" on its own, so a
+// run of such items at the end of the day all remain eligible — the
+// first of them is "next".
 export function findNextScheduleItem(
   items: ScheduleItem[],
   now: Date = new Date()
@@ -79,9 +95,9 @@ export function findNextScheduleItem(
   const nowMinutes = now.getHours() * 60 + now.getMinutes()
   let lastPastIndex = -1
   items.forEach((item, i) => {
-    if (!item.time) return
-    const [h, m] = item.time.split(':').map(Number)
-    if (h * 60 + m <= nowMinutes) lastPastIndex = i
+    const value = scheduleSortValue(item)
+    if (!Number.isFinite(value)) return
+    if (value <= nowMinutes) lastPastIndex = i
   })
   const nextIndex = lastPastIndex + 1
   return { next: items[nextIndex], after: items[nextIndex + 1] }

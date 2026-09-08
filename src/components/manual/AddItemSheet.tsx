@@ -243,6 +243,21 @@ export function AddItemSheet({ trip }: { trip: Trip }) {
     }
   }, [step, editingItem])
 
+  // resolveCandidates/screenshotError are local state, so — unlike
+  // step/type/editingItem in useManualItemUiStore — closing the sheet
+  // (close(), which only resets the store) doesn't clear them. Without
+  // this, the FAB's openPicker() flips step back to 'picker' but the
+  // render below checks resolveCandidates first, so the *previous*
+  // item's "Saved" screen would reappear instead of the fresh picker —
+  // reopening the sheet right after resolving an OpenItem effectively
+  // got stuck. Reset on every fresh entry into the picker.
+  useEffect(() => {
+    if (step === 'picker') {
+      setResolveCandidates(null)
+      setScreenshotError(null)
+    }
+  }, [step])
+
   if (step === 'closed') return null
 
   const set = <K extends keyof FormState>(key: K, value: FormState[K]) => setForm((f) => ({ ...f, [key]: value }))
