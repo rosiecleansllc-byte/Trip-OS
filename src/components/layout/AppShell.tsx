@@ -8,6 +8,7 @@ import { AddItemSheet } from '../manual/AddItemSheet'
 import { AlertCenter } from '../alerts/AlertCenter'
 import { OutfitDetailSheet } from '../wardrobe/OutfitDetailSheet'
 import { AddOutfitSheet } from '../wardrobe/AddOutfitSheet'
+import { useAutoLinkWardrobeVisuals } from '../wardrobe/useAutoLinkWardrobeVisuals'
 import type { Trip } from '../../types/trip'
 import { useAppStore } from '../../store/useAppStore'
 import { getEffectiveTrip } from '../../lib/manualItems'
@@ -30,6 +31,11 @@ export function AppShell({
   const realNow = useNow()
   const now = nowInZone(getTripTimeZone(trip), realNow)
   const { alerts } = useTripAlerts(trip, effectiveTrip, now, realNow)
+  // Reconciles wardrobe items against already-uploaded VisualBoards once
+  // per item (see lib/wardrobeOutfits.ts + useAutoLinkWardrobeVisuals) —
+  // mounted here, not per-page, so every surface that shows a wardrobe
+  // item's photo (Outfit Board, Trip, Today) sees the same resolved links.
+  useAutoLinkWardrobeVisuals(trip)
 
   return (
     <div className="min-h-dvh bg-bg">

@@ -33,6 +33,24 @@ interface AppState {
   // filtered by tripId, never seeded. Each itemIds entry just points at
   // an existing CapsuleItem; no image data lives here.
   outfits: Outfit[]
+  // Links a wardrobe item (a CapsuleItem, which is immutable seed data)
+  // to an existing VisualBoard whose already-uploaded photo should
+  // stand in for a dedicated per-item photo — keyed by
+  // wardrobeVisualLinkKey(tripId, itemId) (see lib/wardrobeOutfits.ts).
+  // Lets a traveler's real-world uploads (an outfit photo showing a top
+  // + bottom together, a themed shoes/accessories flat-lay) back new
+  // wardrobe items with zero re-upload and zero blob duplication — the
+  // linked VisualBoard's own imageKey is the only place its picture
+  // lives, exactly like a dedicated wardrobe photo's own IndexedDB key.
+  // A value is either a VisualBoard.id (linked) or null (explicitly no
+  // link — the traveler removed one, or the one-time auto-link pass in
+  // components/wardrobe/useAutoLinkWardrobeVisuals.ts found no
+  // confident match); key ABSENT means "never evaluated yet". That
+  // three-way distinction (present+string / present+null / absent) is
+  // what stops the auto-link pass from silently re-attaching a link the
+  // traveler removed on purpose — same "explicit override, not just
+  // deletion" reasoning as resolvedOpenItemIds above.
+  wardrobeVisualLinks: Record<string, string | null>
   // Trip Alerts are generated fresh from trip data every time Trip OS
   // opens/resumes (see lib/alerts.ts) — nothing about an alert itself is
   // ever persisted, only what the traveler did with it, keyed by
@@ -64,6 +82,8 @@ interface AppState {
   addOutfit: (outfit: Outfit) => void
   updateOutfit: (id: string, patch: Partial<Outfit>) => void
   deleteOutfit: (id: string) => void
+  linkWardrobeVisual: (tripId: string, itemId: string, visualBoardId: string) => void
+  unlinkWardrobeVisual: (tripId: string, itemId: string) => void
   dismissAlert: (tripId: string, alertId: string) => void
   snoozeAlert: (tripId: string, alertId: string, untilISO: string) => void
   setNotificationsRequested: (value: boolean) => void
@@ -79,6 +99,7 @@ export const useAppStore = create<AppState>()(
       resolvedOpenItemIds: {},
       visualBoards: [],
       outfits: [],
+      wardrobeVisualLinks: {},
       alertOverrides: {},
       notificationsRequested: false,
       setCurrentTripId: (id) => set({ currentTripId: id }),
@@ -123,6 +144,19 @@ export const useAppStore = create<AppState>()(
           outfits: s.outfits.map((o) => (o.id === id ? { ...o, ...patch } : o)),
         })),
       deleteOutfit: (id) => set((s) => ({ outfits: s.outfits.filter((o) => o.id !== id) })),
+      linkWardrobeVisual: (tripId, itemId, visualBoardId) =>
+        set((s) => ({
+          wardrobeVisualLinks: { ...s.wardrobeVisualLinks, [`${tripId}:${itemId}`]: visualBoardId },
+        })),
+      // Sets the link to null rather than deleting the key — see
+      // wardrobeVisualLinks' own comment above for why an explicit "no
+      // link" has to be distinguishable from "never evaluated". Used
+      // both when the traveler taps "Unlink" and when the auto-link
+      // pass finds no confident match.
+      unlinkWardrobeVisual: (tripId, itemId) =>
+        set((s) => ({
+          wardrobeVisualLinks: { ...s.wardrobeVisualLinks, [`${tripId}:${itemId}`]: null },
+        })),
       dismissAlert: (tripId, alertId) =>
         set((s) => ({
           alertOverrides: { ...s.alertOverrides, [`${tripId}:${alertId}`]: { dismissed: true } },
