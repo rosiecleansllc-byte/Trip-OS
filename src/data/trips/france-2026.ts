@@ -715,7 +715,7 @@ export const franceTrip: Trip = {
     { id: 'c9', category: 'dress', name: 'Black Sleeveless Maxi', note: 'Substitutes for a separate black midi skirt when layered.', imageUrl: '/images/capsule/c9.webp' },
     { id: 'c10', category: 'dress', name: 'Floral Maxi', note: 'Primarily for the Riviera.', imageUrl: '/images/capsule/c10.webp' },
     { id: 'c11', category: 'top', name: 'Light Cream 3/4-Sleeve Cardigan', imageUrl: '/images/capsule/c11.webp' },
-    { id: 'c12', category: 'outerwear', name: 'Uniqlo Packable Rain Shell', imageUrl: '/images/capsule/c12.webp' },
+    { id: 'c12', category: 'outerwear', name: 'Uniqlo Packable Rain Shell', imageUrl: '/images/capsule/c12.webp', color: 'white' },
     { id: 'c13', category: 'outerwear', name: 'Beige Banana Republic Rain Capelet', note: 'Optional — still deciding.' },
     { id: 'c14', category: 'shoes', name: 'White Sneakers', imageUrl: '/images/capsule/c14.webp' },
     { id: 'c15', category: 'shoes', name: "Red Rothy's Flats", imageUrl: '/images/capsule/c15.webp' },

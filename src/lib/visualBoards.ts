@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { Building2, Footprints, Gem, Layers, Luggage, ImageIcon, Shirt, Sparkles } from 'lucide-react'
 import type { Trip, VisualBoard, VisualBoardType } from '../types/trip'
 
 // Device-local storage for traveler-uploaded visual boards (outfit
@@ -88,18 +89,36 @@ export const VISUAL_BOARD_TYPE_META: Record<VisualBoardType, { label: string; pi
   outfit: { label: 'Outfit', pickerLabel: 'Outfit' },
   capsule: { label: 'Capsule wardrobe', pickerLabel: 'Capsule wardrobe' },
   packing: { label: 'Packing', pickerLabel: 'Packing' },
+  shoes: { label: 'Shoes', pickerLabel: 'Shoes' },
+  accessories: { label: 'Accessories', pickerLabel: 'Accessories' },
   mood: { label: 'Mood / Inspiration', pickerLabel: 'Mood / Inspiration' },
   city: { label: 'City', pickerLabel: 'City' },
   other: { label: 'Other', pickerLabel: 'Other' },
 }
 
-// Pack sorts boards into three tiers: day-specific outfit boards in
-// trip-date order, then capsule/packing boards, then everything else
-// (mood/city/other) — see lib/visualBoards.ts sortVisualBoards.
+// Shared icon per type — used by the type picker, VisualBoardCard, and
+// anywhere else a board's type needs a glyph, so every surface stays in
+// sync with a single mapping instead of each screen keeping its own.
+export const VISUAL_BOARD_TYPE_ICON: Record<VisualBoardType, typeof Shirt> = {
+  outfit: Shirt,
+  capsule: Layers,
+  packing: Luggage,
+  shoes: Footprints,
+  accessories: Gem,
+  mood: Sparkles,
+  city: Building2,
+  other: ImageIcon,
+}
+
+// Pack sorts boards into five tiers: day-specific outfit boards in
+// trip-date order, then capsule/packing, then shoes, then accessories,
+// then everything else (mood/city/other) — see sortVisualBoards.
 function boardSortTier(board: VisualBoard): number {
   if (board.type === 'outfit') return 0
   if (board.type === 'capsule' || board.type === 'packing') return 1
-  return 2
+  if (board.type === 'shoes') return 2
+  if (board.type === 'accessories') return 3
+  return 4
 }
 
 export function sortVisualBoards(boards: VisualBoard[]): VisualBoard[] {
@@ -115,13 +134,32 @@ export function sortVisualBoards(boards: VisualBoard[]): VisualBoard[] {
   })
 }
 
+// All of a day's boards of a given type, not just one — a day can have
+// more than one uploaded outfit (e.g. a travel-day look plus a same-day
+// change of outfit for dinner). Sorted primaryForDay-first, then by
+// creation order, so "the" outfit (singular call sites, and index 0 for
+// plural ones) is always deterministic rather than array-order-dependent.
+export function findDayVisualBoards(
+  boards: VisualBoard[],
+  tripId: string,
+  dayId: string,
+  type: VisualBoardType = 'outfit'
+): VisualBoard[] {
+  return boards
+    .filter((b) => b.tripId === tripId && b.dayId === dayId && b.type === type)
+    .sort((a, b) => {
+      if (Boolean(a.primaryForDay) !== Boolean(b.primaryForDay)) return a.primaryForDay ? -1 : 1
+      return a.createdAt.localeCompare(b.createdAt)
+    })
+}
+
 export function findDayVisualBoard(
   boards: VisualBoard[],
   tripId: string,
   dayId: string,
   type: VisualBoardType = 'outfit'
 ): VisualBoard | undefined {
-  return boards.find((b) => b.tripId === tripId && b.dayId === dayId && b.type === type)
+  return findDayVisualBoards(boards, tripId, dayId, type)[0]
 }
 
 export function dayLabelFor(trip: Trip, dayId: string | undefined): string | undefined {
