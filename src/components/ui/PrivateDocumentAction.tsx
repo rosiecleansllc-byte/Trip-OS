@@ -1,17 +1,11 @@
 import { useEffect, useRef, useState } from 'react'
 import { Eye, MoreHorizontal, Upload } from 'lucide-react'
 import type { LinkActions } from '../../types/trip'
-import { DOCUMENT_TYPE_LABEL, deletePrivateDoc, getPrivateDoc, putPrivateDoc, type StoredDoc } from '../../lib/privateDocs'
+import { DOCUMENT_TYPE_LABEL, deletePrivateDoc, fileBadge, getPrivateDoc, putPrivateDoc, type StoredDoc } from '../../lib/privateDocs'
 import { Lightbox } from './Lightbox'
 
 const buttonClass =
   'inline-flex items-center gap-1 rounded-full border border-line px-2.5 py-1 text-xs font-medium text-blue transition-colors hover:border-blue/40'
-
-function fileBadge(mimeType: string): 'PDF' | 'IMG' | null {
-  if (mimeType === 'application/pdf') return 'PDF'
-  if (mimeType.startsWith('image/')) return 'IMG'
-  return null
-}
 
 // Renders "Add {ticket/reservation/confirmation/…}" until the traveler has
 // stored that document on this device, then "View {…}" once it's there,

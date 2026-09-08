@@ -16,19 +16,25 @@ export function WeatherCard({
   weather: UseWeatherResult
   compact?: boolean
 }) {
-  const { status, snapshot, refresh, lastUpdatedAt } = weather
+  const { status, snapshot, refresh, lastUpdatedAt, stale } = weather
   const padding = compact ? 'p-3' : 'p-4'
 
   if (status === 'error') {
+    // Never fabricate data: with nothing cached to fall back to (see
+    // useWeather), offline just says so plainly rather than implying a
+    // Retry might work when there's no connectivity to retry with.
+    const offline = typeof navigator !== 'undefined' && !navigator.onLine
     return (
       <Card className={padding}>
         <div className="flex items-center justify-between gap-2">
           <p className="flex items-center gap-1.5 text-xs text-ink-soft">
-            <CloudOff size={13} /> Weather unavailable
+            <CloudOff size={13} /> {offline ? 'Weather unavailable offline' : 'Weather unavailable'}
           </p>
-          <button type="button" onClick={refresh} className="text-xs font-medium text-blue">
-            Retry
-          </button>
+          {!offline && (
+            <button type="button" onClick={refresh} className="text-xs font-medium text-blue">
+              Retry
+            </button>
+          )}
         </div>
       </Card>
     )
@@ -56,7 +62,7 @@ export function WeatherCard({
           aria-label="Refresh weather"
           className="flex items-center gap-1 text-[11px] text-ink-soft hover:text-blue"
         >
-          {lastUpdatedAt ? `Updated ${minutesAgoLabel(lastUpdatedAt)}` : <RefreshCw size={11} />}
+          {lastUpdatedAt ? `${stale ? 'Last updated' : 'Updated'} ${minutesAgoLabel(lastUpdatedAt)}` : <RefreshCw size={11} />}
         </button>
       </div>
       <p className="mt-1 flex items-baseline gap-2">

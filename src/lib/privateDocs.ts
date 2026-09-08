@@ -72,9 +72,32 @@ export async function deletePrivateDoc(key: string): Promise<void> {
   })
 }
 
+// Every key currently stored — used by the Wallet's document-badge
+// lookup (lib/walletDocs.ts) to know, in one IndexedDB read, which of a
+// trip's many document-bearing items actually have a file saved yet,
+// rather than opening one transaction per row.
+export async function listPrivateDocKeys(): Promise<string[]> {
+  const db = await openDb()
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(STORE_NAME, 'readonly')
+    const req = tx.objectStore(STORE_NAME).getAllKeys()
+    req.onsuccess = () => resolve(req.result as string[])
+    req.onerror = () => reject(req.error)
+  })
+}
+
 export const DOCUMENT_TYPE_LABEL: Record<NonNullable<import('../types/trip').LinkActions['privateDocumentType']>, string> = {
   ticket: 'ticket',
   reservation: 'reservation',
   confirmation: 'confirmation',
   receipt: 'receipt',
+}
+
+// Shared by every UI that shows a stored document's type badge
+// (PrivateDocumentAction, the Wallet's document cards) so "PDF" vs "IMG"
+// is decided exactly one way.
+export function fileBadge(mimeType: string): 'PDF' | 'IMG' | null {
+  if (mimeType === 'application/pdf') return 'PDF'
+  if (mimeType.startsWith('image/')) return 'IMG'
+  return null
 }

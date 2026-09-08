@@ -14,6 +14,7 @@ export const austinTrip: Trip = {
     destinationLabel: 'Austin + Waco, Texas',
     startDate: '2026-09-09',
     endDate: '2026-09-13',
+    timeZone: 'America/Chicago',
     travelers: [
       { id: 't1', name: 'You' },
       { id: 't2', name: 'Blake' },
@@ -123,6 +124,8 @@ export const austinTrip: Trip = {
           notes: '2 tickets.',
           privateDocumentKey: 'you-ai-summit-ticket',
           privateDocumentType: 'ticket',
+          travelMinutes: 15,
+          arrivalBufferMinutes: 15,
         },
         { id: 'd4-4', label: 'Event day', type: 'free' },
         { id: 'd4-5', label: 'Waco → Austin / lodging plan TBD', type: 'transport' },
@@ -148,6 +151,8 @@ export const austinTrip: Trip = {
           websiteUrl: 'https://www.flyfrontier.com',
           privateDocumentKey: 'austin-frontier-return-confirmation',
           privateDocumentType: 'confirmation',
+          travelMinutes: 35,
+          arrivalBufferMinutes: 120,
         },
         { id: 'd5-5', time: '22:00', label: 'Arrive Atlanta (ATL)', type: 'transport', location: 'Hartsfield-Jackson Atlanta International Airport (ATL)' },
       ],
@@ -183,6 +188,8 @@ export const austinTrip: Trip = {
       address: 'The Performing Arts Community Center, Waco, TX',
       privateDocumentKey: 'you-ai-summit-ticket',
       privateDocumentType: 'ticket',
+      travelMinutes: 15,
+      arrivalBufferMinutes: 15,
     },
   ],
 
@@ -218,6 +225,8 @@ export const austinTrip: Trip = {
       websiteUrl: 'https://www.flyfrontier.com',
       privateDocumentKey: 'austin-frontier-return-confirmation',
       privateDocumentType: 'confirmation',
+      travelMinutes: 35,
+      arrivalBufferMinutes: 120,
     },
     {
       id: 'tr-uber-aus-hyatt',

@@ -28,6 +28,22 @@ interface AppState {
   // items' private documents: this only ever holds metadata, the image
   // itself lives in IndexedDB (lib/visualBoards.ts), never here.
   visualBoards: VisualBoard[]
+  // Trip Alerts are generated fresh from trip data every time Trip OS
+  // opens/resumes (see lib/alerts.ts) — nothing about an alert itself is
+  // ever persisted, only what the traveler did with it, keyed by
+  // `${tripId}:${alertId}` where alertId is deterministic (e.g.
+  // `leave:${scheduleItemId}`) so the same real-world alert keeps the
+  // same override across regenerations. dismissed hides it until the
+  // underlying condition changes (which naturally stops generating that
+  // alertId); snoozedUntil (an ISO timestamp) hides it only until that
+  // time passes, after which it reappears on its own — no separate
+  // "un-snooze" action needed.
+  alertOverrides: Record<string, { dismissed?: boolean; snoozedUntil?: string }>
+  // Whether the traveler has been asked (and how they answered) about
+  // browser notifications for this device — the actual permission is
+  // always re-read live from Notification.permission, this only
+  // remembers that the app shouldn't ask again unprompted.
+  notificationsRequested: boolean
   setCurrentTripId: (id: string) => void
   toggleShareMode: () => void
   setShareMode: (value: boolean) => void
@@ -40,6 +56,9 @@ interface AppState {
   addVisualBoard: (board: VisualBoard) => void
   updateVisualBoard: (id: string, patch: Partial<VisualBoard>) => void
   deleteVisualBoard: (id: string) => void
+  dismissAlert: (tripId: string, alertId: string) => void
+  snoozeAlert: (tripId: string, alertId: string, untilISO: string) => void
+  setNotificationsRequested: (value: boolean) => void
 }
 
 export const useAppStore = create<AppState>()(
@@ -51,6 +70,8 @@ export const useAppStore = create<AppState>()(
       manualItems: [],
       resolvedOpenItemIds: {},
       visualBoards: [],
+      alertOverrides: {},
+      notificationsRequested: false,
       setCurrentTripId: (id) => set({ currentTripId: id }),
       toggleShareMode: () => set((s) => ({ shareMode: !s.shareMode })),
       setShareMode: (value) => set({ shareMode: value }),
@@ -87,6 +108,15 @@ export const useAppStore = create<AppState>()(
         })),
       deleteVisualBoard: (id) =>
         set((s) => ({ visualBoards: s.visualBoards.filter((b) => b.id !== id) })),
+      dismissAlert: (tripId, alertId) =>
+        set((s) => ({
+          alertOverrides: { ...s.alertOverrides, [`${tripId}:${alertId}`]: { dismissed: true } },
+        })),
+      snoozeAlert: (tripId, alertId, untilISO) =>
+        set((s) => ({
+          alertOverrides: { ...s.alertOverrides, [`${tripId}:${alertId}`]: { snoozedUntil: untilISO } },
+        })),
+      setNotificationsRequested: (value) => set({ notificationsRequested: value }),
     }),
     { name: 'trip-os-app-state' }
   )

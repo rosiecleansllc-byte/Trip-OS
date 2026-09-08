@@ -36,6 +36,12 @@ export interface Leg {
   id: string
   name: string // e.g. "Paris", "Mont-Saint-Michel", "Riviera"
   order: number
+  // IANA zone name (e.g. "America/Chicago", "Europe/Paris") for this leg
+  // specifically — only needed when a single trip actually crosses real
+  // timezones (e.g. a future US-to-Europe itinerary). Falls back to
+  // TripMeta.timeZone when unset; see lib/timezone.ts getTripTimeZone,
+  // the one place that resolves this generically.
+  timeZone?: string
 }
 
 export interface Deadline {
@@ -120,7 +126,20 @@ export interface TravelResource {
   isPrivate?: boolean
 }
 
-export interface ScheduleItem extends LinkActions {
+// Optional generic scheduling fields for computing a "leave by" time —
+// see lib/leaveBy.ts, the single place that turns these (plus an item's
+// own event time) into a displayed leave-by. Deliberately generic rather
+// than a hard-coded per-category travel-time table: a restaurant
+// reservation might carry `{ travelMinutes: 20, arrivalBufferMinutes: 10
+// }`, an airport departure `{ travelMinutes: 35, arrivalBufferMinutes:
+// 120 }`. Omit both (the common case) rather than guessing — leave-by is
+// only ever shown when real data backs it.
+export interface TravelTiming {
+  travelMinutes?: number
+  arrivalBufferMinutes?: number
+}
+
+export interface ScheduleItem extends LinkActions, TravelTiming {
   id: string
   time?: string // HH:mm, omit for all-day items
   label: string
@@ -185,7 +204,7 @@ export interface PackingItem {
   label: string
 }
 
-export interface Booking extends LinkActions {
+export interface Booking extends LinkActions, TravelTiming {
   id: string
   category: BookingCategory
   name: string
@@ -203,7 +222,7 @@ export interface Booking extends LinkActions {
   cancellationDeadline?: ISODateTime
 }
 
-export interface Transport extends LinkActions {
+export interface Transport extends LinkActions, TravelTiming {
   id: string
   mode: TransportMode
   from: string
@@ -251,6 +270,14 @@ export interface TripMeta {
   destinationLabel: string
   startDate: ISODate
   endDate: ISODate
+  // IANA zone name for this trip's destination (e.g. "America/Chicago",
+  // "Europe/Paris") — the default every leg resolves to unless it sets
+  // its own Leg.timeZone. Without this, "today"/"next up"/leave-by/alert
+  // logic would silently use the device's own timezone, which is wrong
+  // whenever the traveler opens the app before actually arriving (e.g.
+  // checking a Paris itinerary from a phone still set to US time). See
+  // lib/timezone.ts.
+  timeZone?: string
   travelers: Traveler[]
   homeCurrency: string
   tripCurrency: string
@@ -315,6 +342,8 @@ export interface ManualTripItem {
   confirmationCode?: string // private — stripped in Share mode
   privateDocumentKey?: string
   privateDocumentType?: LinkActions['privateDocumentType']
+  travelMinutes?: number // see TravelTiming above
+  arrivalBufferMinutes?: number
   // transport-only
   transportMode?: ManualTransportMode
   carrier?: string

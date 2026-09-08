@@ -94,6 +94,8 @@ export function manualItemToBooking(item: ManualTripItem): Booking {
     phone: item.phone,
     privateDocumentKey: item.privateDocumentKey,
     privateDocumentType: item.privateDocumentType,
+    travelMinutes: item.travelMinutes,
+    arrivalBufferMinutes: item.arrivalBufferMinutes,
   }
 }
 
@@ -136,6 +138,8 @@ export function manualItemToTransport(item: ManualTripItem): Transport {
     location: item.fromLocation,
     privateDocumentKey: item.privateDocumentKey,
     privateDocumentType: item.privateDocumentType,
+    travelMinutes: item.travelMinutes,
+    arrivalBufferMinutes: item.arrivalBufferMinutes,
   }
 }
 
@@ -160,6 +164,8 @@ export function manualItemToScheduleItem(item: ManualTripItem): ScheduleItem {
     phone: item.phone,
     privateDocumentKey: item.privateDocumentKey,
     privateDocumentType: item.privateDocumentType,
+    travelMinutes: item.travelMinutes,
+    arrivalBufferMinutes: item.arrivalBufferMinutes,
   }
 }
 

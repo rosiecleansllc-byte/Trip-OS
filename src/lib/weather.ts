@@ -156,6 +156,14 @@ function getCached(locationId: string, ttlMinutes: number): WeatherSnapshot | un
   return entry.snapshot
 }
 
+// Ignores the TTL entirely — used only as an offline/error fallback so a
+// genuinely stale-but-present snapshot can still be shown (labeled with
+// its real age) instead of a bare "unavailable" message. Never used for
+// the normal fresh-data path.
+function getCachedIgnoringTtl(locationId: string): WeatherSnapshot | undefined {
+  return readCache()[locationId]?.snapshot
+}
+
 function setCached(locationId: string, snapshot: WeatherSnapshot) {
   const cache = readCache()
   cache[locationId] = { fetchedAt: snapshot.fetchedAt, snapshot }
@@ -229,6 +237,13 @@ export interface UseWeatherResult {
   error: string | undefined
   refresh: () => void
   lastUpdatedAt: Date | undefined
+  // True when `snapshot` is being served from a TTL-expired cache
+  // because a real fetch just failed (offline, or the API being down) —
+  // status is still 'ready' so WeatherCard renders the data, just
+  // labeled by its real age instead of implying it's live. False (or
+  // snapshot undefined) whenever there was nothing to fall back to,
+  // which is when WeatherCard shows "Weather unavailable offline".
+  stale: boolean
 }
 
 // Fetches on mount and whenever the location changes; never polls. All
@@ -238,6 +253,7 @@ export interface UseWeatherResult {
 // system" effect, not a fetch-then-setState-immediately pattern.
 export function useWeather(location: WeatherLocation | undefined, ttlMinutes = DEFAULT_TTL_MINUTES): UseWeatherResult {
   const [snapshot, setSnapshot] = useState<WeatherSnapshot | undefined>(undefined)
+  const [stale, setStale] = useState(false)
   const [error, setError] = useState<string | undefined>(undefined)
   const [fetchToken, setFetchToken] = useState(0)
   const forceRef = useRef(false)
@@ -252,11 +268,25 @@ export function useWeather(location: WeatherLocation | undefined, ttlMinutes = D
       .then((snap) => {
         if (cancelled) return
         setSnapshot(snap)
+        setStale(false)
         setError(undefined)
       })
       .catch((e: unknown) => {
         if (cancelled) return
-        setError(e instanceof Error ? e.message : 'Weather unavailable')
+        // Never fabricate weather: fall back to whatever was last
+        // fetched for this exact location, however old, rather than
+        // just showing an error — but only ever the last real fetch,
+        // never a guess.
+        const fallback = getCachedIgnoringTtl(location.id)
+        if (fallback) {
+          setSnapshot(fallback)
+          setStale(true)
+          setError(undefined)
+        } else {
+          setSnapshot(undefined)
+          setStale(false)
+          setError(e instanceof Error ? e.message : 'Weather unavailable')
+        }
       })
     return () => {
       cancelled = true
@@ -278,5 +308,6 @@ export function useWeather(location: WeatherLocation | undefined, ttlMinutes = D
     error,
     refresh,
     lastUpdatedAt: ready && snapshot ? new Date(snapshot.fetchedAt) : undefined,
+    stale: ready && stale,
   }
 }

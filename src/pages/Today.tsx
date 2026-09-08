@@ -9,6 +9,7 @@ import {
   Luggage,
   Maximize2,
   MapPin,
+  Navigation,
   Sparkles,
 } from 'lucide-react'
 import type { ManualTripItem, ScheduleItem, Trip } from '../types/trip'
@@ -19,6 +20,8 @@ import { SectionHeader } from '../components/ui/SectionHeader'
 import { ImagePlaceholder } from '../components/ui/ImagePlaceholder'
 import { Lightbox } from '../components/ui/Lightbox'
 import { ManualItemMenu } from '../components/manual/ManualItemMenu'
+import { TodayAlertBanner } from '../components/alerts/TodayAlertBanner'
+import { TodayWallet } from '../components/today/TodayWallet'
 import {
   daysUntil,
   findCurrentDay,
@@ -30,7 +33,10 @@ import {
 } from '../lib/date'
 import { computeReadiness } from '../lib/readiness'
 import { getEffectiveTrip } from '../lib/manualItems'
+import { computeLeaveBy } from '../lib/leaveBy'
+import { getTripTimeZone, nowInZone } from '../lib/timezone'
 import { findDayVisualBoard, useVisualBoardImage } from '../lib/visualBoards'
+import { buildWalletDocEntries, sortWalletEntries } from '../lib/walletDocs'
 import { getWeatherLocationForDay, isWithinForecastRange, useWeather } from '../lib/weather'
 import { useAppStore } from '../store/useAppStore'
 import { WeatherCard } from '../components/ui/WeatherCard'
@@ -43,18 +49,26 @@ const SCHEDULE_ICON: Record<string, string> = {
   lodging: '⌂',
 }
 
+// emphasize=true is the "Next up" slot only — every other schedule card
+// on Today (After that/rest of day) stays compact. Travel-time/leave-by
+// only ever render there, using computeLeaveBy (lib/leaveBy.ts): never
+// invented when the item carries no travelMinutes, and never shown for
+// the compact rows where it would just be clutter.
 function ScheduleCard({
   item,
   manualItem,
   trip,
+  legName,
   emphasize,
 }: {
   item: ScheduleItem
   manualItem?: ManualTripItem
   trip: Trip
+  legName?: string
   emphasize?: boolean
 }) {
   const shareMode = useAppStore((s) => s.shareMode)
+  const leaveBy = emphasize ? computeLeaveBy(item.time, item) : undefined
   return (
     <Card className={emphasize ? 'p-4' : 'flex items-start gap-3 p-3.5'} accent={emphasize ? 'blue' : undefined}>
       {emphasize ? (
@@ -64,6 +78,13 @@ function ScheduleCard({
               {formatTime(item.time) ?? 'Anytime'}
             </p>
             <p className="mt-0.5 text-lg font-medium text-ink">{item.label}</p>
+            {(item.location || legName) && (
+              <p className="mt-0.5 text-xs text-ink-soft">
+                {item.location}
+                {item.location && legName ? ' · ' : ''}
+                {legName}
+              </p>
+            )}
           </div>
           {!shareMode && manualItem && <ManualItemMenu item={manualItem} trip={trip} className="shrink-0" />}
         </div>
@@ -76,6 +97,13 @@ function ScheduleCard({
           {!shareMode && manualItem && <ManualItemMenu item={manualItem} trip={trip} className="shrink-0" />}
         </>
       )}
+      {emphasize && item.travelMinutes != null && (
+        <p className="mt-2 flex items-center gap-1.5 text-xs text-ink-soft">
+          <Navigation size={12} className="text-blue" />
+          ~{item.travelMinutes} min away
+        </p>
+      )}
+      {leaveBy && <p className="mt-1 text-sm font-semibold text-blue">Leave by {leaveBy.leaveByLabel}</p>}
       {!shareMode && item.notes && <p className="mt-1 text-xs text-ink-soft">{item.notes}</p>}
       {item.tip && <p className="mt-1 text-xs italic text-gray">{item.tip}</p>}
       <ActionRow
@@ -97,6 +125,18 @@ function ScheduleCard({
   )
 }
 
+// A single-line-per-item preview of the next 1-2 items after "Next up" —
+// deliberately no ActionRow/menu/notes here, just enough to see what's
+// coming without scrolling to the full "Rest of today" list below.
+function LaterRow({ item }: { item: ScheduleItem }) {
+  return (
+    <div className="flex items-center gap-3 rounded-xl border border-line bg-surface px-3.5 py-2.5">
+      <span className="w-11 shrink-0 text-xs font-medium text-blue">{formatTime(item.time) ?? SCHEDULE_ICON[item.type]}</span>
+      <p className="min-w-0 flex-1 truncate text-sm text-ink">{item.label}</p>
+    </div>
+  )
+}
+
 export function Today({ trip }: { trip: Trip }) {
   const manualItems = useAppStore((s) => s.manualItems)
   const resolvedOpenItemIds = useAppStore((s) => s.resolvedOpenItemIds)
@@ -110,11 +150,20 @@ export function Today({ trip }: { trip: Trip }) {
     () => new Map(manualItems.filter((i) => i.tripId === trip.meta.id).map((i) => [i.id, i])),
     [manualItems, trip.meta.id]
   )
-  const phase = useMemo(() => tripPhase(trip.meta.startDate, trip.meta.endDate), [trip])
-  const today = useMemo(() => findCurrentDay(effectiveTrip.days), [effectiveTrip])
-  const upcoming = useMemo(() => findNextDay(effectiveTrip.days), [effectiveTrip])
+  // Every "what day/time is it" question on this page is answered against
+  // the trip's own destination timezone, not the device's — see
+  // lib/timezone.ts. nowInZone returns a Date whose local getters equal
+  // the destination's wall clock, so it's a drop-in `now` for the
+  // existing lib/date.ts helpers below without changing their signatures.
+  const tz = getTripTimeZone(trip)
+  const now = nowInZone(tz)
+  const phase = useMemo(() => tripPhase(trip.meta.startDate, trip.meta.endDate, now), [trip, now])
+  const today = useMemo(() => findCurrentDay(effectiveTrip.days, now), [effectiveTrip, now])
+  const upcoming = useMemo(() => findNextDay(effectiveTrip.days, now), [effectiveTrip, now])
   const [lightboxSrc, setLightboxSrc] = useState<string | null>(null)
   const [showCompleted, setShowCompleted] = useState(false)
+
+  const walletEntries = useMemo(() => sortWalletEntries(buildWalletDocEntries(effectiveTrip)), [effectiveTrip])
 
   // A traveler-uploaded outfit board takes precedence over the seeded one
   // for today's active-day display (but never deletes/hides the seeded
@@ -145,9 +194,15 @@ export function Today({ trip }: { trip: Trip }) {
     const leg = trip.legs.find((l) => l.id === today.legId)
     const outfitBoard = trip.outfitBoards.find((b) => b.id === today.outfitBoardId)
     const deadlines = today.deadlines ?? []
-    const { next, after } = findNextScheduleItem(today.scheduleItems)
-    const restOfDay = today.scheduleItems.filter((item) => item.id !== next?.id && item.id !== after?.id)
+    const { next } = findNextScheduleItem(today.scheduleItems, now)
+    const afterNext = today.scheduleItems.filter((item) => item.id !== next?.id)
+    // Beneath Next Up, show at most the following two items as a compact
+    // one-line-each "Later" preview; anything past that still appears in
+    // full below under "Rest of today" rather than being hidden.
+    const nextTwo = afterNext.slice(0, 2)
+    const restOfDay = afterNext.slice(2)
     const dayOpenItems = effectiveTrip.openItems.filter((i) => i.status === 'open' && i.relatedDayId === today.id)
+    const todayWalletEntries = walletEntries.filter((e) => e.date === today.date)
 
     return (
       <div className="animate-fade-in space-y-6">
@@ -158,6 +213,8 @@ export function Today({ trip }: { trip: Trip }) {
           <h1 className="font-display text-2xl text-ink">{today.title}</h1>
           <p className="mt-0.5 text-sm text-ink-soft">{formatDateLong(today.date)}</p>
         </div>
+
+        <TodayAlertBanner trip={trip} effectiveTrip={effectiveTrip} now={now} />
 
         {activeDayLocation && <WeatherCard label={activeDayLocation.name} weather={activeWeather} />}
 
@@ -245,14 +302,20 @@ export function Today({ trip }: { trip: Trip }) {
         {next && (
           <div>
             <SectionHeader eyebrow="Next up" title={next.label} />
-            <ScheduleCard item={next} manualItem={manualItemsById.get(next.id)} trip={trip} emphasize />
+            <ScheduleCard item={next} manualItem={manualItemsById.get(next.id)} trip={trip} legName={leg?.name} emphasize />
           </div>
         )}
 
-        {after && (
+        {todayWalletEntries.length > 0 && <TodayWallet entries={todayWalletEntries} />}
+
+        {nextTwo.length > 0 && (
           <div>
-            <SectionHeader eyebrow="After that" title={after.label} />
-            <ScheduleCard item={after} manualItem={manualItemsById.get(after.id)} trip={trip} />
+            <SectionHeader eyebrow="Coming up" title="Later" />
+            <div className="space-y-2">
+              {nextTwo.map((item) => (
+                <LaterRow key={item.id} item={item} />
+              ))}
+            </div>
           </div>
         )}
 

@@ -3,8 +3,9 @@ import { Link } from 'react-router-dom'
 import { useAppStore } from '../../store/useAppStore'
 import type { TripMeta } from '../../types/trip'
 import { clsx } from 'clsx'
+import { AlertBell } from '../alerts/AlertBell'
 
-export function TopBar({ meta }: { meta: TripMeta }) {
+export function TopBar({ meta, alertBadgeCount = 0 }: { meta: TripMeta; alertBadgeCount?: number }) {
   const shareMode = useAppStore((s) => s.shareMode)
   const toggleShareMode = useAppStore((s) => s.toggleShareMode)
 
@@ -15,8 +16,8 @@ export function TopBar({ meta }: { meta: TripMeta }) {
         shareMode ? 'border-blue/30 bg-blue-tint' : 'border-line bg-bg/95'
       )}
     >
-      <div className="mx-auto flex max-w-md items-center justify-between">
-        <Link to="/" className="flex items-center gap-2 min-w-0">
+      <div className="mx-auto flex max-w-md items-center justify-between gap-2">
+        <Link to="/" className="flex min-w-0 items-center gap-2">
           <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-line bg-surface text-ink-soft">
             <LayoutGrid size={15} />
           </span>
@@ -25,18 +26,21 @@ export function TopBar({ meta }: { meta: TripMeta }) {
             <h1 className="truncate font-display text-lg leading-tight text-ink">{meta.name}</h1>
           </div>
         </Link>
-        <button
-          onClick={toggleShareMode}
-          className={clsx(
-            'flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition-colors',
-            shareMode
-              ? 'border-blue bg-blue text-white'
-              : 'border-line bg-surface text-ink-soft hover:border-blue/40'
-          )}
-        >
-          {shareMode ? <Eye size={14} /> : <EyeOff size={14} />}
-          {shareMode ? 'Share mode' : 'Share'}
-        </button>
+        <div className="flex shrink-0 items-center gap-1.5">
+          <AlertBell count={alertBadgeCount} />
+          <button
+            onClick={toggleShareMode}
+            className={clsx(
+              'flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition-colors',
+              shareMode
+                ? 'border-blue bg-blue text-white'
+                : 'border-line bg-surface text-ink-soft hover:border-blue/40'
+            )}
+          >
+            {shareMode ? <Eye size={14} /> : <EyeOff size={14} />}
+            {shareMode ? 'Share mode' : 'Share'}
+          </button>
+        </div>
       </div>
       {shareMode && (
         <p className="mx-auto mt-1.5 max-w-md text-[11px] text-blue">
