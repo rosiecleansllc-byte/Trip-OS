@@ -173,6 +173,11 @@ export function AddItemSheet({ trip }: { trip: Trip }) {
   const [resolveCandidates, setResolveCandidates] = useState<OpenItem[] | null>(null)
   const [savedItemId, setSavedItemId] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
+  // Set only when the item itself saved fine but writing its screenshot
+  // into the private-document wallet failed (see handleSave) — the
+  // traveler needs to know the photo didn't attach, not just see the
+  // sheet close as if everything worked.
+  const [screenshotError, setScreenshotError] = useState<string | null>(null)
 
   // The uploaded screenshot lives only here — component state, never the
   // persisted app store — until Save writes it into the private-document
@@ -227,6 +232,7 @@ export function AddItemSheet({ trip }: { trip: Trip }) {
       setOcrNotice(null)
       setResolveCandidates(null)
       setSavedItemId(null)
+      setScreenshotError(null)
     }
   }, [step, editingItem])
 
@@ -240,6 +246,7 @@ export function AddItemSheet({ trip }: { trip: Trip }) {
     setOcrNotice(null)
     setResolveCandidates(null)
     setSavedItemId(null)
+    setScreenshotError(null)
     pickType(t)
   }
 
@@ -247,6 +254,7 @@ export function AddItemSheet({ trip }: { trip: Trip }) {
     setForm(emptyForm(trip))
     setPendingScreenshot(null)
     setOcrNotice(null)
+    setScreenshotError(null)
     enterForm()
   }
 
@@ -357,10 +365,24 @@ export function AddItemSheet({ trip }: { trip: Trip }) {
     // privateDocumentKey) exists — see the class comment in
     // lib/manualItems.ts createManualItem. Held in memory until now,
     // never in localStorage/Zustand persisted state.
+    //
+    // The item itself is already fully saved above regardless of what
+    // happens here — a failure here never leaves it half-saved, only
+    // without its attached photo — so this is wrapped separately: the
+    // traveler still gets a completed save and a clear, recoverable
+    // message (the item's own ••• menu / ActionRow "Add" button is right
+    // there to attach the photo again), instead of the sheet hanging on
+    // "Saving…" or silently closing as if the photo made it in.
+    let screenshotErrorMessage: string | null = null
     if (pendingScreenshot && saved.privateDocumentKey) {
-      await putPrivateDoc(saved.privateDocumentKey, pendingScreenshot)
+      try {
+        await putPrivateDoc(saved.privateDocumentKey, pendingScreenshot)
+      } catch {
+        screenshotErrorMessage = "Saved, but the screenshot couldn't be attached. You can add it again from this item's card."
+      }
     }
     setPendingScreenshot(null)
+    setScreenshotError(screenshotErrorMessage)
 
     // Only offer to resolve OpenItems that aren't already resolved.
     const candidates = findResolvableOpenItems(trip, saved).filter(
@@ -368,7 +390,7 @@ export function AddItemSheet({ trip }: { trip: Trip }) {
     )
     setSavedItemId(saved.id)
     setSaving(false)
-    if (candidates.length > 0) {
+    if (candidates.length > 0 || screenshotErrorMessage) {
       setResolveCandidates(candidates)
     } else {
       close()
@@ -404,7 +426,15 @@ export function AddItemSheet({ trip }: { trip: Trip }) {
               <CheckCircle2 size={18} />
               <p className="font-display text-lg text-ink">Saved</p>
             </div>
-            <p className="mt-2 text-sm text-ink-soft">This looks like it covers:</p>
+            {screenshotError && (
+              <div className="mt-3 flex items-start gap-2 rounded-xl bg-red-tint px-3.5 py-2.5 text-xs text-red">
+                <AlertTriangle size={14} className="mt-0.5 shrink-0" />
+                <p>{screenshotError}</p>
+              </div>
+            )}
+            {resolveCandidates.length > 0 && (
+              <p className="mt-3 text-sm text-ink-soft">This looks like it covers:</p>
+            )}
             <div className="mt-2 space-y-2">
               {resolveCandidates.map((oi) => (
                 <div key={oi.id} className="flex items-center justify-between gap-3 rounded-xl border border-line p-3">

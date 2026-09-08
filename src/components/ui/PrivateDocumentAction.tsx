@@ -39,10 +39,19 @@ export function PrivateDocumentAction({
   const menuRef = useRef<HTMLDivElement>(null)
 
   const refresh = () => {
-    getPrivateDoc(docKey).then((d) => {
-      setDoc(d)
-      setStatus(d ? 'present' : 'absent')
-    })
+    getPrivateDoc(docKey)
+      .then((d) => {
+        setDoc(d)
+        setStatus(d ? 'present' : 'absent')
+      })
+      // If IndexedDB itself is unavailable/broken, fall back to "absent"
+      // rather than leaving the button stuck invisible in "checking"
+      // forever — the traveler can still see and use the "Add" action,
+      // which will surface the same underlying error if they try it.
+      .catch(() => {
+        setDoc(undefined)
+        setStatus('absent')
+      })
   }
 
   useEffect(() => {

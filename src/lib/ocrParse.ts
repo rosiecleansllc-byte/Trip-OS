@@ -162,15 +162,56 @@ export function extractAllTimes(text: string): string[] {
 
 const CURRENCY_SYMBOL: Record<string, string> = { $: 'USD', '€': 'EUR', '£': 'GBP' }
 
-export function extractCost(text: string): { cost?: string; currency?: string } {
-  const m = text.match(/([$€£])\s?(\d{1,3}(?:[,.]\d{3})*(?:\.\d{2})?)/)
+function extractAmountFromLine(line: string): { cost?: string; currency?: string } {
+  const m = line.match(/([$€£])\s?(\d{1,3}(?:[,.]\d{3})*(?:\.\d{2})?)/)
   if (m) {
     const amount = m[2].replace(/,/g, '')
     return { cost: amount, currency: CURRENCY_SYMBOL[m[1]] }
   }
-  const code = text.match(/\b(USD|EUR|GBP)\s?(\d{1,3}(?:[,.]\d{3})*(?:\.\d{2})?)/i)
+  const code = line.match(/\b(USD|EUR|GBP)\s?(\d{1,3}(?:[,.]\d{3})*(?:\.\d{2})?)/i)
   if (code) return { cost: code[2].replace(/,/g, ''), currency: code[1].toUpperCase() }
   return {}
+}
+
+// Checked in this order — a confirmation showing a room subtotal, taxes,
+// and a final total (the classic Booking.com layout) should never end up
+// with the subtotal, so "grand total"/"total price"/etc. all outrank a
+// bare "total", which in turn outranks "price" (too easily a per-night or
+// per-item figure rather than what's actually owed).
+const TOTAL_LABEL_PRIORITY = [
+  /grand\s*total/i,
+  /total\s*price/i,
+  /amount\s*paid/i,
+  /payment\s*total/i,
+  /\btotal\b/i,
+  /\bprice\b/i,
+]
+
+function findLabeledAmount(lines: string[], labelPattern: RegExp): { cost?: string; currency?: string } | undefined {
+  for (let i = 0; i < lines.length; i++) {
+    if (!labelPattern.test(lines[i])) continue
+    const sameLine = extractAmountFromLine(lines[i])
+    if (sameLine.cost) return sameLine
+    // Some layouts put the label and the amount on separate lines
+    // ("Total\n$353.97").
+    const nextLine = lines[i + 1] ? extractAmountFromLine(lines[i + 1]) : {}
+    if (nextLine.cost) return nextLine
+  }
+  return undefined
+}
+
+// Prefers whichever amount is actually labeled as the total the traveler
+// owes/paid, rather than just the first dollar figure on the page — a
+// hotel confirmation showing "Room: $300 / Taxes: $54 / Total: $354"
+// should extract $354, not $300. Falls back to the first amount anywhere
+// only when nothing on the page is labeled as a total.
+export function extractCost(text: string): { cost?: string; currency?: string } {
+  const lines = text.split('\n')
+  for (const labelPattern of TOTAL_LABEL_PRIORITY) {
+    const found = findLabeledAmount(lines, labelPattern)
+    if (found) return found
+  }
+  return extractAmountFromLine(text)
 }
 
 export function extractPhone(text: string): string | undefined {
@@ -248,11 +289,33 @@ export function extractTicketQuantity(text: string): string | undefined {
 
 const SKIP_TITLE_LINE = /^(confirmation|confirmed|booking|reservation|receipt|order|status|check[- ]?in|check[- ]?out|date|time|total|guest|address|phone|www\.|http)/i
 
+// Platform/OTA/ticketing chrome that shows up as its own line (usually a
+// logo or page header) in a screenshot but is never the actual hotel/
+// restaurant/event name — e.g. a Booking.com hotel confirmation's title
+// should be the property, not "Booking.com"; a Luma ticket's title should
+// be the event, not "luma". Matched as "this line more or less just says
+// the brand name," not "this line mentions the brand anywhere," so a
+// venue that happens to be named after a company isn't wrongly excluded.
+const BRANDING_NAMES = [
+  'booking.com', 'luma', 'lu.ma', 'covermanager', 'google', 'expedia',
+  'opentable', 'resy', 'airbnb', 'vrbo', 'hotels.com', 'tripadvisor',
+  'eventbrite', 'ticketmaster', 'stubhub', 'yelp', 'grubhub', 'doordash',
+]
+
+function isBrandingLine(line: string): boolean {
+  const norm = line.toLowerCase().replace(/[^a-z0-9. ]/g, '').trim()
+  return BRANDING_NAMES.some((b) => {
+    const bn = b.toLowerCase()
+    return norm === bn || norm === bn.replace('.', '') || norm.startsWith(`powered by ${bn}`) || norm.startsWith(`via ${bn}`)
+  })
+}
+
 function isSubstantiveLine(l: string): boolean {
   return (
     l.length >= 3 &&
     l.length <= 80 &&
     !SKIP_TITLE_LINE.test(l) &&
+    !isBrandingLine(l) &&
     !/^\d+$/.test(l) &&
     !/^[$€£]/.test(l) &&
     !/\d{1,2}:\d{2}/.test(l)
@@ -263,20 +326,68 @@ function substantiveLines(text: string): string[] {
   return text.split('\n').map((l) => l.trim()).filter(Boolean).filter(isSubstantiveLine)
 }
 
-// Best guess at a title/name — the first substantive line that isn't
-// obviously a label, a date/time, or a URL. Screenshots overwhelmingly
-// put the hotel/restaurant/event name at or near the top.
+function cleanTitleValue(raw: string): string | undefined {
+  const value = raw.trim().replace(/[.:,]+$/, '')
+  if (value.length < 2 || value.length > 80) return undefined
+  if (isBrandingLine(value)) return undefined
+  return value
+}
+
+// Real confirmations from booking platforms almost always label the
+// actual property/event name somewhere ("Hotel: ...", "Reservation at
+// ...", "Event: ..."), either inline or as a label on its own line with
+// the value on the next — and that's a far more reliable signal than
+// "whatever line comes first," which on a Booking.com or Luma screenshot
+// is the platform's own branding, not the trip item's name.
+const TITLE_LABEL_WORDS = ['hotel', 'property', 'event', 'venue', 'location']
+
+function extractLabeledTitle(text: string): string | undefined {
+  const lines = text.split('\n').map((l) => l.trim())
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i]
+    if (!line) continue
+
+    const phrase = line.match(/(?:reservation\s+at|booking\s+confirmation\s+for)\s*[:-]?\s*(.+)/i)
+    if (phrase) {
+      const value = cleanTitleValue(phrase[1])
+      if (value) return value
+    }
+
+    const labelColon = line.match(/^(hotel|property|event|venue|location)\s*[:-]\s*(.+)/i)
+    if (labelColon) {
+      const value = cleanTitleValue(labelColon[2])
+      if (value) return value
+    }
+
+    const bareLabel = line.match(new RegExp(`^(${TITLE_LABEL_WORDS.join('|')})\\s*:?$`, 'i'))
+    if (bareLabel) {
+      const next = lines.slice(i + 1).find((l) => l.length > 0)
+      const value = next ? cleanTitleValue(next) : undefined
+      if (value) return value
+    }
+  }
+  return undefined
+}
+
+// Best guess at a title/name: prefer a value found next to an explicit
+// label (extractLabeledTitle), and only fall back to "the first
+// substantive, non-branding line" when no label is present.
 export function guessTitle(text: string): string | undefined {
-  return substantiveLines(text)[0]
+  return extractLabeledTitle(text) ?? substantiveLines(text)[0]
 }
 
 // For activities, the venue is often the next substantive line after the
 // event name — used only as a fallback when that line isn't already
 // claimed as the street address.
-function guessVenue(text: string, address: string | undefined): string | undefined {
-  const [, second] = substantiveLines(text)
-  if (!second || second === address) return undefined
-  return second
+function guessVenue(text: string, title: string | undefined, address: string | undefined): string | undefined {
+  // Since guessTitle now prefers a labeled line ("Event: ...") over just
+  // "whichever line comes first," the venue can no longer be assumed to
+  // be "the second substantive line" — that line might be the very same
+  // one the title was read from. Exclude whichever line actually produced
+  // the title (it may carry a label prefix the title itself doesn't, e.g.
+  // "Event: You x AI Summit" vs. title "You x AI Summit"), then take the
+  // next remaining substantive line that isn't the address either.
+  return substantiveLines(text).find((l) => l !== address && !(title && l.includes(title)))
 }
 
 function paymentIndicatesPaid(text: string): boolean {
@@ -339,12 +450,13 @@ export function parseFieldsForType(type: ManualItemType, text: string, tripStart
   // activity
   const times = extractAllTimes(text)
   const address = extractAddress(text)
+  const activityTitle = guessTitle(text)
   return {
-    title: guessTitle(text),
+    title: activityTitle,
     date: extractDate(text, tripStartDate),
     time: times[0],
     endTime: times[1],
-    location: guessVenue(text, address),
+    location: guessVenue(text, activityTitle, address),
     address,
     confirmationCode,
     partySize: extractTicketQuantity(text),
