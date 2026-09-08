@@ -5,7 +5,7 @@ import type { Trip } from '../types/trip'
 import { ActionRow } from '../components/ui/ActionRow'
 import { Card } from '../components/ui/Card'
 import { ManualItemMenu } from '../components/manual/ManualItemMenu'
-import { formatDateShort, isSameISODate } from '../lib/date'
+import { formatDateShort, formatTime, isSameISODate } from '../lib/date'
 import { useAppStore } from '../store/useAppStore'
 import { getEffectiveTrip } from '../lib/manualItems'
 import {
@@ -147,7 +147,7 @@ export function TripPage({ trip }: { trip: Trip }) {
                     <ul className="mt-3 space-y-2.5 border-t border-line pt-3">
                       {day.scheduleItems.map((item) => (
                         <li key={item.id} className="flex gap-2.5 text-sm">
-                          <span className="w-11 shrink-0 text-xs text-blue">{item.time ?? ''}</span>
+                          <span className="w-11 shrink-0 text-xs text-blue">{formatTime(item.time) ?? ''}</span>
                           <div className="min-w-0 flex-1">
                             <div className="flex items-start justify-between gap-2">
                               <p className="text-ink">{item.label}</p>

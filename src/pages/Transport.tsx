@@ -5,7 +5,7 @@ import { Card } from '../components/ui/Card'
 import { SectionHeader } from '../components/ui/SectionHeader'
 import { StatusTag } from '../components/ui/StatusTag'
 import { ManualItemMenu } from '../components/manual/ManualItemMenu'
-import { formatDateCompact } from '../lib/date'
+import { formatDateCompact, formatTime } from '../lib/date'
 import { formatMoney } from '../lib/money'
 import { useAppStore } from '../store/useAppStore'
 import { redactTransport } from '../lib/share'
@@ -39,7 +39,7 @@ function TransportRow({
           </p>
           <p className="mt-0.5 text-xs text-ink-soft">
             {formatDateCompact(t.date)}
-            {t.departTime ? ` · ${t.departTime}${t.arriveTime ? `–${t.arriveTime}` : ''}` : ''}
+            {t.departTime ? ` · ${formatTime(t.departTime)}${t.arriveTime ? `–${formatTime(t.arriveTime)}` : ''}` : ''}
           </p>
         </div>
         <div className="flex shrink-0 items-center gap-1.5">

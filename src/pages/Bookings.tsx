@@ -6,7 +6,7 @@ import { OpenItemToggle } from '../components/ui/OpenItemToggle'
 import { SectionHeader } from '../components/ui/SectionHeader'
 import { StatusTag } from '../components/ui/StatusTag'
 import { ManualItemMenu } from '../components/manual/ManualItemMenu'
-import { formatDateCompact, formatDateTimeCompact } from '../lib/date'
+import { formatDateCompact, formatDateTimeCompact, formatTime } from '../lib/date'
 import { formatMoney } from '../lib/money'
 import { useAppStore } from '../store/useAppStore'
 import { redactBooking } from '../lib/share'
@@ -43,7 +43,7 @@ function BookingRow({
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <p className="text-sm font-medium text-ink">{b.name}</p>
-          <p className="mt-0.5 text-xs text-ink-soft">{dateLabel}{b.time ? ` · ${b.time}` : ''}</p>
+          <p className="mt-0.5 text-xs text-ink-soft">{dateLabel}{b.time ? ` · ${formatTime(b.time)}` : ''}</p>
         </div>
         <div className="flex shrink-0 items-center gap-1.5">
           <StatusTag status={b.status} />
