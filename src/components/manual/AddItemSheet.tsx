@@ -171,6 +171,15 @@ export function AddItemSheet({ trip }: { trip: Trip }) {
 
   const [form, setForm] = useState<FormState>(() => emptyForm(trip))
   const [resolveCandidates, setResolveCandidates] = useState<OpenItem[] | null>(null)
+  // The manual items list as of the save that produced resolveCandidates
+  // — includes the just-created/edited item, unlike the manualItems value
+  // above, which is whatever the store held when this component last
+  // rendered *before* that save (a plain closed-over variable, not
+  // re-read reactively inside handleSave). The "Mark resolved" button on
+  // the post-save screen reads this instead, so linking relatedOpenItemId
+  // — including a round-trip OpenItem's second leg — always sees the item
+  // that was just saved.
+  const [postSaveManualItems, setPostSaveManualItems] = useState<ManualTripItem[]>([])
   const [saving, setSaving] = useState(false)
   // Set only when the item itself saved fine but writing its screenshot
   // into the private-document wallet failed (see handleSave) — the
@@ -387,6 +396,7 @@ export function AddItemSheet({ trip }: { trip: Trip }) {
     const candidates = findResolvableOpenItems(trip, nextManualItems, saved).filter(
       (oi) => !effectiveResolvedIds[`${trip.meta.id}:${oi.id}`]
     )
+    setPostSaveManualItems(nextManualItems)
     setSaving(false)
     if (candidates.length > 0 || screenshotErrorMessage) {
       setResolveCandidates(candidates)
@@ -446,8 +456,12 @@ export function AddItemSheet({ trip }: { trip: Trip }) {
                       // findOpenItemsToUnresolve), not just the one just
                       // saved — a round-trip OpenItem needs both legs
                       // linked so deleting or editing either one can
-                      // reopen it if nothing else still covers it.
-                      findManualItemsForOpenItem(trip, manualItems, oi).forEach((mi) =>
+                      // reopen it if nothing else still covers it. Reads
+                      // postSaveManualItems (captured at save time), not
+                      // the plain manualItems closure above, which is
+                      // stale relative to the item this very screen is
+                      // about.
+                      findManualItemsForOpenItem(trip, postSaveManualItems, oi).forEach((mi) =>
                         updateManualItem(mi.id, { relatedOpenItemId: oi.id })
                       )
                       setResolveCandidates((c) => (c ? c.filter((x) => x.id !== oi.id) : c))
