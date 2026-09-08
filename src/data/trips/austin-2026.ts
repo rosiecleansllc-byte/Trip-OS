@@ -49,7 +49,12 @@ export const austinTrip: Trip = {
       // Franklin's BBQ after arriving — see outfitBoards below.
       outfitBoardIds: ['ob1-travel', 'ob1-franklin'],
       scheduleItems: [
-        { id: 'd1-1', label: 'Travel to ATL', type: 'transport' },
+        // No real time for the drive to the airport — sortOrder just
+        // keeps it at the top of the day once a manual item (which
+        // always carries a real time) merges in and forces a resort;
+        // see scheduleSortValue (lib/date.ts) for why an untimed item
+        // needs this to avoid sinking to the very end of the list.
+        { id: 'd1-1', label: 'Travel to ATL', type: 'transport', sortOrder: 720 },
         {
           id: 'd1-2',
           time: '16:19',
@@ -102,11 +107,16 @@ export const austinTrip: Trip = {
       title: 'Austin',
       outfitNote: 'Casual Austin exploring.',
       outfitBoardId: 'ob2-exploring',
+      // None of these have a real time yet, but each still gets a
+      // sortOrder (lib/date.ts scheduleSortValue) so they hold their
+      // correct relative order — instead of all sinking to the end,
+      // in whatever order they happen to be authored — the moment a
+      // manual item with a real time merges into this day.
       scheduleItems: [
-        { id: 'd2-1', label: 'Breakfast at Hyatt House', type: 'meal' },
-        { id: 'd2-2', label: 'Austin exploration / activities TBD', type: 'free' },
-        { id: 'd2-3', label: 'Lunch TBD', type: 'meal' },
-        { id: 'd2-4', label: 'Dinner TBD', type: 'meal' },
+        { id: 'd2-1', label: 'Breakfast at Hyatt House', type: 'meal', sortOrder: 480 },
+        { id: 'd2-2', label: 'Austin exploration / activities TBD', type: 'free', sortOrder: 600 },
+        { id: 'd2-3', label: 'Lunch TBD', type: 'meal', sortOrder: 780 },
+        { id: 'd2-4', label: 'Dinner TBD', type: 'meal', sortOrder: 1140 },
       ],
     },
     {
