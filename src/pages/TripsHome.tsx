@@ -1,8 +1,8 @@
 import { useNavigate } from 'react-router-dom'
-import { CalendarDays, ChevronRight, MapPin } from 'lucide-react'
+import { CalendarDays, MapPin } from 'lucide-react'
 import { clsx } from 'clsx'
 import { trips } from '../data/tripsIndex'
-import { Card } from '../components/ui/Card'
+import { ImagePlaceholder } from '../components/ui/ImagePlaceholder'
 import { daysUntil, formatDateCompact, tripPhase } from '../lib/date'
 import { computeReadiness } from '../lib/readiness'
 import { useAppStore } from '../store/useAppStore'
@@ -13,6 +13,10 @@ const PHASE_LABEL: Record<'pre' | 'active' | 'post', string> = {
   post: 'Completed',
 }
 
+// Tapping a trip here opens its cover/overview page (see Overview.tsx),
+// not straight into Today — that's a deliberate stop before the
+// operational trip screens, reached from there via its own "Enter Trip"
+// button.
 export function TripsHome() {
   const navigate = useNavigate()
   const setCurrentTripId = useAppStore((s) => s.setCurrentTripId)
@@ -25,7 +29,7 @@ export function TripsHome() {
         <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-blue">Trip OS</p>
         <h1 className="font-display text-2xl text-ink">Your trips</h1>
 
-        <div className="mt-5 space-y-3">
+        <div className="mt-5 space-y-4">
           {sorted.map((trip) => {
             const phase = tripPhase(trip.meta.startDate, trip.meta.endDate)
             const countdown = daysUntil(trip.meta.startDate)
@@ -38,41 +42,49 @@ export function TripsHome() {
                 type="button"
                 onClick={() => {
                   setCurrentTripId(trip.meta.id)
-                  navigate('/today')
+                  navigate('/overview')
                 }}
                 className="block w-full text-left"
               >
-                <Card className="p-4">
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="min-w-0">
-                      <p className="font-display text-lg text-ink">{trip.meta.name}</p>
-                      <p className="mt-0.5 flex items-center gap-1 text-xs text-ink-soft">
-                        <MapPin size={12} />
-                        {trip.meta.destinationLabel}
-                      </p>
-                    </div>
+                <div className="overflow-hidden rounded-3xl border border-line bg-surface shadow-[0_1px_2px_rgba(17,17,17,0.04)]">
+                  <div className="relative h-48 w-full overflow-hidden">
+                    <ImagePlaceholder
+                      label={trip.meta.coverAlt ?? `${trip.meta.name} cover artwork`}
+                      imageUrl={trip.meta.coverImageUrl}
+                      fit="cover"
+                      className="h-full w-full"
+                      style={trip.meta.coverPosition ? { objectPosition: trip.meta.coverPosition } : undefined}
+                    />
+                    <div className="pointer-events-none absolute inset-x-0 bottom-0 h-20 bg-gradient-to-t from-ink/70 to-transparent" />
                     <span
                       className={clsx(
-                        'shrink-0 rounded-full px-2.5 py-1 text-[11px] font-medium',
+                        'absolute right-3 top-3 rounded-full px-2.5 py-1 text-[11px] font-medium',
                         phase === 'active'
                           ? 'bg-blue text-white'
                           : phase === 'pre'
-                            ? 'bg-blue-tint text-blue'
-                            : 'bg-bg-soft text-ink-soft'
+                            ? 'bg-surface/90 text-blue'
+                            : 'bg-surface/90 text-ink-soft'
                       )}
                     >
                       {PHASE_LABEL[phase]}
                     </span>
+                    <div className="pointer-events-none absolute inset-x-4 bottom-3">
+                      <p className="font-display text-2xl text-white drop-shadow-sm">{trip.meta.name}</p>
+                    </div>
                   </div>
 
-                  <p className="mt-2.5 flex items-center gap-1.5 text-xs text-ink-soft">
-                    <CalendarDays size={12} />
-                    {formatDateCompact(trip.meta.startDate)} – {formatDateCompact(trip.meta.endDate)} · {dayCount} days
-                    {phase === 'pre' && countdown > 0 ? ` · ${countdown} day${countdown === 1 ? '' : 's'} away` : ''}
-                  </p>
+                  <div className="p-4">
+                    <p className="flex items-center gap-1.5 text-xs text-ink-soft">
+                      <MapPin size={12} />
+                      {trip.meta.destinationLabel}
+                    </p>
+                    <p className="mt-1.5 flex items-center gap-1.5 text-xs text-ink-soft">
+                      <CalendarDays size={12} />
+                      {formatDateCompact(trip.meta.startDate)} – {formatDateCompact(trip.meta.endDate)} · {dayCount} days
+                      {phase === 'pre' && countdown > 0 ? ` · ${countdown} day${countdown === 1 ? '' : 's'} away` : ''}
+                    </p>
 
-                  <div className="mt-3 flex items-center justify-between">
-                    <div className="flex-1">
+                    <div className="mt-3">
                       <div className="h-1.5 overflow-hidden rounded-full bg-bg-soft">
                         <div
                           className="h-full rounded-full bg-blue transition-all"
@@ -81,9 +93,8 @@ export function TripsHome() {
                       </div>
                       <p className="mt-1 text-[11px] text-ink-soft">{readiness.percent}% ready</p>
                     </div>
-                    <ChevronRight size={18} className="ml-3 shrink-0 text-gray" />
                   </div>
-                </Card>
+                </div>
               </button>
             )
           })}

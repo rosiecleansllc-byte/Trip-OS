@@ -256,9 +256,28 @@ export interface TripMeta {
   tripCurrency: string
   status: 'upcoming' | 'active' | 'past'
   coverImageUrl?: string
+  coverAlt?: string // alt text for coverImageUrl; falls back to a generic description if unset
+  coverPosition?: string // CSS object-position, e.g. "center 30%", for responsive cropping
   weatherDisclaimer?: string
   budgetNote?: string
   outfitBoardImageUrl?: string // full capsule + daily-outfit board, for the Pack lightbox
+}
+
+// A real-world place whose live weather is worth showing for this trip —
+// see lib/weather.ts. Public/decorative data, safe in Share mode like the
+// rest of the readiness card. relatedLegId ties it to Leg.id/DayPlan.legId
+// so a day's weather can be looked up generically (getWeatherLocationForDay
+// in lib/weather.ts) instead of any page hardcoding a city name; a single
+// location can cover more than one leg (e.g. an outbound and a return visit
+// to the same city) via an array.
+export interface WeatherLocation {
+  id: string
+  name: string
+  city: string
+  country?: string
+  latitude?: number
+  longitude?: number
+  relatedLegId?: string | string[]
 }
 
 // A trip item Cecilia adds herself from inside the app — a stay, a leg of
@@ -323,4 +342,5 @@ export interface Trip {
   openItems: OpenItem[]
   packingList?: PackingItem[] // a plain checklist, for trips without a styled capsule wardrobe
   resources?: TravelResource[] // public reference links, e.g. an official transit map
+  weatherLocations?: WeatherLocation[] // see lib/weather.ts
 }

@@ -21,11 +21,19 @@ export const austinTrip: Trip = {
     homeCurrency: 'USD',
     tripCurrency: 'USD',
     status: 'upcoming',
+    coverImageUrl: '/images/trip-covers/austin-waco-2026.webp',
+    coverAlt: 'Austin, Texas cowgirl poster pointing toward a map of Texas',
+    coverPosition: 'center 20%',
   },
 
   legs: [
     { id: 'austin', name: 'Austin', order: 1 },
     { id: 'waco', name: 'Waco', order: 2 },
+  ],
+
+  weatherLocations: [
+    { id: 'wx-austin', name: 'Austin', city: 'Austin', country: 'US', latitude: 30.2672, longitude: -97.7431, relatedLegId: 'austin' },
+    { id: 'wx-waco', name: 'Waco', city: 'Waco', country: 'US', latitude: 31.5493, longitude: -97.1467, relatedLegId: 'waco' },
   ],
 
   days: [
@@ -87,14 +95,14 @@ export const austinTrip: Trip = {
       id: 'd3',
       date: '2026-09-11',
       dayNumber: 3,
-      legId: 'austin',
-      title: 'Austin / lodging transition',
+      legId: 'waco',
+      title: 'Austin → Waco',
       outfitNote: 'Comfortable clothes for checkout and travel.',
       scheduleItems: [
         { id: 'd3-1', label: 'Breakfast at Hyatt House', type: 'meal' },
         { id: 'd3-2', label: 'Pack / checkout', type: 'free' },
         { id: 'd3-3', time: '11:00', label: 'Hyatt House checkout by 11:00 AM', type: 'lodging', location: 'Hyatt House Austin/Downtown, Austin' },
-        { id: 'd3-4', label: 'Lodging Sept. 11–13 TBD', type: 'free' },
+        { id: 'd3-4', label: 'Travel Austin → Waco', type: 'transport' },
       ],
     },
     {
@@ -105,7 +113,6 @@ export const austinTrip: Trip = {
       title: 'You × AI Summit / Waco',
       outfitNote: 'Summit outfit.',
       scheduleItems: [
-        { id: 'd4-1', label: 'Austin → Waco transportation TBD', type: 'transport' },
         { id: 'd4-2', label: 'Arrive for Summit', type: 'transport', location: 'The Performing Arts Community Center, Waco, TX' },
         {
           id: 'd4-3',

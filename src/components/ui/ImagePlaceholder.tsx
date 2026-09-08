@@ -1,3 +1,4 @@
+import type { CSSProperties } from 'react'
 import { ImageIcon } from 'lucide-react'
 
 export function ImagePlaceholder({
@@ -6,6 +7,7 @@ export function ImagePlaceholder({
   imageUrl,
   fit = 'contain',
   onClick,
+  style,
 }: {
   label: string
   className?: string
@@ -14,6 +16,8 @@ export function ImagePlaceholder({
    *  Use 'cover' only for purely decorative fills where cropping is fine. */
   fit?: 'contain' | 'cover'
   onClick?: () => void
+  /** e.g. { objectPosition: 'center 30%' } for responsive cropping of a cover image */
+  style?: CSSProperties
 }) {
   if (imageUrl) {
     return (
@@ -21,6 +25,7 @@ export function ImagePlaceholder({
         src={imageUrl}
         alt={label}
         onClick={onClick}
+        style={style}
         className={`bg-bg-soft ${fit === 'contain' ? 'object-contain' : 'object-cover'} ${onClick ? 'cursor-zoom-in' : ''} ${className}`}
       />
     )

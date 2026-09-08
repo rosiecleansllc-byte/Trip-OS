@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { ChevronDown, CloudSun } from 'lucide-react'
 import { clsx } from 'clsx'
 import type { Trip } from '../types/trip'
@@ -8,6 +8,13 @@ import { ManualItemMenu } from '../components/manual/ManualItemMenu'
 import { formatDateShort, isSameISODate } from '../lib/date'
 import { useAppStore } from '../store/useAppStore'
 import { getEffectiveTrip } from '../lib/manualItems'
+import {
+  describeWeatherCode,
+  forecastForDate,
+  getWeatherLocationForDay,
+  getWeather,
+  type WeatherSnapshot,
+} from '../lib/weather'
 
 export function TripPage({ trip }: { trip: Trip }) {
   const shareMode = useAppStore((s) => s.shareMode)
@@ -18,6 +25,35 @@ export function TripPage({ trip }: { trip: Trip }) {
   const [openDay, setOpenDay] = useState<string | null>(
     effectiveTrip.days.find((d) => isSameISODate(d.date))?.id ?? effectiveTrip.days[0]?.id ?? null
   )
+
+  // One fetch per unique weather location (2-3 for these trips), not one
+  // per day row — every day resolves its own location via
+  // getWeatherLocationForDay and looks it up in this map, so a 12-day
+  // itinerary still only makes as many requests as there are distinct
+  // places. Cached individually by lib/weather.ts's own localStorage
+  // cache, so this is cheap on repeat visits regardless.
+  const [weatherByLocation, setWeatherByLocation] = useState<Record<string, WeatherSnapshot>>({})
+  useEffect(() => {
+    const locations = trip.weatherLocations ?? []
+    if (locations.length === 0) return
+    let cancelled = false
+    Promise.all(
+      locations.map((loc) =>
+        getWeather(loc, { ttlMinutes: 240 })
+          .then((snap) => [loc.id, snap] as const)
+          .catch(() => null)
+      )
+    ).then((results) => {
+      if (cancelled) return
+      const map: Record<string, WeatherSnapshot> = {}
+      for (const r of results) if (r) map[r[0]] = r[1]
+      setWeatherByLocation(map)
+    })
+    return () => {
+      cancelled = true
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [trip.meta.id])
 
   const legHeaderDayIds = useMemo(() => {
     const ids = new Set<string>()
@@ -55,6 +91,8 @@ export function TripPage({ trip }: { trip: Trip }) {
           const isToday = isSameISODate(day.date)
           const isOpen = openDay === day.id
           const hasOpenDeadline = (day.deadlines ?? []).some((d) => !d.done)
+          const dayLocation = getWeatherLocationForDay(effectiveTrip, day.id)
+          const dayForecast = dayLocation ? forecastForDate(weatherByLocation[dayLocation.id], day.date) : undefined
 
           return (
             <li key={day.id} className="relative">
@@ -80,8 +118,13 @@ export function TripPage({ trip }: { trip: Trip }) {
                 >
                   <div className="flex items-start justify-between gap-3">
                     <div>
-                      <p className="text-xs font-medium text-gray">
+                      <p className="flex items-center gap-1.5 text-xs font-medium text-gray">
                         Day {day.dayNumber} · {formatDateShort(day.date)}
+                        {dayForecast && (
+                          <span className="text-ink-soft">
+                            · {dayForecast.highF}° / {dayForecast.lowF}° {describeWeatherCode(dayForecast.code).emoji}
+                          </span>
+                        )}
                       </p>
                       <h3 className="font-display text-lg text-ink">{day.title}</h3>
                     </div>
