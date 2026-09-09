@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { clsx } from 'clsx'
-import { Check, ImageIcon, Maximize2, Plus } from 'lucide-react'
+import { Check, ImageIcon, Maximize2, Pencil, Plus } from 'lucide-react'
 import type { Trip, VisualBoardType } from '../types/trip'
 import { Card } from '../components/ui/Card'
 import { SectionHeader } from '../components/ui/SectionHeader'
@@ -15,11 +15,18 @@ import { OutfitCard } from '../components/wardrobe/OutfitCard'
 import { WardrobeOutfitBoardSection } from '../components/wardrobe/WardrobeOutfitBoardSection'
 import { getWeatherLocationForDay, isWithinForecastRange, useWeather } from '../lib/weather'
 import { isWardrobeItemBoard, sortVisualBoards, uploadedWardrobeItemsForTrip } from '../lib/visualBoards'
-import { WARDROBE_CATEGORY_LABELS, WARDROBE_CATEGORY_ORDER, allSeededOutfitsInOrder, sortOutfits } from '../lib/wardrobeOutfits'
+import {
+  WARDROBE_CATEGORY_LABELS,
+  WARDROBE_CATEGORY_ORDER,
+  allSeededOutfitsInOrder,
+  getEffectiveCapsule,
+  sortOutfits,
+} from '../lib/wardrobeOutfits'
 import { useAppStore } from '../store/useAppStore'
 import { useVisualBoardUiStore } from '../store/useVisualBoardUiStore'
 import { useOutfitUiStore } from '../store/useOutfitUiStore'
 import { useOutfitDetailUiStore } from '../store/useOutfitDetailUiStore'
+import { useCapsuleItemUiStore } from '../store/useCapsuleItemUiStore'
 
 const OUTFIT_TIER: VisualBoardType[] = ['outfit']
 const CAPSULE_TIER: VisualBoardType[] = ['capsule', 'packing']
@@ -96,12 +103,19 @@ export function Pack({ trip }: { trip: Trip }) {
   const hasChecklist = (trip.packingList?.length ?? 0) > 0
   const shareMode = useAppStore((s) => s.shareMode)
   const visualBoards = useAppStore((s) => s.visualBoards)
+  const wardrobeItemOverrides = useAppStore((s) => s.wardrobeItemOverrides)
+  const openEditCapsuleItem = useCapsuleItemUiStore((s) => s.openEdit)
+  // Seeded CapsuleItems with any traveler edit already applied (see
+  // lib/wardrobeOutfits.ts CapsuleItemOverride) — every rendering
+  // surface in this tab reads the effective item, never trip.capsule
+  // directly, so a rename/recategorize/photo change shows immediately.
+  const effectiveCapsule = getEffectiveCapsule(trip, wardrobeItemOverrides)
   // Traveler-uploaded individual wardrobe pieces (see types/trip.ts
   // VisualBoard.visualKind) — rendered in the Wardrobe tab grouped by
   // category alongside any seeded CapsuleItems, never in Boards. Hidden
   // entirely in Share mode, same as every other private-upload surface.
   const uploadedWardrobeItems = shareMode ? [] : uploadedWardrobeItemsForTrip(visualBoards, trip.meta.id)
-  const hasWardrobeTab = trip.capsule.length > 0 || uploadedWardrobeItems.length > 0
+  const hasWardrobeTab = effectiveCapsule.length > 0 || uploadedWardrobeItems.length > 0
   // "Visuals"/Boards is always present outside Share mode — Austin has no
   // seeded capsule/outfit data at all, and every trip (seeded or not)
   // should still be able to hold traveler-uploaded boards. Hidden
@@ -208,7 +222,7 @@ export function Pack({ trip }: { trip: Trip }) {
             </button>
           )}
           {WARDROBE_CATEGORY_ORDER.map((cat) => {
-            const seededItems = trip.capsule.filter((c) => c.category === cat)
+            const seededItems = effectiveCapsule.filter((c) => c.category === cat)
             const uploadedItems = uploadedWardrobeItems.filter((b) => (b.wardrobeCategory ?? 'other') === cat)
             if (seededItems.length === 0 && uploadedItems.length === 0) return null
             return (
@@ -220,7 +234,7 @@ export function Pack({ trip }: { trip: Trip }) {
                 />
                 <div className="grid grid-cols-2 gap-3">
                   {seededItems.map((item) => (
-                    <Card key={item.id} className="overflow-hidden">
+                    <Card key={item.id} className="relative overflow-hidden">
                       {shareMode ? (
                         <ImagePlaceholder label={item.name} imageUrl={item.imageUrl} className="h-32 w-full" />
                       ) : (
@@ -230,6 +244,23 @@ export function Pack({ trip }: { trip: Trip }) {
                         <p className="text-xs font-medium text-ink">{item.name}</p>
                         {item.note && <p className="mt-0.5 text-[11px] text-ink-soft">{item.note}</p>}
                       </div>
+                      {!shareMode && (
+                        <button
+                          type="button"
+                          aria-label="Edit wardrobe item"
+                          onClick={() => {
+                            // The sheet needs the raw seeded item (not
+                            // the override-applied one) so it can tell
+                            // whether a seeded photo exists to restore —
+                            // see EditCapsuleItemSheet's seededPhotoRemoved.
+                            const seeded = trip.capsule.find((c) => c.id === item.id)
+                            if (seeded) openEditCapsuleItem(seeded)
+                          }}
+                          className="absolute right-1.5 top-1.5 flex h-6 w-6 items-center justify-center rounded-full bg-ink/55 text-white"
+                        >
+                          <Pencil size={11} />
+                        </button>
+                      )}
                     </Card>
                   ))}
                   {/* Traveler-uploaded pieces for this category — full

@@ -87,6 +87,50 @@ function resolvedFromCapsuleItem(item: CapsuleItem): ResolvedWardrobeItem {
   return { id: item.id, name: item.name, category: item.category, note: item.note, source: 'capsule', imageUrl: item.imageUrl }
 }
 
+// A traveler's edit to a seeded CapsuleItem — see useAppStore's
+// wardrobeItemOverrides. Kept separate from CapsuleItem itself (rather
+// than mutating trip.capsule, which is immutable imported seed data) so
+// Cecilia can rename, recategorize, or re-photo a seeded piece without a
+// code change, while the item's id — and therefore every Outfit.itemIds
+// reference to it — never changes.
+//
+// photoRemoved is a dedicated boolean sentinel rather than relying on
+// `imageUrl: undefined` in the Partial below: zustand's persist
+// middleware serializes via JSON.stringify, which silently drops any
+// key whose value is undefined, so an override couldn't otherwise
+// survive a page reload as "explicitly cleared". true means "hide the
+// seeded studio photo" — CapsuleItemImage then falls through to its
+// existing dedicated-photo/linked-visual machinery exactly as it
+// already does for an item that never shipped an imageUrl at all.
+export type CapsuleItemOverride = Partial<Pick<CapsuleItem, 'name' | 'category' | 'subtype' | 'color' | 'note'>> & {
+  photoRemoved?: boolean
+}
+
+export function wardrobeItemOverrideKey(tripId: string, itemId: string): string {
+  return `${tripId}:${itemId}`
+}
+
+// The one place a seeded CapsuleItem and its (possibly absent) override
+// combine into the item every surface should actually render.
+export function applyCapsuleItemOverride(item: CapsuleItem, override: CapsuleItemOverride | undefined): CapsuleItem {
+  if (!override) return item
+  const { photoRemoved, ...patch } = override
+  return {
+    ...item,
+    ...patch,
+    imageUrl: photoRemoved ? undefined : item.imageUrl,
+  }
+}
+
+// Every seeded item on this trip, with any local override already
+// applied — the id-stable "effective" capsule that Pack's Wardrobe tab
+// and every outfit-rendering surface (Today/Trip/Outfit Board, via
+// allWardrobePieces/resolveOutfitItems below) should read from instead
+// of trip.capsule directly.
+export function getEffectiveCapsule(trip: Trip, overrides: Record<string, CapsuleItemOverride>): CapsuleItem[] {
+  return trip.capsule.map((item) => applyCapsuleItemOverride(item, overrides[wardrobeItemOverrideKey(trip.meta.id, item.id)]))
+}
+
 function resolvedFromUploadedBoard(board: VisualBoard): ResolvedWardrobeItem {
   return {
     id: board.id,
@@ -104,13 +148,22 @@ function resolvedFromUploadedBoard(board: VisualBoard): ResolvedWardrobeItem {
 // Pack's Wardrobe tab, both of which group these by category
 // (WARDROBE_CATEGORY_ORDER) without needing to care which id space a
 // given piece lives in.
-export function allWardrobePieces(trip: Trip, visualBoards: VisualBoard[]): ResolvedWardrobeItem[] {
+export function allWardrobePieces(
+  trip: Trip,
+  visualBoards: VisualBoard[],
+  overrides: Record<string, CapsuleItemOverride> = {}
+): ResolvedWardrobeItem[] {
   const uploaded = visualBoards.filter((b) => b.tripId === trip.meta.id && b.visualKind === 'wardrobe-item')
-  return [...trip.capsule.map(resolvedFromCapsuleItem), ...uploaded.map(resolvedFromUploadedBoard)]
+  return [...getEffectiveCapsule(trip, overrides).map(resolvedFromCapsuleItem), ...uploaded.map(resolvedFromUploadedBoard)]
 }
 
-export function resolveOutfitItems(trip: Trip, outfit: Outfit, visualBoards: VisualBoard[]): ResolvedWardrobeItem[] {
-  const pieces = allWardrobePieces(trip, visualBoards)
+export function resolveOutfitItems(
+  trip: Trip,
+  outfit: Outfit,
+  visualBoards: VisualBoard[],
+  overrides: Record<string, CapsuleItemOverride> = {}
+): ResolvedWardrobeItem[] {
+  const pieces = allWardrobePieces(trip, visualBoards, overrides)
   return outfit.itemIds
     .map((id) => pieces.find((p) => p.id === id))
     .filter((p): p is ResolvedWardrobeItem => Boolean(p))

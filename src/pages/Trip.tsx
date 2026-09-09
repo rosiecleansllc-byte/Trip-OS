@@ -14,7 +14,7 @@ import { useOutfitDetailUiStore } from '../store/useOutfitDetailUiStore'
 import { getEffectiveTrip } from '../lib/manualItems'
 import { findDayVisualBoard, useVisualBoardImage } from '../lib/visualBoards'
 import { getOutfitBoardsForDay } from '../lib/outfits'
-import { getOutfitsForDay, resolveOutfitItems } from '../lib/wardrobeOutfits'
+import { getOutfitsForDay, resolveOutfitItems, type CapsuleItemOverride } from '../lib/wardrobeOutfits'
 import {
   describeWeatherCode,
   forecastForDate,
@@ -59,17 +59,19 @@ function DayOutfitRow({
   trip,
   shareMode,
   visualBoards,
+  wardrobeItemOverrides,
 }: {
   outfit: Outfit
   trip: Trip
   shareMode: boolean
   visualBoards: VisualBoard[]
+  wardrobeItemOverrides: Record<string, CapsuleItemOverride>
 }) {
   const open = useOutfitDetailUiStore((s) => s.open)
   // Uploaded wardrobe-item pieces are excluded entirely in Share mode
   // (same "zero the array" pattern as every other private-upload
   // surface) — a seeded piece's name still shows either way.
-  const items = resolveOutfitItems(trip, outfit, shareMode ? [] : visualBoards)
+  const items = resolveOutfitItems(trip, outfit, shareMode ? [] : visualBoards, wardrobeItemOverrides)
   const previewItem = items[0]
   return (
     <button
@@ -97,6 +99,7 @@ export function TripPage({ trip }: { trip: Trip }) {
   const resolvedOpenItemIds = useAppStore((s) => s.resolvedOpenItemIds)
   const visualBoards = useAppStore((s) => s.visualBoards)
   const storeOutfits = useAppStore((s) => s.outfits)
+  const wardrobeItemOverrides = useAppStore((s) => s.wardrobeItemOverrides)
   const effectiveTrip = getEffectiveTrip(trip, manualItems, resolvedOpenItemIds)
   const manualItemsById = new Map(manualItems.filter((i) => i.tripId === trip.meta.id).map((i) => [i.id, i]))
   const [openDay, setOpenDay] = useState<string | null>(
@@ -237,6 +240,7 @@ export function TripPage({ trip }: { trip: Trip }) {
                             trip={trip}
                             shareMode={shareMode}
                             visualBoards={visualBoards}
+                            wardrobeItemOverrides={wardrobeItemOverrides}
                           />
                         ))}
                       </div>

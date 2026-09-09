@@ -23,6 +23,7 @@ export function WardrobeOutfitBoardSection({ trip, shareMode }: { trip: Trip; sh
   const [lightbox, setLightbox] = useState<{ src: string; alt: string } | null>(null)
   const openDetail = useOutfitDetailUiStore((s) => s.open)
   const visualBoards = useAppStore((s) => s.visualBoards)
+  const wardrobeItemOverrides = useAppStore((s) => s.wardrobeItemOverrides)
   const entries = allSeededOutfitsInOrder(trip)
 
   if (entries.length === 0) return null
@@ -34,7 +35,7 @@ export function WardrobeOutfitBoardSection({ trip, shareMode }: { trip: Trip; sh
         // mode (same "zero the array" pattern as every other
         // private-upload surface) — a seeded piece's name still shows
         // either way.
-        const items = resolveOutfitItems(trip, outfit, shareMode ? [] : visualBoards)
+        const items = resolveOutfitItems(trip, outfit, shareMode ? [] : visualBoards, wardrobeItemOverrides)
         const dayLabel = `Day ${day.dayNumber} · ${formatDateCompact(day.date)} · ${day.title}`
         return (
           <Card key={outfit.id} className="p-4">

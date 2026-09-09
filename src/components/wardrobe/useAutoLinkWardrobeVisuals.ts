@@ -2,7 +2,12 @@ import { useEffect } from 'react'
 import type { Trip } from '../../types/trip'
 import { useAppStore } from '../../store/useAppStore'
 import { isWardrobeItemBoard } from '../../lib/visualBoards'
-import { autoMatchVisualBoardForWardrobeItem, outfitDayHintForItem, wardrobeVisualLinkKey } from '../../lib/wardrobeOutfits'
+import {
+  autoMatchVisualBoardForWardrobeItem,
+  getEffectiveCapsule,
+  outfitDayHintForItem,
+  wardrobeVisualLinkKey,
+} from '../../lib/wardrobeOutfits'
 
 // Reconciliation pass: every time the trip's uploaded VisualBoards
 // change, tries a conservative auto-match (lib/wardrobeOutfits.ts
@@ -29,6 +34,7 @@ export function useAutoLinkWardrobeVisuals(trip: Trip) {
   const shareMode = useAppStore((s) => s.shareMode)
   const visualBoards = useAppStore((s) => s.visualBoards)
   const wardrobeVisualLinks = useAppStore((s) => s.wardrobeVisualLinks)
+  const wardrobeItemOverrides = useAppStore((s) => s.wardrobeItemOverrides)
   const linkWardrobeVisual = useAppStore((s) => s.linkWardrobeVisual)
 
   useEffect(() => {
@@ -41,7 +47,10 @@ export function useAutoLinkWardrobeVisuals(trip: Trip) {
     // another item's picture (see LinkVisualSheet's identical filter).
     const tripBoards = visualBoards.filter((b) => b.tripId === trip.meta.id && !isWardrobeItemBoard(b))
     if (tripBoards.length === 0) return
-    for (const item of trip.capsule) {
+    // Matches against the effective (override-applied) item — a
+    // traveler's rename should immediately start matching new uploads
+    // by its new name/category, not the stale seeded one.
+    for (const item of getEffectiveCapsule(trip, wardrobeItemOverrides)) {
       if (item.imageUrl) continue
       const key = wardrobeVisualLinkKey(trip.meta.id, item.id)
       if (key in wardrobeVisualLinks) continue
@@ -54,5 +63,5 @@ export function useAutoLinkWardrobeVisuals(trip: Trip) {
       // arrives.
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [trip, visualBoards, shareMode])
+  }, [trip, visualBoards, shareMode, wardrobeItemOverrides])
 }
