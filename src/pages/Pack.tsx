@@ -127,6 +127,7 @@ export function Pack({ trip }: { trip: Trip }) {
   const activeTab: PackTab | undefined = tabs.includes(tab) ? tab : tabs[0]
   const [lightbox, setLightbox] = useState<{ src: string; alt: string } | null>(null)
   const openPicker = useVisualBoardUiStore((s) => s.openPicker)
+  const openWardrobeItem = useVisualBoardUiStore((s) => s.openWardrobeItem)
   const outfits = useAppStore((s) => s.outfits)
   const openNewOutfit = useOutfitUiStore((s) => s.openNew)
   const openOutfitDetail = useOutfitDetailUiStore((s) => s.open)
@@ -199,7 +200,7 @@ export function Pack({ trip }: { trip: Trip }) {
           {!shareMode && (
             <button
               type="button"
-              onClick={openPicker}
+              onClick={openWardrobeItem}
               className="flex w-full items-center justify-center gap-2 rounded-full border border-blue/30 bg-blue-tint py-2.5 text-sm font-medium text-blue"
             >
               <Plus size={15} />

@@ -74,6 +74,7 @@ function BackHeader({ title, onBack, onClose }: { title: string; onBack?: () => 
 export function AddVisualBoardSheet({ trip }: { trip: Trip }) {
   const step = useVisualBoardUiStore((s) => s.step)
   const editingBoard = useVisualBoardUiStore((s) => s.editingBoard)
+  const initialKind = useVisualBoardUiStore((s) => s.initialKind)
   const close = useVisualBoardUiStore((s) => s.close)
 
   const addVisualBoard = useAppStore((s) => s.addVisualBoard)
@@ -133,6 +134,15 @@ export function AddVisualBoardSheet({ trip }: { trip: Trip }) {
       setWardrobeSubtype(editingBoard.wardrobeSubtype ?? '')
       setForm({ title: editingBoard.title, dayId: editingBoard.dayId ?? '', notes: editingBoard.notes ?? '' })
       setPhase(isWardrobe ? 'wardrobeForm' : 'boardForm')
+    } else if (initialKind === 'wardrobe-item') {
+      // Pack -> Wardrobe's "Add wardrobe item" — the kind is already
+      // implied by which tab this was opened from, so skip the generic
+      // chooser and land straight on the category picker.
+      setKind('wardrobe-item')
+      setWardrobeCategory('top')
+      setWardrobeSubtype('')
+      setForm(emptyForm())
+      setPhase('wardrobeCategory')
     } else {
       setKind('board')
       setBoardType('outfit')
@@ -145,7 +155,7 @@ export function AddVisualBoardSheet({ trip }: { trip: Trip }) {
     setImageError(null)
     setSaved(false)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [step, editingBoard])
+  }, [step, editingBoard, initialKind])
 
   if (step === 'closed') return null
 
