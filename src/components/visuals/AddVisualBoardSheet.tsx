@@ -1,18 +1,35 @@
 import { useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { clsx } from 'clsx'
-import { ImageIcon, X } from 'lucide-react'
-import type { Trip, VisualBoard, VisualBoardType } from '../../types/trip'
+import { ChevronLeft, ImageIcon, X } from 'lucide-react'
+import type { CapsuleCategory, Trip, VisualBoard, VisualBoardType } from '../../types/trip'
 import { useAppStore } from '../../store/useAppStore'
 import { useVisualBoardUiStore } from '../../store/useVisualBoardUiStore'
-import { createVisualBoard, putVisualBoardImage, VISUAL_BOARD_TYPE_META, VISUAL_BOARD_TYPE_ICON } from '../../lib/visualBoards'
+import { createVisualBoard, putVisualBoardImage, VISUAL_BOARD_TYPE_META, WARDROBE_SUBTYPE_PRESETS } from '../../lib/visualBoards'
+import { WARDROBE_CATEGORY_LABELS, WARDROBE_CATEGORY_ORDER } from '../../lib/wardrobeOutfits'
 import { Lightbox } from '../ui/Lightbox'
 
-const TYPE_ORDER: VisualBoardType[] = ['outfit', 'capsule', 'packing', 'shoes', 'accessories', 'mood', 'city', 'other']
+// The 3 most common board types surface directly on the first screen,
+// alongside "Individual wardrobe item" — the 4 options Cecilia actually
+// asked for. The rest (packing/shoes/accessories/city/other) stay fully
+// supported (existing uploads of those types keep rendering exactly as
+// before) but live one tap further behind "Other board type", so the
+// common case stays fast without losing any existing capability —
+// shoes/accessories boards specifically are still what backs the
+// auto-link matching in useAutoLinkWardrobeVisuals.
+const PRIMARY_BOARD_TYPES: VisualBoardType[] = ['outfit', 'capsule', 'mood']
+const SECONDARY_BOARD_TYPES: VisualBoardType[] = ['packing', 'shoes', 'accessories', 'city', 'other']
 
 const inputClass =
   'w-full rounded-xl border border-line bg-bg px-3 py-2.5 text-sm text-ink placeholder:text-gray focus:border-blue/50 focus:outline-none'
 const labelClass = 'mb-1 block text-xs font-medium text-ink-soft'
+
+// The sheet's internal flow — deliberately local state (not the UI
+// store), so navigating between steps (including "Change type" while
+// editing) never re-triggers the effect that populates the form from
+// editingBoard and silently discards what's already typed. See
+// useVisualBoardUiStore's comment for the bug this replaced.
+type Phase = 'kind' | 'moreBoardTypes' | 'boardForm' | 'wardrobeCategory' | 'wardrobeForm'
 
 interface FormState {
   title: string
@@ -24,20 +41,50 @@ function emptyForm(): FormState {
   return { title: '', dayId: '', notes: '' }
 }
 
-function formFromBoard(board: VisualBoard): FormState {
-  return { title: board.title, dayId: board.dayId ?? '', notes: board.notes ?? '' }
+function BigChoiceButton({ label, onClick }: { label: string; onClick: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="flex w-full items-center rounded-xl border border-line p-3.5 text-left text-sm font-medium text-ink transition-colors hover:border-blue/40"
+    >
+      {label}
+    </button>
+  )
+}
+
+function BackHeader({ title, onBack, onClose }: { title: string; onBack?: () => void; onClose: () => void }) {
+  return (
+    <div className="mb-3 flex items-center justify-between">
+      <div className="flex items-center gap-1.5">
+        {onBack && (
+          <button type="button" aria-label="Back" onClick={onBack} className="text-ink-soft">
+            <ChevronLeft size={18} />
+          </button>
+        )}
+        <p className="font-display text-lg text-ink">{title}</p>
+      </div>
+      <button aria-label="Close" onClick={onClose} className="text-ink-soft">
+        <X size={18} />
+      </button>
+    </div>
+  )
 }
 
 export function AddVisualBoardSheet({ trip }: { trip: Trip }) {
   const step = useVisualBoardUiStore((s) => s.step)
-  const type = useVisualBoardUiStore((s) => s.type)
   const editingBoard = useVisualBoardUiStore((s) => s.editingBoard)
-  const pickType = useVisualBoardUiStore((s) => s.pickType)
+  const initialKind = useVisualBoardUiStore((s) => s.initialKind)
   const close = useVisualBoardUiStore((s) => s.close)
 
   const addVisualBoard = useAppStore((s) => s.addVisualBoard)
   const updateVisualBoard = useAppStore((s) => s.updateVisualBoard)
 
+  const [phase, setPhase] = useState<Phase>('kind')
+  const [kind, setKind] = useState<'board' | 'wardrobe-item'>('board')
+  const [boardType, setBoardType] = useState<VisualBoardType>('outfit')
+  const [wardrobeCategory, setWardrobeCategory] = useState<CapsuleCategory>('top')
+  const [wardrobeSubtype, setWardrobeSubtype] = useState('')
   const [form, setForm] = useState<FormState>(() => emptyForm())
   const [saving, setSaving] = useState(false)
   const [imageError, setImageError] = useState<string | null>(null)
@@ -46,9 +93,6 @@ export function AddVisualBoardSheet({ trip }: { trip: Trip }) {
   // The picked image lives only here until Save writes it into the
   // visual-board IndexedDB wallet under the board's own imageKey — same
   // hold-in-memory-until-save approach as AddItemSheet's pendingScreenshot.
-  // On edit, the existing image is loaded into this same slot lazily
-  // (only if the traveler chooses to replace it) rather than eagerly, so
-  // opening the form to edit a title doesn't need to touch IndexedDB at all.
   const [pendingImage, setPendingImageState] = useState<File | null>(null)
   const [previewUrl, setPreviewUrl] = useState<string | null>(null)
   const [lightboxOpen, setLightboxOpen] = useState(false)
@@ -76,36 +120,42 @@ export function AddVisualBoardSheet({ trip }: { trip: Trip }) {
     }
   }, [])
 
+  // Populates (or resets) the whole flow exactly once per sheet
+  // "session" — a fresh open (step transitions closed -> open) or a
+  // different board to edit. Internal navigation between phases never
+  // re-fires this, since neither `step` nor `editingBoard` changes then.
   useEffect(() => {
-    if (step === 'form' && editingBoard) {
-      setForm(formFromBoard(editingBoard))
-      setPendingImage(null)
-      setImageError(null)
-      setSaved(false)
-    } else if (step === 'form' && !editingBoard) {
+    if (step !== 'open') return
+    if (editingBoard) {
+      const isWardrobe = editingBoard.visualKind === 'wardrobe-item'
+      setKind(isWardrobe ? 'wardrobe-item' : 'board')
+      setBoardType(editingBoard.type)
+      setWardrobeCategory(editingBoard.wardrobeCategory ?? 'top')
+      setWardrobeSubtype(editingBoard.wardrobeSubtype ?? '')
+      setForm({ title: editingBoard.title, dayId: editingBoard.dayId ?? '', notes: editingBoard.notes ?? '' })
+      setPhase(isWardrobe ? 'wardrobeForm' : 'boardForm')
+    } else if (initialKind === 'wardrobe-item') {
+      // Pack -> Wardrobe's "Add wardrobe item" — the kind is already
+      // implied by which tab this was opened from, so skip the generic
+      // chooser and land straight on the category picker.
+      setKind('wardrobe-item')
+      setWardrobeCategory('top')
+      setWardrobeSubtype('')
       setForm(emptyForm())
-      setPendingImage(null)
-      setImageError(null)
-      setSaved(false)
+      setPhase('wardrobeCategory')
+    } else {
+      setKind('board')
+      setBoardType('outfit')
+      setWardrobeCategory('top')
+      setWardrobeSubtype('')
+      setForm(emptyForm())
+      setPhase('kind')
     }
+    setPendingImage(null)
+    setImageError(null)
+    setSaved(false)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [step, editingBoard])
-
-  // saved/imageError are local state, so — unlike step/type/editingBoard
-  // in useVisualBoardUiStore — closing the sheet (close(), which only
-  // resets the store) doesn't clear them. Without this, openPicker()
-  // (the "Add visual" button) flips step back to 'picker', but the
-  // render below checks `saved` first, so the *previous* upload's
-  // "Saved" screen would reappear instead of the fresh type picker —
-  // uploading a second visual right after the first got stuck, only
-  // recoverable with a full page refresh. Reset on every fresh entry
-  // into the picker, the same fix already applied to AddItemSheet.
-  useEffect(() => {
-    if (step === 'picker') {
-      setSaved(false)
-      setImageError(null)
-    }
-  }, [step])
+  }, [step, editingBoard, initialKind])
 
   if (step === 'closed') return null
 
@@ -118,19 +168,55 @@ export function AddVisualBoardSheet({ trip }: { trip: Trip }) {
     setPendingImage(file)
   }
 
+  const pickBoardType = (type: VisualBoardType) => {
+    setKind('board')
+    setBoardType(type)
+    setPhase('boardForm')
+  }
+
+  const pickWardrobeCategory = (category: CapsuleCategory) => {
+    setKind('wardrobe-item')
+    setWardrobeCategory(category)
+    setPhase('wardrobeForm')
+  }
+
+  // Starts a second (third, ...) wardrobe item without leaving the
+  // sheet — the store's step/editingBoard stay untouched, so this is
+  // purely a local reset, letting Cecilia upload a whole wardrobe's
+  // worth of pieces in one sitting without ever closing the sheet.
+  const handleAddAnotherWardrobeItem = () => {
+    setForm(emptyForm())
+    setWardrobeSubtype('')
+    setPendingImage(null)
+    setImageError(null)
+    setSaved(false)
+    setPhase('wardrobeCategory')
+  }
+
   const handleSave = async () => {
-    if (!type) return
     setSaving(true)
 
-    const selectedDay = form.dayId ? trip.days.find((d) => d.id === form.dayId) : undefined
-    const patch = {
-      tripId: trip.meta.id,
-      type,
-      title: form.title.trim(),
-      dayId: selectedDay?.id,
-      date: selectedDay?.date,
-      notes: form.notes.trim() || undefined,
-    }
+    const isWardrobe = kind === 'wardrobe-item'
+    const selectedDay = !isWardrobe && form.dayId ? trip.days.find((d) => d.id === form.dayId) : undefined
+    const patch = isWardrobe
+      ? {
+          tripId: trip.meta.id,
+          type: 'other' as VisualBoardType, // unused for a wardrobe-item entry
+          title: form.title.trim(),
+          notes: form.notes.trim() || undefined,
+          visualKind: 'wardrobe-item' as const,
+          wardrobeCategory,
+          wardrobeSubtype: wardrobeSubtype.trim() || undefined,
+        }
+      : {
+          tripId: trip.meta.id,
+          type: boardType,
+          title: form.title.trim(),
+          dayId: selectedDay?.id,
+          date: selectedDay?.date,
+          notes: form.notes.trim() || undefined,
+          visualKind: 'board' as const,
+        }
 
     let board: VisualBoard
     if (editingBoard) {
@@ -163,6 +249,33 @@ export function AddVisualBoardSheet({ trip }: { trip: Trip }) {
   }
 
   const isValid = Boolean(form.title.trim())
+  const subtypePresets = WARDROBE_SUBTYPE_PRESETS[wardrobeCategory] ?? []
+
+  const imagePicker = (
+    <div>
+      <label className={labelClass}>Image</label>
+      <button
+        type="button"
+        onClick={() => fileInputRef.current?.click()}
+        className="flex w-full flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-line bg-bg-soft py-6 text-center"
+      >
+        {previewUrl ? (
+          <img
+            src={previewUrl}
+            alt=""
+            onClick={(e) => {
+              e.stopPropagation()
+              setLightboxOpen(true)
+            }}
+            className="h-32 w-32 rounded-lg object-cover"
+          />
+        ) : (
+          <ImageIcon size={22} className="text-ink-soft" />
+        )}
+        <span className="text-xs font-medium text-blue">{previewUrl ? 'Replace image' : 'Upload photo'}</span>
+      </button>
+    </div>
+  )
 
   // Rendered via portal straight to <body> — same reasoning as
   // Lightbox: nesting this fixed-fullscreen sheet inside a page's own
@@ -181,124 +294,203 @@ export function AddVisualBoardSheet({ trip }: { trip: Trip }) {
           <div className="px-5 pt-2">
             <p className="font-display text-lg text-ink">Saved</p>
             {imageError && <p className="mt-3 text-xs text-ink-soft">{imageError}</p>}
-            <button
-              type="button"
-              onClick={close}
-              className="mt-4 w-full rounded-full bg-blue py-3 text-sm font-medium text-white"
-            >
-              Done
-            </button>
-          </div>
-        ) : step === 'picker' ? (
-          <div className="px-5 pt-2">
-            <div className="mb-3 flex items-center justify-between">
-              <p className="font-display text-lg text-ink">Add visual</p>
-              <button aria-label="Close" onClick={close} className="text-ink-soft">
-                <X size={18} />
-              </button>
-            </div>
-            <div className="space-y-2">
-              {TYPE_ORDER.map((t) => {
-                const meta = VISUAL_BOARD_TYPE_META[t]
-                const Icon = VISUAL_BOARD_TYPE_ICON[t]
-                return (
-                  <button
-                    key={t}
-                    type="button"
-                    onClick={() => pickType(t)}
-                    className="flex w-full items-center gap-3 rounded-xl border border-line p-3.5 text-left transition-colors hover:border-blue/40"
-                  >
-                    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-blue-tint text-blue">
-                      <Icon size={17} />
-                    </span>
-                    <span className="text-sm font-medium text-ink">{meta.pickerLabel}</span>
-                  </button>
-                )
-              })}
-            </div>
-          </div>
-        ) : (
-          type && (
-            <div className="px-5 pt-2">
-              <div className="mb-3 flex items-center justify-between">
-                <p className="font-display text-lg text-ink">
-                  {editingBoard ? `Edit ${VISUAL_BOARD_TYPE_META[type].label}` : `Add ${VISUAL_BOARD_TYPE_META[type].label}`}
-                </p>
-                <button aria-label="Close" onClick={close} className="text-ink-soft">
-                  <X size={18} />
+            {kind === 'wardrobe-item' && !editingBoard ? (
+              <div className="mt-4 flex gap-2">
+                <button
+                  type="button"
+                  onClick={handleAddAnotherWardrobeItem}
+                  className="flex-1 rounded-full border border-blue/30 bg-blue-tint py-3 text-sm font-medium text-blue"
+                >
+                  Add another item
+                </button>
+                <button type="button" onClick={close} className="flex-1 rounded-full bg-blue py-3 text-sm font-medium text-white">
+                  Done
                 </button>
               </div>
-
-              <div className="space-y-3">
-                <div>
-                  <label className={labelClass}>Image</label>
-                  <button
-                    type="button"
-                    onClick={() => fileInputRef.current?.click()}
-                    className="flex w-full flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-line bg-bg-soft py-6 text-center"
-                  >
-                    {previewUrl ? (
-                      <img
-                        src={previewUrl}
-                        alt=""
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          setLightboxOpen(true)
-                        }}
-                        className="h-32 w-32 rounded-lg object-cover"
-                      />
-                    ) : (
-                      <ImageIcon size={22} className="text-ink-soft" />
-                    )}
-                    <span className="text-xs font-medium text-blue">
-                      {previewUrl ? 'Replace image' : 'Upload photo'}
-                    </span>
-                  </button>
-                </div>
-
-                <div>
-                  <label className={labelClass}>Title</label>
-                  <input
-                    className={inputClass}
-                    value={form.title}
-                    onChange={(e) => set('title', e.target.value)}
-                    placeholder={type === 'outfit' ? 'e.g. Summit outfit' : 'Board title'}
-                  />
-                </div>
-
-                <div>
-                  <label className={labelClass}>Day</label>
-                  <select className={inputClass} value={form.dayId} onChange={(e) => set('dayId', e.target.value)}>
-                    <option value="">Whole trip (no specific day)</option>
-                    {trip.days.map((d) => (
-                      <option key={d.id} value={d.id}>
-                        Day {d.dayNumber} · {d.title}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <div>
-                  <label className={labelClass}>Notes</label>
-                  <textarea
-                    className={clsx(inputClass, 'min-h-[72px] resize-none')}
-                    value={form.notes}
-                    onChange={(e) => set('notes', e.target.value)}
-                    placeholder="Optional"
-                  />
-                </div>
-              </div>
-
+            ) : (
               <button
                 type="button"
-                disabled={!isValid || saving}
-                onClick={handleSave}
-                className="mt-5 w-full rounded-full bg-blue py-3 text-sm font-medium text-white disabled:opacity-40"
+                onClick={close}
+                className="mt-4 w-full rounded-full bg-blue py-3 text-sm font-medium text-white"
               >
-                {saving ? 'Saving…' : editingBoard ? 'Save changes' : 'Add visual'}
+                Done
               </button>
+            )}
+          </div>
+        ) : phase === 'kind' ? (
+          <div className="px-5 pt-2">
+            <BackHeader title="What are you adding?" onClose={close} />
+            <div className="space-y-2">
+              {PRIMARY_BOARD_TYPES.map((t) => (
+                <BigChoiceButton key={t} label={VISUAL_BOARD_TYPE_META[t].pickerLabel} onClick={() => pickBoardType(t)} />
+              ))}
+              <BigChoiceButton label="Individual wardrobe item" onClick={() => setPhase('wardrobeCategory')} />
             </div>
-          )
+            <button
+              type="button"
+              onClick={() => setPhase('moreBoardTypes')}
+              className="mt-3 text-xs font-medium text-blue"
+            >
+              Other board type ›
+            </button>
+          </div>
+        ) : phase === 'moreBoardTypes' ? (
+          <div className="px-5 pt-2">
+            <BackHeader title="Other board type" onBack={() => setPhase('kind')} onClose={close} />
+            <div className="space-y-2">
+              {SECONDARY_BOARD_TYPES.map((t) => (
+                <BigChoiceButton key={t} label={VISUAL_BOARD_TYPE_META[t].pickerLabel} onClick={() => pickBoardType(t)} />
+              ))}
+            </div>
+          </div>
+        ) : phase === 'wardrobeCategory' ? (
+          <div className="px-5 pt-2">
+            <BackHeader title="What kind of item?" onBack={() => setPhase('kind')} onClose={close} />
+            <div className="grid grid-cols-2 gap-2">
+              {WARDROBE_CATEGORY_ORDER.map((cat) => (
+                <button
+                  key={cat}
+                  type="button"
+                  onClick={() => pickWardrobeCategory(cat)}
+                  className="rounded-xl border border-line p-3.5 text-center text-sm font-medium text-ink transition-colors hover:border-blue/40"
+                >
+                  {WARDROBE_CATEGORY_LABELS[cat]}
+                </button>
+              ))}
+            </div>
+          </div>
+        ) : phase === 'wardrobeForm' ? (
+          <div className="px-5 pt-2">
+            <BackHeader title={editingBoard ? 'Edit wardrobe item' : 'Add wardrobe item'} onClose={close} />
+            <button
+              type="button"
+              onClick={() => setPhase('kind')}
+              className="mb-3 text-xs font-medium text-blue"
+            >
+              Change type
+            </button>
+
+            <div className="space-y-3">
+              {imagePicker}
+
+              <div>
+                <label className={labelClass}>Title</label>
+                <input
+                  className={inputClass}
+                  value={form.title}
+                  onChange={(e) => set('title', e.target.value)}
+                  placeholder="e.g. White Button-Down"
+                />
+              </div>
+
+              <div>
+                <div className="mb-1 flex items-center justify-between">
+                  <label className={clsx(labelClass, 'mb-0')}>Category</label>
+                  <button type="button" onClick={() => setPhase('wardrobeCategory')} className="text-xs font-medium text-blue">
+                    Change
+                  </button>
+                </div>
+                <p className="rounded-xl border border-line bg-bg-soft px-3 py-2.5 text-sm text-ink">
+                  {WARDROBE_CATEGORY_LABELS[wardrobeCategory]}
+                </p>
+              </div>
+
+              {subtypePresets.length > 0 && (
+                <div>
+                  <label className={labelClass}>Subtype (optional)</label>
+                  <div className="flex flex-wrap gap-1.5">
+                    {subtypePresets.map((preset) => (
+                      <button
+                        key={preset}
+                        type="button"
+                        onClick={() => setWardrobeSubtype((v) => (v === preset ? '' : preset))}
+                        className={clsx(
+                          'rounded-full border px-3 py-1.5 text-xs font-medium transition-colors',
+                          wardrobeSubtype === preset ? 'border-blue bg-blue-tint text-blue' : 'border-line text-ink-soft'
+                        )}
+                      >
+                        {preset}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              <div>
+                <label className={labelClass}>Notes</label>
+                <textarea
+                  className={clsx(inputClass, 'min-h-[60px] resize-none')}
+                  value={form.notes}
+                  onChange={(e) => set('notes', e.target.value)}
+                  placeholder="Optional"
+                />
+              </div>
+            </div>
+
+            <button
+              type="button"
+              disabled={!isValid || saving}
+              onClick={() => void handleSave()}
+              className="mt-5 w-full rounded-full bg-blue py-3 text-sm font-medium text-white disabled:opacity-40"
+            >
+              {saving ? 'Saving…' : editingBoard ? 'Save changes' : 'Add item'}
+            </button>
+          </div>
+        ) : (
+          <div className="px-5 pt-2">
+            <BackHeader
+              title={editingBoard ? `Edit ${VISUAL_BOARD_TYPE_META[boardType].label}` : `Add ${VISUAL_BOARD_TYPE_META[boardType].label}`}
+              onClose={close}
+            />
+            <button type="button" onClick={() => setPhase('kind')} className="mb-3 text-xs font-medium text-blue">
+              Change type
+            </button>
+
+            <div className="space-y-3">
+              {imagePicker}
+
+              <div>
+                <label className={labelClass}>Title</label>
+                <input
+                  className={inputClass}
+                  value={form.title}
+                  onChange={(e) => set('title', e.target.value)}
+                  placeholder={boardType === 'outfit' ? 'e.g. Summit outfit' : 'Board title'}
+                />
+              </div>
+
+              <div>
+                <label className={labelClass}>Day</label>
+                <select className={inputClass} value={form.dayId} onChange={(e) => set('dayId', e.target.value)}>
+                  <option value="">Whole trip (no specific day)</option>
+                  {trip.days.map((d) => (
+                    <option key={d.id} value={d.id}>
+                      Day {d.dayNumber} · {d.title}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className={labelClass}>Notes</label>
+                <textarea
+                  className={clsx(inputClass, 'min-h-[72px] resize-none')}
+                  value={form.notes}
+                  onChange={(e) => set('notes', e.target.value)}
+                  placeholder="Optional"
+                />
+              </div>
+            </div>
+
+            <button
+              type="button"
+              disabled={!isValid || saving}
+              onClick={() => void handleSave()}
+              className="mt-5 w-full rounded-full bg-blue py-3 text-sm font-medium text-white disabled:opacity-40"
+            >
+              {saving ? 'Saving…' : editingBoard ? 'Save changes' : 'Add visual'}
+            </button>
+          </div>
         )}
       </div>
       {lightboxOpen && previewUrl && (

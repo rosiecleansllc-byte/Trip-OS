@@ -3,7 +3,14 @@ import { ImageIcon, MoreHorizontal, Upload } from 'lucide-react'
 import type { Trip, VisualBoard } from '../../types/trip'
 import { useAppStore } from '../../store/useAppStore'
 import { useVisualBoardUiStore } from '../../store/useVisualBoardUiStore'
-import { deleteVisualBoardImage, putVisualBoardImage, useVisualBoardImage, VISUAL_BOARD_TYPE_META } from '../../lib/visualBoards'
+import {
+  deleteVisualBoardImage,
+  isWardrobeItemBoard,
+  putVisualBoardImage,
+  useVisualBoardImage,
+  VISUAL_BOARD_TYPE_META,
+} from '../../lib/visualBoards'
+import { WARDROBE_CATEGORY_LABELS } from '../../lib/wardrobeOutfits'
 import { Lightbox } from '../ui/Lightbox'
 
 // One traveler-uploaded visual board, rendered as a card in Pack's grid.
@@ -54,6 +61,18 @@ export function VisualBoardCard({
   }, [menuOpen])
 
   const dayLabel = board.dayId ? trip.days.find((d) => d.id === board.dayId) : undefined
+  const isWardrobeItem = isWardrobeItemBoard(board)
+  // Subtitle: a day-assigned board still leads with its day; a wardrobe
+  // item shows its category (+ subtype, if given) instead of the
+  // otherwise-unused board `type`; anything else falls back to its
+  // board type label, same as before this component knew about
+  // wardrobe items at all.
+  const subtitle = dayLabel
+    ? `Day ${dayLabel.dayNumber} · ${dayLabel.title}`
+    : isWardrobeItem
+      ? [WARDROBE_CATEGORY_LABELS[board.wardrobeCategory ?? 'other'], board.wardrobeSubtype].filter(Boolean).join(' · ')
+      : VISUAL_BOARD_TYPE_META[board.type].label
+  const badgeLabel = isWardrobeItem ? WARDROBE_CATEGORY_LABELS[board.wardrobeCategory ?? 'other'] : 'Board'
 
   const handleReplace = async (file: File) => {
     setActionError(null)
@@ -138,11 +157,13 @@ export function VisualBoardCard({
         )}
       </button>
 
+      <span className="pointer-events-none absolute left-2 top-2 rounded-full bg-ink/60 px-2 py-0.5 text-[9px] font-medium uppercase tracking-wide text-white">
+        {badgeLabel}
+      </span>
+
       <div className="p-2.5">
         <p className="truncate text-xs font-medium text-ink">{board.title}</p>
-        <p className="truncate text-[11px] text-ink-soft">
-          {dayLabel ? `Day ${dayLabel.dayNumber} · ${dayLabel.title}` : VISUAL_BOARD_TYPE_META[board.type].label}
-        </p>
+        {subtitle && <p className="truncate text-[11px] text-ink-soft">{subtitle}</p>}
         {actionError && <p className="mt-1 text-[10px] text-red">{actionError}</p>}
       </div>
 
@@ -163,7 +184,7 @@ export function VisualBoardCard({
           <div className="absolute right-0 top-full z-10 mt-1 w-36 overflow-hidden rounded-xl border border-line bg-surface shadow-lg">
             {confirmingDelete ? (
               <div className="p-2.5">
-                <p className="text-xs text-ink">Delete this board?</p>
+                <p className="text-xs text-ink">{isWardrobeItem ? 'Delete this item?' : 'Delete this board?'}</p>
                 <div className="mt-2 flex gap-1.5">
                   <button
                     type="button"

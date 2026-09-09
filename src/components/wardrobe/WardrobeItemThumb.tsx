@@ -1,37 +1,37 @@
 import { ImageIcon } from 'lucide-react'
-import type { CapsuleItem, Trip } from '../../types/trip'
+import type { Trip } from '../../types/trip'
 import { useVisualBoardImage } from '../../lib/visualBoards'
-import { resolveLinkedVisualBoard, wardrobeItemImageKey } from '../../lib/wardrobeOutfits'
+import { resolveLinkedVisualBoard, wardrobeItemImageKey, type ResolvedWardrobeItem } from '../../lib/wardrobeOutfits'
 import { useAppStore } from '../../store/useAppStore'
 
 // Read-only image resolver for a wardrobe item, used anywhere an Outfit
 // shows its component pieces (Outfit Board, Outfit detail, Trip/Today
 // preview) — never offers Add/Replace/Remove/Link itself, that
-// management stays exclusively in the Wardrobe tab's CapsuleItemImage.
-// Resolves, in order:
-//   1. the item's seeded public photo (item.imageUrl) — always shown,
-//      safe in Share mode;
-//   2. unless shareMode is true, a dedicated private photo the
-//      traveler uploaded for this exact item (the same per-item
-//      IndexedDB key CapsuleItemImage writes to) — so a photo uploaded
-//      once in Wardrobe shows up everywhere an outfit references that
-//      item, no separate re-upload needed;
-//   3. unless shareMode is true, an existing VisualBoard the traveler
-//      already uploaded and linked to this item (explicitly via "Use
-//      existing visual", or automatically — see
-//      useAutoLinkWardrobeVisuals) — so a whole-outfit or themed
-//      flat-lay photo she uploaded before this item even existed still
-//      backs it, with zero re-upload and zero duplicated blobs;
-//   4. a placeholder.
-// A dedicated photo (tier 2) always wins over a linked one (tier 3) —
-// see CapsuleItemImage, where uploading a dedicated photo overrides the
-// link and removing it falls back to the link again.
+// management stays exclusively in the Wardrobe tab (CapsuleItemImage for
+// a seeded piece, VisualBoardCard for a traveler-uploaded one). Accepts
+// a ResolvedWardrobeItem (see lib/wardrobeOutfits.ts) rather than a raw
+// CapsuleItem, since an Outfit's pieces can come from either id space —
+// a seeded CapsuleItem or a traveler-uploaded wardrobe-item VisualBoard.
+//
+// Resolution branches on item.source:
+//   - 'uploaded': the piece already IS a VisualBoard, so its own
+//     imageKey is read directly (unless shareMode is true) — no linking
+//     indirection needed, it never had a separate "dedicated photo" to
+//     begin with.
+//   - 'capsule': the original seeded-item chain, in order — the item's
+//     seeded public photo (item.imageUrl, always shown, safe in Share
+//     mode); unless shareMode is true, a dedicated private photo the
+//     traveler uploaded for this exact item (same per-item IndexedDB key
+//     CapsuleItemImage writes to); unless shareMode is true, an existing
+//     VisualBoard linked to this item (explicitly via "Use existing
+//     visual", or automatically — see useAutoLinkWardrobeVisuals). A
+//     dedicated photo always wins over a linked one — see
+//     CapsuleItemImage, where uploading one overrides the link and
+//     removing it falls back to the link again.
+// Either branch falls through to a placeholder.
 // shareMode is a required prop (not read from the store) so every
 // caller has to make the privacy call explicit rather than risk
-// forgetting it. The linked-visual tier only ever reads the persisted
-// link (useAppStore's wardrobeVisualLinks) — see
-// useAutoLinkWardrobeVisuals for where that link is computed and
-// written; this component never computes a live match itself.
+// forgetting it.
 export function WardrobeItemThumb({
   item,
   trip,
@@ -39,7 +39,7 @@ export function WardrobeItemThumb({
   size = 64,
   onOpen,
 }: {
-  item: CapsuleItem
+  item: ResolvedWardrobeItem
   trip: Trip
   shareMode: boolean
   size?: number
@@ -48,14 +48,21 @@ export function WardrobeItemThumb({
   const visualBoards = useAppStore((s) => s.visualBoards)
   const wardrobeVisualLinks = useAppStore((s) => s.wardrobeVisualLinks)
 
-  const privateKey = !item.imageUrl && !shareMode ? wardrobeItemImageKey(trip, item) : undefined
+  const isCapsule = item.source === 'capsule'
+
+  const uploadedKey = !isCapsule && !shareMode ? item.imageKey : undefined
+  const { url: uploadedUrl } = useVisualBoardImage(uploadedKey)
+
+  const privateKey = isCapsule && !item.imageUrl && !shareMode ? wardrobeItemImageKey(trip, item.id) : undefined
   const { url: privateUrl } = useVisualBoardImage(privateKey)
 
   const linkedBoard =
-    !item.imageUrl && !shareMode ? resolveLinkedVisualBoard(trip, item, visualBoards, wardrobeVisualLinks) : undefined
+    isCapsule && !item.imageUrl && !shareMode
+      ? resolveLinkedVisualBoard(trip, item.id, visualBoards, wardrobeVisualLinks)
+      : undefined
   const { url: linkedUrl } = useVisualBoardImage(linkedBoard?.imageKey)
 
-  const url = item.imageUrl ?? privateUrl ?? linkedUrl
+  const url = isCapsule ? (item.imageUrl ?? privateUrl ?? linkedUrl) : uploadedUrl
 
   if (url && onOpen) {
     return (

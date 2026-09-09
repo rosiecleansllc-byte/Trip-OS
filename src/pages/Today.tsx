@@ -12,7 +12,7 @@ import {
   Navigation,
   Sparkles,
 } from 'lucide-react'
-import type { ManualTripItem, ScheduleItem, Trip } from '../types/trip'
+import type { ManualTripItem, ScheduleItem, Trip, VisualBoard } from '../types/trip'
 import { ActionRow } from '../components/ui/ActionRow'
 import { Card } from '../components/ui/Card'
 import { OpenItemToggle } from '../components/ui/OpenItemToggle'
@@ -152,16 +152,22 @@ function TodayOutfitCard({
   trip,
   eyebrow,
   shareMode,
+  visualBoards,
   onOpenItem,
 }: {
   outfit: Outfit
   trip: Trip
   eyebrow: string
   shareMode: boolean
+  visualBoards: VisualBoard[]
   onOpenItem: (src: string, alt: string) => void
 }) {
   const openDetail = useOutfitDetailUiStore((s) => s.open)
-  const items = resolveOutfitItems(trip, outfit)
+  // Traveler-uploaded wardrobe-item pieces (title + photo) are excluded
+  // entirely in Share mode — same "zero the array" pattern as every
+  // other private-upload surface — while a seeded piece's name still
+  // shows (only its photo is separately gated inside WardrobeItemThumb).
+  const items = resolveOutfitItems(trip, outfit, shareMode ? [] : visualBoards)
   return (
     <Card className="overflow-hidden">
       <button type="button" onClick={() => openDetail(outfit.id)} className="block w-full p-4 text-left">
@@ -308,6 +314,7 @@ export function Today({ trip }: { trip: Trip }) {
               trip={trip}
               eyebrow="Today's outfit"
               shareMode={shareMode}
+              visualBoards={visualBoards}
               onOpenItem={(src) => setLightboxSrc(src)}
             />
             {todaysOutfits.length > 1 && (
@@ -327,6 +334,7 @@ export function Today({ trip }: { trip: Trip }) {
                   trip={trip}
                   eyebrow="Also today"
                   shareMode={shareMode}
+                  visualBoards={visualBoards}
                   onOpenItem={(src) => setLightboxSrc(src)}
                 />
               ))}
