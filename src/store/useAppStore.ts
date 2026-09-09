@@ -2,6 +2,7 @@ import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import { defaultTripId } from '../data/tripsIndex'
 import type { ManualTripItem, Outfit, VisualBoard } from '../types/trip'
+import type { CapsuleItemOverride } from '../lib/wardrobeOutfits'
 
 interface AppState {
   currentTripId: string
@@ -51,6 +52,15 @@ interface AppState {
   // traveler removed on purpose — same "explicit override, not just
   // deletion" reasoning as resolvedOpenItemIds above.
   wardrobeVisualLinks: Record<string, string | null>
+  // A traveler's edits to a seeded CapsuleItem (rename, recategorize,
+  // change subtype/color/notes, remove the seeded studio photo) — keyed
+  // by wardrobeItemOverrideKey(tripId, itemId) (see
+  // lib/wardrobeOutfits.ts). trip.capsule itself is immutable imported
+  // seed data, so edits live here instead and are merged in at read time
+  // (getEffectiveCapsule/allWardrobePieces/resolveOutfitItems) — the
+  // item's id, and therefore every Outfit.itemIds reference to it, never
+  // changes. A key's absence means "render the seed data unmodified".
+  wardrobeItemOverrides: Record<string, CapsuleItemOverride>
   // Trip Alerts are generated fresh from trip data every time Trip OS
   // opens/resumes (see lib/alerts.ts) — nothing about an alert itself is
   // ever persisted, only what the traveler did with it, keyed by
@@ -84,6 +94,8 @@ interface AppState {
   deleteOutfit: (id: string) => void
   linkWardrobeVisual: (tripId: string, itemId: string, visualBoardId: string) => void
   unlinkWardrobeVisual: (tripId: string, itemId: string) => void
+  setWardrobeItemOverride: (tripId: string, itemId: string, override: CapsuleItemOverride) => void
+  resetWardrobeItemOverride: (tripId: string, itemId: string) => void
   dismissAlert: (tripId: string, alertId: string) => void
   snoozeAlert: (tripId: string, alertId: string, untilISO: string) => void
   setNotificationsRequested: (value: boolean) => void
@@ -100,6 +112,7 @@ export const useAppStore = create<AppState>()(
       visualBoards: [],
       outfits: [],
       wardrobeVisualLinks: {},
+      wardrobeItemOverrides: {},
       alertOverrides: {},
       notificationsRequested: false,
       setCurrentTripId: (id) => set({ currentTripId: id }),
@@ -157,6 +170,19 @@ export const useAppStore = create<AppState>()(
         set((s) => ({
           wardrobeVisualLinks: { ...s.wardrobeVisualLinks, [`${tripId}:${itemId}`]: null },
         })),
+      setWardrobeItemOverride: (tripId, itemId, override) =>
+        set((s) => ({
+          wardrobeItemOverrides: { ...s.wardrobeItemOverrides, [`${tripId}:${itemId}`]: override },
+        })),
+      // Deletes the key entirely (rather than setting an empty object)
+      // so the item goes back to rendering the seed data exactly as if
+      // it had never been edited.
+      resetWardrobeItemOverride: (tripId, itemId) =>
+        set((s) => {
+          const key = `${tripId}:${itemId}`
+          const { [key]: _removed, ...rest } = s.wardrobeItemOverrides
+          return { wardrobeItemOverrides: rest }
+        }),
       dismissAlert: (tripId, alertId) =>
         set((s) => ({
           alertOverrides: { ...s.alertOverrides, [`${tripId}:${alertId}`]: { dismissed: true } },

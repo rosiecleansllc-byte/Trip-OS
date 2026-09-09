@@ -27,6 +27,7 @@ export function OutfitCard({
   const shareMode = useAppStore((s) => s.shareMode)
   const deleteOutfit = useAppStore((s) => s.deleteOutfit)
   const visualBoards = useAppStore((s) => s.visualBoards)
+  const wardrobeItemOverrides = useAppStore((s) => s.wardrobeItemOverrides)
   const openEdit = useOutfitUiStore((s) => s.openEdit)
   const [menuOpen, setMenuOpen] = useState(false)
   const [confirmingDelete, setConfirmingDelete] = useState(false)
@@ -47,7 +48,7 @@ export function OutfitCard({
   // Uploaded wardrobe-item pieces are excluded entirely in Share mode
   // (same "zero the array" pattern as every other private-upload
   // surface) — a seeded piece's name still shows either way.
-  const items = resolveOutfitItems(trip, outfit, shareMode ? [] : visualBoards)
+  const items = resolveOutfitItems(trip, outfit, shareMode ? [] : visualBoards, wardrobeItemOverrides)
   const dayLabel = outfitDayLabel(trip, outfit.dayId) ?? 'Whole trip'
 
   return (

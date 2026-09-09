@@ -38,7 +38,7 @@ import { useNow } from '../lib/useNow'
 import { findDayVisualBoards, useVisualBoardImage } from '../lib/visualBoards'
 import { getOutfitBoardsForDay } from '../lib/outfits'
 import { OutfitBoardLookCard } from '../components/visuals/OutfitBoardSection'
-import { getOutfitsForDay, resolveOutfitItems } from '../lib/wardrobeOutfits'
+import { getOutfitsForDay, resolveOutfitItems, type CapsuleItemOverride } from '../lib/wardrobeOutfits'
 import { useOutfitDetailUiStore } from '../store/useOutfitDetailUiStore'
 import { WardrobeItemThumb } from '../components/wardrobe/WardrobeItemThumb'
 import type { Outfit } from '../types/trip'
@@ -153,6 +153,7 @@ function TodayOutfitCard({
   eyebrow,
   shareMode,
   visualBoards,
+  wardrobeItemOverrides,
   onOpenItem,
 }: {
   outfit: Outfit
@@ -160,6 +161,7 @@ function TodayOutfitCard({
   eyebrow: string
   shareMode: boolean
   visualBoards: VisualBoard[]
+  wardrobeItemOverrides: Record<string, CapsuleItemOverride>
   onOpenItem: (src: string, alt: string) => void
 }) {
   const openDetail = useOutfitDetailUiStore((s) => s.open)
@@ -167,7 +169,7 @@ function TodayOutfitCard({
   // entirely in Share mode — same "zero the array" pattern as every
   // other private-upload surface — while a seeded piece's name still
   // shows (only its photo is separately gated inside WardrobeItemThumb).
-  const items = resolveOutfitItems(trip, outfit, shareMode ? [] : visualBoards)
+  const items = resolveOutfitItems(trip, outfit, shareMode ? [] : visualBoards, wardrobeItemOverrides)
   return (
     <Card className="overflow-hidden">
       <button type="button" onClick={() => openDetail(outfit.id)} className="block w-full p-4 text-left">
@@ -192,6 +194,7 @@ export function Today({ trip }: { trip: Trip }) {
   const shareMode = useAppStore((s) => s.shareMode)
   const visualBoards = useAppStore((s) => s.visualBoards)
   const storeOutfits = useAppStore((s) => s.outfits)
+  const wardrobeItemOverrides = useAppStore((s) => s.wardrobeItemOverrides)
   const effectiveTrip = useMemo(
     () => getEffectiveTrip(trip, manualItems, resolvedOpenItemIds),
     [trip, manualItems, resolvedOpenItemIds]
@@ -315,6 +318,7 @@ export function Today({ trip }: { trip: Trip }) {
               eyebrow="Today's outfit"
               shareMode={shareMode}
               visualBoards={visualBoards}
+              wardrobeItemOverrides={wardrobeItemOverrides}
               onOpenItem={(src) => setLightboxSrc(src)}
             />
             {todaysOutfits.length > 1 && (
@@ -335,6 +339,7 @@ export function Today({ trip }: { trip: Trip }) {
                   eyebrow="Also today"
                   shareMode={shareMode}
                   visualBoards={visualBoards}
+                  wardrobeItemOverrides={wardrobeItemOverrides}
                   onOpenItem={(src) => setLightboxSrc(src)}
                 />
               ))}

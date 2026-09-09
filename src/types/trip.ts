@@ -281,6 +281,10 @@ export interface CapsuleItem {
   note?: string
   imageUrl?: string
   color?: string
+  // Optional freeform/preset subtype within the category (e.g. "tee",
+  // "sneakers") — same vocabulary as VisualBoard.wardrobeSubtype,
+  // display-only, never affects grouping or matching.
+  subtype?: string
 }
 
 export interface OutfitBoard {

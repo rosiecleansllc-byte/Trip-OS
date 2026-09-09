@@ -71,14 +71,16 @@ export function AddOutfitSheet({ trip }: { trip: Trip }) {
 
   const storeOutfits = useAppStore((s) => s.outfits)
   const visualBoards = useAppStore((s) => s.visualBoards)
+  const wardrobeItemOverrides = useAppStore((s) => s.wardrobeItemOverrides)
   const addOutfit = useAppStore((s) => s.addOutfit)
   const updateOutfit = useAppStore((s) => s.updateOutfit)
   // Every wardrobe piece this trip can build an outfit from — seeded
-  // CapsuleItems plus the traveler's own uploaded wardrobe-item
-  // VisualBoards (see lib/wardrobeOutfits.ts). This sheet is never
-  // mounted in Share mode (AppShell only renders it outside shareMode),
-  // so no zeroing is needed here the way outfit-display surfaces need it.
-  const wardrobePieces = allWardrobePieces(trip, visualBoards)
+  // CapsuleItems (with any local edit applied) plus the traveler's own
+  // uploaded wardrobe-item VisualBoards (see lib/wardrobeOutfits.ts).
+  // This sheet is never mounted in Share mode (AppShell only renders it
+  // outside shareMode), so no zeroing is needed here the way
+  // outfit-display surfaces need it.
+  const wardrobePieces = allWardrobePieces(trip, visualBoards, wardrobeItemOverrides)
 
   const [form, setForm] = useState<FormState>(() => emptyForm())
   const [saving, setSaving] = useState(false)
