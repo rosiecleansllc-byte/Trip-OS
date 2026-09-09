@@ -36,7 +36,10 @@ export function WardrobeOutfitBoardSection({ trip, shareMode }: { trip: Trip; sh
         // private-upload surface) — a seeded piece's name still shows
         // either way.
         const items = resolveOutfitItems(trip, outfit, shareMode ? [] : visualBoards, wardrobeItemOverrides)
-        const dayLabel = `Day ${day.dayNumber} · ${formatDateCompact(day.date)} · ${day.title}`
+        // day is undefined for an outfit whose plan fell through and
+        // hasn't been reassigned yet (see allSeededOutfitsInOrder) —
+        // same "Whole trip" fallback OutfitCard/OutfitDetailSheet use.
+        const dayLabel = day ? `Day ${day.dayNumber} · ${formatDateCompact(day.date)} · ${day.title}` : 'Whole trip'
         return (
           <Card key={outfit.id} className="p-4">
             <button type="button" onClick={() => openDetail(outfit.id)} className="block w-full text-left">

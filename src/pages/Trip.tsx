@@ -267,7 +267,14 @@ export function TripPage({ trip }: { trip: Trip }) {
                           <span className="w-11 shrink-0 text-xs text-blue">{formatTime(item.time) ?? ''}</span>
                           <div className="min-w-0 flex-1">
                             <div className="flex items-start justify-between gap-2">
-                              <p className="text-ink">{item.label}</p>
+                              <p className={clsx('text-ink', item.cancelled && 'text-ink-soft line-through')}>
+                                {item.label}
+                                {item.cancelled && (
+                                  <span className="ml-1.5 rounded-full border border-line bg-bg-soft px-1.5 py-0.5 align-middle text-[9px] font-medium uppercase tracking-wide text-ink-soft no-underline">
+                                    Canceled
+                                  </span>
+                                )}
+                              </p>
                               {!shareMode && manualItemsById.has(item.id) && (
                                 <ManualItemMenu item={manualItemsById.get(item.id)!} trip={trip} className="shrink-0" />
                               )}

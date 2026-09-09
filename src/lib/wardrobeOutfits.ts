@@ -56,13 +56,25 @@ export function getOutfitsForDay(trip: Trip, storeOutfits: Outfit[], dayId: stri
 // components/wardrobe/WardrobeOutfitBoardSection.tsx). Traveler-created
 // outfits aren't included here; the board is specifically the curated,
 // seeded set of looks.
-export function allSeededOutfitsInOrder(trip: Trip): { day: DayPlan; outfit: Outfit }[] {
-  const out: { day: DayPlan; outfit: Outfit }[] = []
+//
+// A seeded outfit can have no dayId — e.g. a look whose date fell
+// through (a plan tied to a canceled/rebooked flight) and is
+// deliberately left unassigned rather than guessed at a new date (see
+// types/trip.ts Outfit.dayId). Its record still needs to stay visible
+// for review rather than silently vanishing from the Outfit Board, so
+// every such outfit is appended after the day-assigned ones, each with
+// `day: undefined` — WardrobeOutfitBoardSection renders these under the
+// same "Whole trip" label OutfitCard/OutfitDetailSheet already use for
+// a dayId-less outfit elsewhere in the app.
+export function allSeededOutfitsInOrder(trip: Trip): { day?: DayPlan; outfit: Outfit }[] {
+  const out: { day?: DayPlan; outfit: Outfit }[] = []
   for (const day of trip.days) {
     for (const outfit of (trip.outfits ?? []).filter((o) => o.dayId === day.id)) {
       out.push({ day, outfit })
     }
   }
+  const unassigned = (trip.outfits ?? []).filter((o) => !o.dayId).sort((a, b) => a.sortOrder - b.sortOrder)
+  for (const outfit of unassigned) out.push({ outfit })
   return out
 }
 

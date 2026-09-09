@@ -156,6 +156,14 @@ export interface ScheduleItem extends LinkActions, TravelTiming {
   notes?: string
   isPrivate?: boolean
   tip?: string // survives Share mode
+  // Display-only: this line represents a plan that fell through (e.g. a
+  // canceled flight) but is being kept visible rather than deleted, per
+  // Trip OS's "never silently delete a record of what was booked" rule.
+  // Distinct from Booking/Transport's own `status` — a ScheduleItem is
+  // just a day's narrative text, so this is the one lightweight flag it
+  // needs to render a muted "Canceled" treatment and drop out of "Next
+  // up" consideration (see lib/date.ts callers filtering on this).
+  cancelled?: boolean
 }
 
 export interface DayPlan {
