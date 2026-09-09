@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Building2, Footprints, Gem, Layers, Luggage, ImageIcon, Shirt, Sparkles } from 'lucide-react'
-import type { Trip, VisualBoard, VisualBoardType } from '../types/trip'
+import type { CapsuleCategory, Trip, VisualBoard, VisualBoardType } from '../types/trip'
 
 // Device-local storage for traveler-uploaded visual boards (outfit
 // photos, capsule/packing flat-lays, mood boards, city inspiration).
@@ -166,6 +166,33 @@ export function dayLabelFor(trip: Trip, dayId: string | undefined): string | und
   if (!dayId) return undefined
   const day = trip.days.find((d) => d.id === dayId)
   return day ? `Day ${day.dayNumber} · ${day.title}` : undefined
+}
+
+// A VisualBoard uploaded as a single wardrobe piece rather than a true
+// multi-item board — see types/trip.ts VisualBoard.visualKind. Every
+// pre-existing upload (visualKind absent) is a board, same as before
+// this field existed.
+export function isWardrobeItemBoard(board: VisualBoard): boolean {
+  return board.visualKind === 'wardrobe-item'
+}
+
+// Every traveler-uploaded wardrobe piece for a trip — the Wardrobe tab's
+// counterpart to sortVisualBoards' board-only listing (see Pack.tsx,
+// which filters isWardrobeItemBoard out of its Boards tab and into this
+// instead).
+export function uploadedWardrobeItemsForTrip(boards: VisualBoard[], tripId: string): VisualBoard[] {
+  return boards.filter((b) => b.tripId === tripId && isWardrobeItemBoard(b))
+}
+
+// Optional preset subtype chips shown per category in the wardrobe-item
+// add form — display-only labels, never validated or matched against.
+// Categories with no obvious short list (dress/outerwear/bag/other) get
+// none; the traveler can still type a freeform subtype for those.
+export const WARDROBE_SUBTYPE_PRESETS: Partial<Record<CapsuleCategory, string[]>> = {
+  top: ['Tee', 'Blouse', 'Button-down', 'Sweater'],
+  bottom: ['Jeans', 'Skirt', 'Leggings', 'Trousers'],
+  shoes: ['Sneakers', 'Sandals', 'Heels', 'Flats'],
+  accessory: ['Scarf', 'Sunglasses', 'Jewelry', 'Belt'],
 }
 
 // Loads a board's image from IndexedDB and exposes it as an object URL,

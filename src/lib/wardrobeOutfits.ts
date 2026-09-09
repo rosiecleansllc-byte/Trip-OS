@@ -66,19 +66,66 @@ export function allSeededOutfitsInOrder(trip: Trip): { day: DayPlan; outfit: Out
   return out
 }
 
-export function resolveOutfitItems(trip: Trip, outfit: Outfit): CapsuleItem[] {
+// One wardrobe piece, resolved from either id space an Outfit.itemIds
+// entry can point at: a seeded CapsuleItem, or a traveler-uploaded
+// 'wardrobe-item'-kind VisualBoard (see types/trip.ts). Every consumer
+// that renders an outfit's pieces (OutfitCard, OutfitDetailSheet,
+// WardrobeOutfitBoardSection, Today/Trip previews, AddOutfitSheet's
+// picker) works from this single shape via WardrobeItemThumb, instead
+// of each needing to know which id space a given itemId came from.
+export interface ResolvedWardrobeItem {
+  id: string
+  name: string
+  category: CapsuleCategory
+  note?: string
+  source: 'capsule' | 'uploaded'
+  imageUrl?: string // capsule only — a seeded public photo
+  imageKey?: string // uploaded only — the VisualBoard's own IndexedDB key, read directly (no linking indirection: it already IS the item's photo)
+}
+
+function resolvedFromCapsuleItem(item: CapsuleItem): ResolvedWardrobeItem {
+  return { id: item.id, name: item.name, category: item.category, note: item.note, source: 'capsule', imageUrl: item.imageUrl }
+}
+
+function resolvedFromUploadedBoard(board: VisualBoard): ResolvedWardrobeItem {
+  return {
+    id: board.id,
+    name: board.title,
+    category: board.wardrobeCategory ?? 'other',
+    note: board.notes,
+    source: 'uploaded',
+    imageKey: board.imageKey,
+  }
+}
+
+// Every wardrobe piece available to build an outfit from — seeded
+// CapsuleItems plus this trip's traveler-uploaded wardrobe-item
+// VisualBoards, in one list. Backs AddOutfitSheet's item picker and
+// Pack's Wardrobe tab, both of which group these by category
+// (WARDROBE_CATEGORY_ORDER) without needing to care which id space a
+// given piece lives in.
+export function allWardrobePieces(trip: Trip, visualBoards: VisualBoard[]): ResolvedWardrobeItem[] {
+  const uploaded = visualBoards.filter((b) => b.tripId === trip.meta.id && b.visualKind === 'wardrobe-item')
+  return [...trip.capsule.map(resolvedFromCapsuleItem), ...uploaded.map(resolvedFromUploadedBoard)]
+}
+
+export function resolveOutfitItems(trip: Trip, outfit: Outfit, visualBoards: VisualBoard[]): ResolvedWardrobeItem[] {
+  const pieces = allWardrobePieces(trip, visualBoards)
   return outfit.itemIds
-    .map((id) => trip.capsule.find((c) => c.id === id))
-    .filter((c): c is CapsuleItem => Boolean(c))
+    .map((id) => pieces.find((p) => p.id === id))
+    .filter((p): p is ResolvedWardrobeItem => Boolean(p))
 }
 
 // Same IndexedDB key scheme CapsuleItemImage.tsx already writes to for
 // an imageless wardrobe item's private photo — reading it here (rather
 // than inventing a second key format) is what lets the Outfit Board and
 // Outfit detail show a piece's photo the moment it's been uploaded once
-// in the Wardrobe tab, with no separate re-upload ever required.
-export function wardrobeItemImageKey(trip: Trip, item: CapsuleItem): string {
-  return `capsule-${trip.meta.id}-${item.id}`
+// in the Wardrobe tab, with no separate re-upload ever required. Takes
+// just the item's id (not a whole CapsuleItem) since that's the only
+// part this key depends on — lets callers holding a ResolvedWardrobeItem
+// use it too.
+export function wardrobeItemImageKey(trip: Trip, itemId: string): string {
+  return `capsule-${trip.meta.id}-${itemId}`
 }
 
 export function outfitDayLabel(trip: Trip, dayId: string | undefined): string | undefined {
@@ -178,14 +225,15 @@ export function outfitDayHintForItem(trip: Trip, item: CapsuleItem): string | un
 // Reads back a wardrobe item's persisted link (see useAppStore's
 // wardrobeVisualLinks) — a real VisualBoard, or undefined if unlinked/
 // never evaluated/the linked board no longer exists. Never computes a
-// live match itself.
+// live match itself. Takes just the item's id, same reasoning as
+// wardrobeItemImageKey above.
 export function resolveLinkedVisualBoard(
   trip: Trip,
-  item: CapsuleItem,
+  itemId: string,
   visualBoards: VisualBoard[],
   wardrobeVisualLinks: Record<string, string | null>
 ): VisualBoard | undefined {
-  const linkedId = wardrobeVisualLinks[wardrobeVisualLinkKey(trip.meta.id, item.id)]
+  const linkedId = wardrobeVisualLinks[wardrobeVisualLinkKey(trip.meta.id, itemId)]
   if (!linkedId) return undefined
   return visualBoards.find((b) => b.id === linkedId && b.tripId === trip.meta.id)
 }

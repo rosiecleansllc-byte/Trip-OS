@@ -1,6 +1,7 @@
 import { useEffect } from 'react'
 import type { Trip } from '../../types/trip'
 import { useAppStore } from '../../store/useAppStore'
+import { isWardrobeItemBoard } from '../../lib/visualBoards'
 import { autoMatchVisualBoardForWardrobeItem, outfitDayHintForItem, wardrobeVisualLinkKey } from '../../lib/wardrobeOutfits'
 
 // Reconciliation pass: every time the trip's uploaded VisualBoards
@@ -34,7 +35,11 @@ export function useAutoLinkWardrobeVisuals(trip: Trip) {
     // Auto-linking is a management side effect (writes to the store) —
     // never runs in Share mode, same as every other edit affordance.
     if (shareMode) return
-    const tripBoards = visualBoards.filter((b) => b.tripId === trip.meta.id)
+    // Wardrobe-item-kind uploads are excluded from the candidate pool —
+    // linking is for reusing a true multi-item board as a stand-in
+    // photo, not for treating one already-distinct wardrobe piece as
+    // another item's picture (see LinkVisualSheet's identical filter).
+    const tripBoards = visualBoards.filter((b) => b.tripId === trip.meta.id && !isWardrobeItemBoard(b))
     if (tripBoards.length === 0) return
     for (const item of trip.capsule) {
       if (item.imageUrl) continue

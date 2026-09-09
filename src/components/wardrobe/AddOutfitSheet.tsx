@@ -2,10 +2,10 @@ import { useEffect, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { clsx } from 'clsx'
 import { Check, X } from 'lucide-react'
-import type { CapsuleItem, Outfit, Trip } from '../../types/trip'
+import type { Outfit, Trip } from '../../types/trip'
 import { useAppStore } from '../../store/useAppStore'
 import { useOutfitUiStore } from '../../store/useOutfitUiStore'
-import { WARDROBE_CATEGORY_LABELS, WARDROBE_CATEGORY_ORDER } from '../../lib/wardrobeOutfits'
+import { WARDROBE_CATEGORY_LABELS, WARDROBE_CATEGORY_ORDER, allWardrobePieces, type ResolvedWardrobeItem } from '../../lib/wardrobeOutfits'
 import { WardrobeItemThumb } from './WardrobeItemThumb'
 
 const inputClass =
@@ -33,7 +33,7 @@ function PickRow({
   selected,
   onToggle,
 }: {
-  item: CapsuleItem
+  item: ResolvedWardrobeItem
   trip: Trip
   selected: boolean
   onToggle: () => void
@@ -70,8 +70,15 @@ export function AddOutfitSheet({ trip }: { trip: Trip }) {
   const close = useOutfitUiStore((s) => s.close)
 
   const storeOutfits = useAppStore((s) => s.outfits)
+  const visualBoards = useAppStore((s) => s.visualBoards)
   const addOutfit = useAppStore((s) => s.addOutfit)
   const updateOutfit = useAppStore((s) => s.updateOutfit)
+  // Every wardrobe piece this trip can build an outfit from — seeded
+  // CapsuleItems plus the traveler's own uploaded wardrobe-item
+  // VisualBoards (see lib/wardrobeOutfits.ts). This sheet is never
+  // mounted in Share mode (AppShell only renders it outside shareMode),
+  // so no zeroing is needed here the way outfit-display surfaces need it.
+  const wardrobePieces = allWardrobePieces(trip, visualBoards)
 
   const [form, setForm] = useState<FormState>(() => emptyForm())
   const [saving, setSaving] = useState(false)
@@ -166,14 +173,14 @@ export function AddOutfitSheet({ trip }: { trip: Trip }) {
 
             <div>
               <label className={labelClass}>Wardrobe items</label>
-              {trip.capsule.length === 0 ? (
+              {wardrobePieces.length === 0 ? (
                 <p className="rounded-xl border border-dashed border-line bg-bg-soft px-3 py-4 text-center text-xs text-ink-soft">
                   This trip has no wardrobe items yet.
                 </p>
               ) : (
                 <div className="space-y-4">
                   {WARDROBE_CATEGORY_ORDER.map((cat) => {
-                    const items = trip.capsule.filter((c) => c.category === cat)
+                    const items = wardrobePieces.filter((c) => c.category === cat)
                     if (items.length === 0) return null
                     return (
                       <div key={cat}>

@@ -1,7 +1,7 @@
 import { createPortal } from 'react-dom'
 import { X } from 'lucide-react'
 import type { Trip, VisualBoard } from '../../types/trip'
-import { sortVisualBoards, useVisualBoardImage, VISUAL_BOARD_TYPE_META } from '../../lib/visualBoards'
+import { isWardrobeItemBoard, sortVisualBoards, useVisualBoardImage, VISUAL_BOARD_TYPE_META } from '../../lib/visualBoards'
 import { useAppStore } from '../../store/useAppStore'
 
 function VisualBoardPickRow({ board, onSelect }: { board: VisualBoard; onSelect: () => void }) {
@@ -41,7 +41,11 @@ export function LinkVisualSheet({
   onClose: () => void
 }) {
   const visualBoards = useAppStore((s) => s.visualBoards)
-  const boards = sortVisualBoards(visualBoards.filter((b) => b.tripId === trip.meta.id))
+  // Wardrobe-item-kind uploads are excluded: linking is for reusing a
+  // true multi-item board (a collage, a themed flat-lay) as a stand-in
+  // photo, not for treating one already-distinct wardrobe piece as
+  // another item's picture.
+  const boards = sortVisualBoards(visualBoards.filter((b) => b.tripId === trip.meta.id && !isWardrobeItemBoard(b)))
 
   return createPortal(
     <div className="fixed inset-0 z-40 flex items-end justify-center">

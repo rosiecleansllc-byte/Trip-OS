@@ -27,7 +27,7 @@ import { LinkVisualSheet } from '../wardrobe/LinkVisualSheet'
 // link again (see `url` below) — so linking a shared photo now never
 // blocks replacing it with this item's own dedicated photo later.
 export function CapsuleItemImage({ item, trip, className }: { item: CapsuleItem; trip: Trip; className: string }) {
-  const imageKey = wardrobeItemImageKey(trip, item)
+  const imageKey = wardrobeItemImageKey(trip, item.id)
   const [version, setVersion] = useState(0)
   const [lightboxOpen, setLightboxOpen] = useState(false)
   const [pickerOpen, setPickerOpen] = useState(false)
@@ -39,7 +39,7 @@ export function CapsuleItemImage({ item, trip, className }: { item: CapsuleItem;
   const wardrobeVisualLinks = useAppStore((s) => s.wardrobeVisualLinks)
   const linkWardrobeVisual = useAppStore((s) => s.linkWardrobeVisual)
   const unlinkWardrobeVisual = useAppStore((s) => s.unlinkWardrobeVisual)
-  const linkedBoard = resolveLinkedVisualBoard(trip, item, visualBoards, wardrobeVisualLinks)
+  const linkedBoard = resolveLinkedVisualBoard(trip, item.id, visualBoards, wardrobeVisualLinks)
   const { url: linkedUrl } = useVisualBoardImage(linkedBoard?.imageKey)
 
   if (item.imageUrl) {

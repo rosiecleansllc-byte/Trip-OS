@@ -14,7 +14,7 @@ import { CapsuleItemImage } from '../components/pack/CapsuleItemImage'
 import { OutfitCard } from '../components/wardrobe/OutfitCard'
 import { WardrobeOutfitBoardSection } from '../components/wardrobe/WardrobeOutfitBoardSection'
 import { getWeatherLocationForDay, isWithinForecastRange, useWeather } from '../lib/weather'
-import { sortVisualBoards } from '../lib/visualBoards'
+import { isWardrobeItemBoard, sortVisualBoards, uploadedWardrobeItemsForTrip } from '../lib/visualBoards'
 import { WARDROBE_CATEGORY_LABELS, WARDROBE_CATEGORY_ORDER, allSeededOutfitsInOrder, sortOutfits } from '../lib/wardrobeOutfits'
 import { useAppStore } from '../store/useAppStore'
 import { useVisualBoardUiStore } from '../store/useVisualBoardUiStore'
@@ -93,16 +93,22 @@ function PackingChecklist({ trip }: { trip: Trip }) {
 type PackTab = 'capsule' | 'outfits' | 'checklist' | 'visuals'
 
 export function Pack({ trip }: { trip: Trip }) {
-  const hasCapsule = trip.capsule.length > 0
   const hasChecklist = (trip.packingList?.length ?? 0) > 0
   const shareMode = useAppStore((s) => s.shareMode)
-  // "Visuals" is always present outside Share mode — Austin has no seeded
-  // capsule/outfit data at all, and every trip (seeded or not) should
-  // still be able to hold traveler-uploaded boards. Hidden entirely in
-  // Share mode, same as the per-board Add/Edit/Replace/Delete controls it
-  // hosts.
+  const visualBoards = useAppStore((s) => s.visualBoards)
+  // Traveler-uploaded individual wardrobe pieces (see types/trip.ts
+  // VisualBoard.visualKind) — rendered in the Wardrobe tab grouped by
+  // category alongside any seeded CapsuleItems, never in Boards. Hidden
+  // entirely in Share mode, same as every other private-upload surface.
+  const uploadedWardrobeItems = shareMode ? [] : uploadedWardrobeItemsForTrip(visualBoards, trip.meta.id)
+  const hasWardrobeTab = trip.capsule.length > 0 || uploadedWardrobeItems.length > 0
+  // "Visuals"/Boards is always present outside Share mode — Austin has no
+  // seeded capsule/outfit data at all, and every trip (seeded or not)
+  // should still be able to hold traveler-uploaded boards. Hidden
+  // entirely in Share mode, same as the per-board Add/Edit/Replace/Delete
+  // controls it hosts.
   const tabs: PackTab[] = [
-    ...(hasCapsule ? (['capsule', 'outfits'] as const) : []),
+    ...(hasWardrobeTab ? (['capsule', 'outfits'] as const) : []),
     ...(hasChecklist ? (['checklist'] as const) : []),
     ...(shareMode ? [] : (['visuals'] as const)),
   ]
@@ -120,12 +126,15 @@ export function Pack({ trip }: { trip: Trip }) {
   // a private-mode-safe choice.
   const activeTab: PackTab | undefined = tabs.includes(tab) ? tab : tabs[0]
   const [lightbox, setLightbox] = useState<{ src: string; alt: string } | null>(null)
-  const visualBoards = useAppStore((s) => s.visualBoards)
   const openPicker = useVisualBoardUiStore((s) => s.openPicker)
   const outfits = useAppStore((s) => s.outfits)
   const openNewOutfit = useOutfitUiStore((s) => s.openNew)
   const openOutfitDetail = useOutfitDetailUiStore((s) => s.open)
-  const tripVisualBoards = sortVisualBoards(visualBoards.filter((b) => b.tripId === trip.meta.id))
+  // Boards only — wardrobe-item-kind uploads live in the Wardrobe tab
+  // instead (uploadedWardrobeItems above).
+  const tripVisualBoards = sortVisualBoards(
+    visualBoards.filter((b) => b.tripId === trip.meta.id && !isWardrobeItemBoard(b))
+  )
   const outfitBoards = tripVisualBoards.filter((b) => OUTFIT_TIER.includes(b.type))
   const capsulePackingBoards = tripVisualBoards.filter((b) => CAPSULE_TIER.includes(b.type))
   const shoesBoards = tripVisualBoards.filter((b) => SHOES_TIER.includes(b.type))
@@ -176,7 +185,7 @@ export function Pack({ trip }: { trip: Trip }) {
                 : key === 'outfits'
                   ? 'Outfits'
                   : key === 'visuals'
-                    ? 'Visuals'
+                    ? 'Boards'
                     : 'Checklist'}
             </button>
           ))}
@@ -187,14 +196,29 @@ export function Pack({ trip }: { trip: Trip }) {
 
       {activeTab === 'capsule' && (
         <div className="space-y-6">
+          {!shareMode && (
+            <button
+              type="button"
+              onClick={openPicker}
+              className="flex w-full items-center justify-center gap-2 rounded-full border border-blue/30 bg-blue-tint py-2.5 text-sm font-medium text-blue"
+            >
+              <Plus size={15} />
+              Add wardrobe item
+            </button>
+          )}
           {WARDROBE_CATEGORY_ORDER.map((cat) => {
-            const items = trip.capsule.filter((c) => c.category === cat)
-            if (items.length === 0) return null
+            const seededItems = trip.capsule.filter((c) => c.category === cat)
+            const uploadedItems = uploadedWardrobeItems.filter((b) => (b.wardrobeCategory ?? 'other') === cat)
+            if (seededItems.length === 0 && uploadedItems.length === 0) return null
             return (
               <div key={cat}>
-                <SectionHeader eyebrow={`${items.length} items`} title={WARDROBE_CATEGORY_LABELS[cat]} accent="red" />
+                <SectionHeader
+                  eyebrow={`${seededItems.length + uploadedItems.length} items`}
+                  title={WARDROBE_CATEGORY_LABELS[cat]}
+                  accent="red"
+                />
                 <div className="grid grid-cols-2 gap-3">
-                  {items.map((item) => (
+                  {seededItems.map((item) => (
                     <Card key={item.id} className="overflow-hidden">
                       {shareMode ? (
                         <ImagePlaceholder label={item.name} imageUrl={item.imageUrl} className="h-32 w-full" />
@@ -206,6 +230,13 @@ export function Pack({ trip }: { trip: Trip }) {
                         {item.note && <p className="mt-0.5 text-[11px] text-ink-soft">{item.note}</p>}
                       </div>
                     </Card>
+                  ))}
+                  {/* Traveler-uploaded pieces for this category — full
+                      View/Replace/Remove/Edit/Delete lifecycle already
+                      lives in VisualBoardCard, including recategorizing
+                      one that was mis-saved. */}
+                  {uploadedItems.map((board) => (
+                    <VisualBoardCard key={board.id} board={board} trip={trip} />
                   ))}
                 </div>
               </div>

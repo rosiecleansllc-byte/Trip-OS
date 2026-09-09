@@ -54,9 +54,22 @@ function DayOutfitThumb({ board }: { board: VisualBoard }) {
 // detail via the globally-mounted OutfitDetailSheet (see AppShell.tsx)
 // — never a generic navigation to Pack. A day with more than one
 // outfit (e.g. Austin's Sept 9) just renders one row per outfit.
-function DayOutfitRow({ outfit, trip, shareMode }: { outfit: Outfit; trip: Trip; shareMode: boolean }) {
+function DayOutfitRow({
+  outfit,
+  trip,
+  shareMode,
+  visualBoards,
+}: {
+  outfit: Outfit
+  trip: Trip
+  shareMode: boolean
+  visualBoards: VisualBoard[]
+}) {
   const open = useOutfitDetailUiStore((s) => s.open)
-  const items = resolveOutfitItems(trip, outfit)
+  // Uploaded wardrobe-item pieces are excluded entirely in Share mode
+  // (same "zero the array" pattern as every other private-upload
+  // surface) — a seeded piece's name still shows either way.
+  const items = resolveOutfitItems(trip, outfit, shareMode ? [] : visualBoards)
   const previewItem = items[0]
   return (
     <button
@@ -218,7 +231,13 @@ export function TripPage({ trip }: { trip: Trip }) {
                     {dayOutfits.length > 0 ? (
                       <div>
                         {dayOutfits.map((outfit) => (
-                          <DayOutfitRow key={outfit.id} outfit={outfit} trip={trip} shareMode={shareMode} />
+                          <DayOutfitRow
+                            key={outfit.id}
+                            outfit={outfit}
+                            trip={trip}
+                            shareMode={shareMode}
+                            visualBoards={visualBoards}
+                          />
                         ))}
                       </div>
                     ) : seededDayLooks.length > 0 ? (

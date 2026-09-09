@@ -5,6 +5,7 @@ import { Lightbox } from '../ui/Lightbox'
 import { formatDateCompact } from '../../lib/date'
 import { allSeededOutfitsInOrder, resolveOutfitItems } from '../../lib/wardrobeOutfits'
 import { useOutfitDetailUiStore } from '../../store/useOutfitDetailUiStore'
+import { useAppStore } from '../../store/useAppStore'
 import { WardrobeItemThumb } from './WardrobeItemThumb'
 
 // The visual "Outfit Board" for trips on the new reference-based Outfit
@@ -21,6 +22,7 @@ import { WardrobeItemThumb } from './WardrobeItemThumb'
 export function WardrobeOutfitBoardSection({ trip, shareMode }: { trip: Trip; shareMode: boolean }) {
   const [lightbox, setLightbox] = useState<{ src: string; alt: string } | null>(null)
   const openDetail = useOutfitDetailUiStore((s) => s.open)
+  const visualBoards = useAppStore((s) => s.visualBoards)
   const entries = allSeededOutfitsInOrder(trip)
 
   if (entries.length === 0) return null
@@ -28,7 +30,11 @@ export function WardrobeOutfitBoardSection({ trip, shareMode }: { trip: Trip; sh
   return (
     <div className="space-y-4">
       {entries.map(({ day, outfit }) => {
-        const items = resolveOutfitItems(trip, outfit)
+        // Uploaded wardrobe-item pieces are excluded entirely in Share
+        // mode (same "zero the array" pattern as every other
+        // private-upload surface) — a seeded piece's name still shows
+        // either way.
+        const items = resolveOutfitItems(trip, outfit, shareMode ? [] : visualBoards)
         const dayLabel = `Day ${day.dayNumber} · ${formatDateCompact(day.date)} · ${day.title}`
         return (
           <Card key={outfit.id} className="p-4">

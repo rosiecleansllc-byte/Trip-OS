@@ -422,6 +422,26 @@ export interface VisualBoard {
   // with — see lib/visualBoards.ts findDayVisualBoards. Never required:
   // with none marked, the earliest-created board leads.
   primaryForDay?: boolean
+  // Distinguishes a true multi-item board upload (a collage, a whole
+  // outfit photo, a themed flat-lay) from a single wardrobe piece (one
+  // top, one pair of shoes, ...). Absent or 'board' preserves every
+  // existing upload's behavior unchanged — only an explicit
+  // 'wardrobe-item' entry is pulled out of Pack's Boards tab and
+  // rendered in the Wardrobe tab instead, grouped by wardrobeCategory
+  // (see lib/visualBoards.ts isWardrobeItemBoard and
+  // lib/wardrobeOutfits.ts ResolvedWardrobeItem/resolveOutfitItems,
+  // which lets an Outfit reference this the same way it references a
+  // seeded CapsuleItem). `type` is unused/ignored on a 'wardrobe-item'
+  // entry (kept required on the type for simplicity — every write path
+  // sets it to a neutral default).
+  visualKind?: 'board' | 'wardrobe-item'
+  // Only set when visualKind === 'wardrobe-item' — the same category
+  // vocabulary as CapsuleCategory (Tops/Bottoms/Dresses/... ) so an
+  // uploaded piece groups identically alongside seeded capsule items.
+  wardrobeCategory?: CapsuleCategory
+  // Optional freeform/preset subtype within the category (e.g. "tee",
+  // "sneakers") — display-only, never affects grouping or matching.
+  wardrobeSubtype?: string
 }
 
 // A real outfit — a named, referenced group of actual wardrobe pieces
