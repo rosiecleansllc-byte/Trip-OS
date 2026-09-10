@@ -5,10 +5,12 @@ import { clsx } from 'clsx'
 import type { Outfit, Trip, VisualBoard } from '../types/trip'
 import { ActionRow } from '../components/ui/ActionRow'
 import { Card } from '../components/ui/Card'
+import { EventSessionSchedule } from '../components/ui/EventSessionSchedule'
 import { Lightbox } from '../components/ui/Lightbox'
 import { ManualItemMenu } from '../components/manual/ManualItemMenu'
 import { WardrobeItemThumb } from '../components/wardrobe/WardrobeItemThumb'
 import { formatDateShort, formatTime, isSameISODate } from '../lib/date'
+import { getSessionsForItem } from '../lib/eventSessions'
 import { useAppStore } from '../store/useAppStore'
 import { useOutfitDetailUiStore } from '../store/useOutfitDetailUiStore'
 import { getEffectiveTrip } from '../lib/manualItems'
@@ -262,43 +264,47 @@ export function TripPage({ trip }: { trip: Trip }) {
                       </p>
                     )}
                     <ul className="mt-3 space-y-2.5 border-t border-line pt-3">
-                      {day.scheduleItems.map((item) => (
-                        <li key={item.id} className="flex gap-2.5 text-sm">
-                          <span className="w-11 shrink-0 text-xs text-blue">{formatTime(item.time) ?? ''}</span>
-                          <div className="min-w-0 flex-1">
-                            <div className="flex items-start justify-between gap-2">
-                              <p className={clsx('text-ink', item.cancelled && 'text-ink-soft line-through')}>
-                                {item.label}
-                                {item.cancelled && (
-                                  <span className="ml-1.5 rounded-full border border-line bg-bg-soft px-1.5 py-0.5 align-middle text-[9px] font-medium uppercase tracking-wide text-ink-soft no-underline">
-                                    Canceled
-                                  </span>
+                      {day.scheduleItems.map((item) => {
+                        const sessions = getSessionsForItem(effectiveTrip, item.id)
+                        return (
+                          <li key={item.id} className="flex gap-2.5 text-sm">
+                            <span className="w-11 shrink-0 text-xs text-blue">{formatTime(item.time) ?? ''}</span>
+                            <div className="min-w-0 flex-1">
+                              <div className="flex items-start justify-between gap-2">
+                                <p className={clsx('text-ink', item.cancelled && 'text-ink-soft line-through')}>
+                                  {item.label}
+                                  {item.cancelled && (
+                                    <span className="ml-1.5 rounded-full border border-line bg-bg-soft px-1.5 py-0.5 align-middle text-[9px] font-medium uppercase tracking-wide text-ink-soft no-underline">
+                                      Canceled
+                                    </span>
+                                  )}
+                                </p>
+                                {!shareMode && manualItemsById.has(item.id) && (
+                                  <ManualItemMenu item={manualItemsById.get(item.id)!} trip={trip} className="shrink-0" />
                                 )}
-                              </p>
-                              {!shareMode && manualItemsById.has(item.id) && (
-                                <ManualItemMenu item={manualItemsById.get(item.id)!} trip={trip} className="shrink-0" />
-                              )}
+                              </div>
+                              {!shareMode && item.notes && <p className="text-xs text-ink-soft">{item.notes}</p>}
+                              {item.tip && <p className="text-xs italic text-gray">{item.tip}</p>}
+                              <ActionRow
+                                location={item.location}
+                                websiteUrl={item.websiteUrl}
+                                ticketUrl={item.ticketUrl}
+                                reservationUrl={item.reservationUrl}
+                                menuUrl={item.menuUrl}
+                                phone={item.phone}
+                                privateTicketUrl={item.privateTicketUrl}
+                                modifyUrl={item.modifyUrl}
+                                privateDocumentKey={item.privateDocumentKey}
+                                privateDocumentLabel={item.privateDocumentLabel}
+                                privateDocumentType={item.privateDocumentType}
+                                shareMode={shareMode}
+                                className="mt-1.5"
+                              />
+                              <EventSessionSchedule sessions={sessions} title={item.personalScheduleLabel} />
                             </div>
-                            {!shareMode && item.notes && <p className="text-xs text-ink-soft">{item.notes}</p>}
-                            {item.tip && <p className="text-xs italic text-gray">{item.tip}</p>}
-                            <ActionRow
-                              location={item.location}
-                              websiteUrl={item.websiteUrl}
-                              ticketUrl={item.ticketUrl}
-                              reservationUrl={item.reservationUrl}
-                              menuUrl={item.menuUrl}
-                              phone={item.phone}
-                              privateTicketUrl={item.privateTicketUrl}
-                              modifyUrl={item.modifyUrl}
-                              privateDocumentKey={item.privateDocumentKey}
-                              privateDocumentLabel={item.privateDocumentLabel}
-                              privateDocumentType={item.privateDocumentType}
-                              shareMode={shareMode}
-                              className="mt-1.5"
-                            />
-                          </div>
-                        </li>
-                      ))}
+                          </li>
+                        )
+                      })}
                     </ul>
                   </>
                 )}

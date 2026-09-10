@@ -164,6 +164,31 @@ export interface ScheduleItem extends LinkActions, TravelTiming {
   // needs to render a muted "Canceled" treatment and drop out of "Next
   // up" consideration (see lib/date.ts callers filtering on this).
   cancelled?: boolean
+  // Heading for this item's EventSession children (see EventSession
+  // below), e.g. "My Summit Schedule" — only meaningful when at least
+  // one EventSession's parentItemId points at this item. Left unset,
+  // EventSessionSchedule falls back to a generic "My Schedule".
+  personalScheduleLabel?: string
+}
+
+// One session within a larger, multi-track event (a conference, summit,
+// or festival with a full public agenda) that the traveler has
+// personally chosen to attend. Trip OS never tries to model the full
+// public agenda — only the sessions actually selected, tied to the
+// ScheduleItem that represents the parent event via `parentItemId`
+// (see ScheduleItem.personalScheduleLabel above) rather than embedding
+// the whole itinerary into one notes field. This keeps "parent event +
+// traveler-selected personal session schedule" reusable for any future
+// conference/summit/festival with the same shape — see
+// lib/eventSessions.ts for the helpers that read this generically.
+export interface EventSession {
+  id: string
+  parentItemId: string // ScheduleItem.id of the parent event this session belongs to
+  startTime: string // HH:mm, 24-hour
+  endTime: string // HH:mm, 24-hour
+  title: string
+  room: string // room/stage/track label
+  speaker?: string
 }
 
 export interface DayPlan {
@@ -496,6 +521,10 @@ export interface Trip {
   // France) still on the older OutfitBoard/itemNames scaffold, which
   // keeps rendering unchanged wherever this is absent.
   outfits?: Outfit[]
+  // Traveler-selected personal sessions for any multi-track event this
+  // trip includes (see EventSession above) — optional/empty for every
+  // trip without one, same pattern as `outfits`.
+  eventSessions?: EventSession[]
   openItems: OpenItem[]
   packingList?: PackingItem[] // a plain checklist, for trips without a styled capsule wardrobe
   resources?: TravelResource[] // public reference links, e.g. an official transit map
