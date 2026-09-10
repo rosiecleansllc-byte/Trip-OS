@@ -44,6 +44,12 @@ export interface WalletDocEntry {
   time?: string
   category: WalletCategory
   legName?: string
+  // True when the source Booking/Transport was cancelled — the document
+  // itself is still kept fully browsable here (never deleted), but a
+  // cancelled item's document should never be treated as "still needed"
+  // by alerts.ts's missing-document check. A ScheduleItem-only entry
+  // (no matching Booking/Transport row) is never cancelled on its own.
+  cancelled: boolean
 }
 
 const BOOKING_CATEGORY_TO_WALLET: Record<BookingCategory, WalletCategory> = {
@@ -86,6 +92,7 @@ function fromBooking(trip: Trip, b: Booking): WalletDocEntry {
     time: b.time,
     category: BOOKING_CATEGORY_TO_WALLET[b.category],
     legName: b.legId ? trip.legs.find((l) => l.id === b.legId)?.name : legNameForDate(trip, b.dateStart),
+    cancelled: b.status === 'cancelled',
   }
 }
 
@@ -100,6 +107,7 @@ function fromTransport(trip: Trip, t: Transport): WalletDocEntry {
     time: t.departTime,
     category: TRANSPORT_MODE_TO_WALLET[t.mode],
     legName: legNameForDate(trip, t.date),
+    cancelled: t.status === 'cancelled',
   }
 }
 
@@ -114,6 +122,7 @@ function fromScheduleItem(date: ISODate, legName: string | undefined, item: Sche
     time: item.time,
     category: SCHEDULE_TYPE_TO_WALLET[item.type],
     legName,
+    cancelled: Boolean(item.cancelled),
   }
 }
 

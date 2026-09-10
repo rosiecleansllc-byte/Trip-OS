@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
+import { clsx } from 'clsx'
 import {
   AlertTriangle,
   CheckCircle2,
@@ -83,7 +84,14 @@ function ScheduleCard({
             <p className="text-[11px] font-medium uppercase tracking-[0.14em] text-blue">
               {formatTime(item.time) ?? 'Anytime'}
             </p>
-            <p className="mt-0.5 text-lg font-medium text-ink">{item.label}</p>
+            <p className={clsx('mt-0.5 text-lg font-medium text-ink', item.cancelled && 'text-ink-soft line-through')}>
+              {item.label}
+              {item.cancelled && (
+                <span className="ml-1.5 rounded-full border border-line bg-bg-soft px-1.5 py-0.5 align-middle text-[9px] font-medium uppercase tracking-wide text-ink-soft no-underline">
+                  Canceled
+                </span>
+              )}
+            </p>
             {(item.location || legName) && (
               <p className="mt-0.5 text-xs text-ink-soft">
                 {item.location}
@@ -99,7 +107,14 @@ function ScheduleCard({
           <span className="mt-0.5 w-11 shrink-0 text-xs font-medium text-blue">
             {formatTime(item.time) ?? SCHEDULE_ICON[item.type]}
           </span>
-          <p className="min-w-0 flex-1 text-sm font-medium text-ink">{item.label}</p>
+          <p className={clsx('min-w-0 flex-1 text-sm font-medium text-ink', item.cancelled && 'text-ink-soft line-through')}>
+            {item.label}
+            {item.cancelled && (
+              <span className="ml-1.5 rounded-full border border-line bg-bg-soft px-1.5 py-0.5 align-middle text-[9px] font-medium uppercase tracking-wide text-ink-soft no-underline">
+                Canceled
+              </span>
+            )}
+          </p>
           {!shareMode && manualItem && <ManualItemMenu item={manualItem} trip={trip} className="shrink-0" />}
         </>
       )}
@@ -268,7 +283,14 @@ export function Today({ trip }: { trip: Trip }) {
   if (phase === 'active' && today) {
     const leg = trip.legs.find((l) => l.id === today.legId)
     const deadlines = today.deadlines ?? []
-    const { next } = findNextScheduleItem(today.scheduleItems, now)
+    // A cancelled item (e.g. a canceled flight) is never eligible to be
+    // "Next up" — it's kept visible in the day's schedule for the
+    // record, but should never look like an active plan the traveler is
+    // about to act on. Still appears further down in "Rest of today".
+    const { next } = findNextScheduleItem(
+      today.scheduleItems.filter((item) => !item.cancelled),
+      now
+    )
     const afterNext = today.scheduleItems.filter((item) => item.id !== next?.id)
     // Beneath Next Up, show at most the following two items as a compact
     // one-line-each "Later" preview; anything past that still appears in

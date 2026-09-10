@@ -1,11 +1,14 @@
 import type { Trip } from '../../types/trip'
 
 // Seed data for Trip 2: Austin + Waco 2026 — the real-world beta for
-// Trip OS's multi-trip architecture. Two confirmed flights, one hotel that
-// only covers part of the stay, and one confirmed event ticket, plus a
-// deliberately unfinished back half (lodging + Austin↔Waco transport)
-// modeled as OpenItems rather than guessed. Nothing here is placeholder
-// content invented for the demo — it's the real trip as booked so far.
+// Trip OS's multi-trip architecture. Two confirmed outbound/return
+// flights (the original Sep. 9 outbound was canceled and rebooked for
+// Sep. 10 — kept as a canceled historical record rather than deleted;
+// see the transport array), one hotel that only covers part of the
+// stay, and one confirmed event ticket, plus a deliberately unfinished
+// back half (lodging + Austin↔Waco transport) modeled as OpenItems
+// rather than guessed. Nothing here is placeholder content invented for
+// the demo — it's the real trip as booked so far.
 
 export const austinTrip: Trip = {
   meta: {
@@ -43,51 +46,100 @@ export const austinTrip: Trip = {
       date: '2026-09-09',
       dayNumber: 1,
       legId: 'austin',
-      title: 'Travel to Austin',
-      outfitNote: 'Comfortable travel clothes for the flight.',
-      // Two looks today — the flight outfit, then a bottoms swap for
-      // Franklin's BBQ after arriving — see the seeded outfits array
-      // below (each entry sets its own dayId: 'd1', no cross-reference
-      // needed here).
+      title: 'Flight Canceled — Rebooked for Sep. 10',
+      // The original Sep. 9 flight was canceled and rebooked for Sep.
+      // 10 (see d2) — no outfit is assigned to this day anymore (the
+      // "Travel Day to Austin" outfit moved to d2 with the real flight;
+      // see outfit-travel-day below).
+      outfitNote: 'Original flight canceled and rebooked — no confirmed plans today. See Sep. 10 for the actual travel day.',
       scheduleItems: [
-        // No real time for the drive to the airport — sortOrder just
-        // keeps it at the top of the day once a manual item (which
-        // always carries a real time) merges in and forces a resort;
-        // see scheduleSortValue (lib/date.ts) for why an untimed item
-        // needs this to avoid sinking to the very end of the list.
-        { id: 'd1-1', label: 'Travel to ATL', type: 'transport', sortOrder: 720 },
+        // The original outbound chain, kept visible (never deleted) and
+        // marked cancelled — see tr-frontier-outbound in transport
+        // below for the matching Transport record and its preserved
+        // historical confirmation document.
+        { id: 'd1-1', label: 'Travel to ATL', type: 'transport', sortOrder: 720, cancelled: true },
         {
           id: 'd1-2',
           time: '16:19',
           label: 'Frontier ATL → AUS',
           type: 'transport',
           location: 'Hartsfield-Jackson Atlanta International Airport (ATL)',
-          // Airport/security context lives here rather than as its own
-          // standalone schedule row — it's part of getting on this
-          // flight, not a separate itinerary stop.
-          notes: 'Arrive with time for ATL airport security. Direct, 2h 29m, economy.',
+          notes: 'Canceled by the airline. Rebooked as Frontier 4211, departing Sep. 10 at 4:19 PM — see the new flight on Sep. 10.',
+          cancelled: true,
           websiteUrl: 'https://www.flyfrontier.com',
           privateDocumentKey: 'austin-frontier-outbound-confirmation',
           privateDocumentType: 'confirmation',
         },
-        { id: 'd1-3', time: '17:48', label: 'Arrive Austin (AUS)', type: 'transport', location: 'Austin-Bergstrom International Airport (AUS)' },
         {
-          id: 'd1-4',
-          label: 'Uber: AUS → Franklin Barbecue',
+          id: 'd1-3',
+          time: '17:48',
+          label: 'Arrive Austin (AUS)',
           type: 'transport',
           location: 'Austin-Bergstrom International Airport (AUS)',
-          sortOrder: 1075, // just after the 17:48 arrival
+          cancelled: true,
         },
-        { id: 'd1-5', label: 'Franklin Barbecue', type: 'meal', location: 'Franklin Barbecue, Austin, TX', sortOrder: 1090 },
+        // The old "Uber: AUS → Franklin Barbecue" leg (d1-4) is removed
+        // outright, not just flagged — the new arrival plan on Sep. 10
+        // goes straight from the airport to the hotel instead (see
+        // tr-uber-aus-hyatt / d2-4), so keeping both around would show
+        // two competing "active" versions of the same ground transport.
+        //
+        // Franklin Barbecue itself is NOT auto-moved to Sep. 10 or any
+        // other date — the plan is undecided now that the flight moved,
+        // so both Franklin-related items below are kept exactly where
+        // they were (Sep. 9, no date/time invented) and flagged via
+        // `tip` for separate review, per the same "never silently
+        // delete or guess" rule as the flight itself.
+        {
+          id: 'd1-5',
+          label: 'Franklin Barbecue',
+          type: 'meal',
+          location: 'Franklin Barbecue, Austin, TX',
+          sortOrder: 1090,
+          tip: "Affected by the Sep. 9 flight cancellation — not yet rescheduled. Review this plan separately; don't assume it still happens today.",
+        },
         {
           id: 'd1-6',
           label: 'Uber: Franklin Barbecue → Hyatt House Austin/Downtown',
           type: 'transport',
           location: 'Franklin Barbecue, Austin, TX',
           sortOrder: 1110,
+          tip: 'Affected by the Sep. 9 flight cancellation — depends on the Franklin plan above, which is still under review.',
+        },
+      ],
+    },
+    {
+      id: 'd2',
+      date: '2026-09-10',
+      dayNumber: 2,
+      legId: 'austin',
+      // Sep. 10 is now the real travel/arrival day — takes over the
+      // "Travel to Austin" title and outfit that Sep. 9 originally had.
+      title: 'Travel to Austin',
+      outfitNote: 'Comfortable travel clothes for the flight.',
+      scheduleItems: [
+        { id: 'd2-1', label: 'Travel to ATL', type: 'transport', sortOrder: 720 },
+        {
+          id: 'd2-2',
+          time: '16:19',
+          label: 'Frontier ATL → AUS',
+          type: 'transport',
+          location: 'Hartsfield-Jackson Atlanta International Airport (ATL)',
+          notes: 'Rebooked after the original Sep. 9 flight was canceled by the airline. Flight 4211, nonstop, 2h 29m, economy.',
+          websiteUrl: 'https://www.flyfrontier.com',
+          privateDocumentKey: 'austin-frontier-outbound-sep10-confirmation',
+          privateDocumentType: 'confirmation',
+        },
+        { id: 'd2-3', time: '17:48', label: 'Arrive Austin (AUS)', type: 'transport', location: 'Austin-Bergstrom International Airport (AUS)' },
+        {
+          id: 'd2-4',
+          label: 'Uber: AUS Airport → Hyatt House Austin/Downtown',
+          type: 'transport',
+          location: 'Austin-Bergstrom International Airport (AUS)',
+          sortOrder: 1075, // just after the 17:48 arrival
         },
         {
-          id: 'd1-7',
+          id: 'd2-5',
           label: 'Check in at Hyatt House Austin/Downtown',
           type: 'lodging',
           location: 'Hyatt House Austin/Downtown, 901 Neches Street, Austin, TX 78701',
@@ -97,26 +149,6 @@ export const austinTrip: Trip = {
           privateDocumentType: 'confirmation',
           sortOrder: 1130,
         },
-        { id: 'd1-8', label: 'Easy dinner / settle in', type: 'meal', sortOrder: 1200 },
-      ],
-    },
-    {
-      id: 'd2',
-      date: '2026-09-10',
-      dayNumber: 2,
-      legId: 'austin',
-      title: 'Austin',
-      outfitNote: 'Casual Austin exploring.',
-      // None of these have a real time yet, but each still gets a
-      // sortOrder (lib/date.ts scheduleSortValue) so they hold their
-      // correct relative order — instead of all sinking to the end,
-      // in whatever order they happen to be authored — the moment a
-      // manual item with a real time merges into this day.
-      scheduleItems: [
-        { id: 'd2-1', label: 'Breakfast at Hyatt House', type: 'meal', sortOrder: 480 },
-        { id: 'd2-2', label: 'Austin exploration / activities TBD', type: 'free', sortOrder: 600 },
-        { id: 'd2-3', label: 'Lunch TBD', type: 'meal', sortOrder: 780 },
-        { id: 'd2-4', label: 'Dinner TBD', type: 'meal', sortOrder: 1140 },
       ],
     },
     {
@@ -238,6 +270,12 @@ export const austinTrip: Trip = {
 
   transport: [
     {
+      // The original outbound flight — canceled by the airline. Kept
+      // (never deleted) as the historical record, along with its own
+      // privateDocumentKey, so a confirmation already saved on-device
+      // stays reachable. status: 'cancelled' already excludes this from
+      // Trip Ready, the "travel day today" alert, and missing-document
+      // nagging (see lib/readiness.ts, lib/alerts.ts, lib/walletDocs.ts).
       id: 'tr-frontier-outbound',
       mode: 'flight',
       from: 'ATL',
@@ -246,11 +284,34 @@ export const austinTrip: Trip = {
       departTime: '16:19',
       arriveTime: '17:48',
       carrier: 'Frontier Airlines',
-      status: 'confirmed',
+      status: 'cancelled',
       cost: null,
-      notes: 'Arrive with time for ATL airport security. Direct, 2h 29m, economy.',
+      notes: 'Canceled by the airline. Rebooked as Frontier 4211 on Sep. 10 (see tr-frontier-outbound-sep10).',
       websiteUrl: 'https://www.flyfrontier.com',
       privateDocumentKey: 'austin-frontier-outbound-confirmation',
+      privateDocumentType: 'confirmation',
+    },
+    {
+      // The active, rebooked outbound flight — the real confirmed
+      // outbound transportation for this trip. Uses its own
+      // privateDocumentKey (separate from the canceled flight above) so
+      // the new confirmation photo/PDF the traveler adds here never
+      // overwrites the old one.
+      id: 'tr-frontier-outbound-sep10',
+      mode: 'flight',
+      from: 'ATL',
+      to: 'AUS',
+      date: '2026-09-10',
+      departTime: '16:19',
+      arriveTime: '17:48',
+      carrier: 'Frontier Airlines',
+      number: '4211',
+      status: 'confirmed',
+      cost: null,
+      confirmationCode: 'UFTKYP',
+      notes: 'Rebooked after the original Sep. 9 flight was canceled. Nonstop, 2h 29m, economy.',
+      websiteUrl: 'https://www.flyfrontier.com',
+      privateDocumentKey: 'austin-frontier-outbound-sep10-confirmation',
       privateDocumentType: 'confirmation',
     },
     {
@@ -272,29 +333,34 @@ export const austinTrip: Trip = {
       arrivalBufferMinutes: 120,
     },
     {
-      // Replaces the old direct AUS → Hyatt House Uber — the real Sept.
-      // 9 arrival flow is two separate legs with a Franklin Barbecue stop
-      // between them.
-      id: 'tr-uber-aus-franklin',
+      // Replaces the old AUS → Franklin Barbecue Uber (removed below) —
+      // the new Sep. 10 arrival goes straight from the airport to the
+      // hotel; Franklin Barbecue itself is undecided, not auto-moved.
+      id: 'tr-uber-aus-hyatt',
       mode: 'local',
       from: 'Austin-Bergstrom International Airport (AUS)',
-      to: 'Franklin Barbecue',
-      date: '2026-09-09',
+      to: 'Hyatt House Austin/Downtown',
+      date: '2026-09-10',
       carrier: 'Uber',
       status: 'confirmed',
       cost: null,
       location: 'Austin-Bergstrom International Airport (AUS)',
     },
     {
+      // Franklin-related and directly downstream of the undecided
+      // Franklin plan (see d1-5/d1-6) — kept, not deleted, but marked
+      // 'pending' rather than 'confirmed' so it doesn't satisfy
+      // readiness while the Franklin plan itself is still under review.
       id: 'tr-uber-franklin-hyatt',
       mode: 'local',
       from: 'Franklin Barbecue',
       to: 'Hyatt House Austin/Downtown',
       date: '2026-09-09',
       carrier: 'Uber',
-      status: 'confirmed',
+      status: 'pending',
       cost: null,
       location: 'Franklin Barbecue, Austin, TX',
+      notes: 'Affected by the Sep. 9 flight cancellation — depends on the still-undecided Franklin Barbecue plan.',
     },
   ],
 
@@ -328,37 +394,49 @@ export const austinTrip: Trip = {
   // so France's older text-scaffold rendering is unaffected.
   outfitBoards: [],
 
-  // Six looks across the five days (Sept. 9 has two — Travel Day +
-  // Franklin's BBQ, both dayId: 'd1', disambiguated only by having two
-  // separate Outfit entries — no plural-field workaround needed). Each
-  // itemIds entry references an id from capsule above; no imageUrl or
-  // itemNames text here at all — WardrobeOutfitBoardSection resolves
-  // every item's photo (seeded or privately uploaded) at render time.
+  // Six looks total. Four are assigned to a specific day (dayId); two —
+  // Franklin's BBQ and Austin Exploring — are unassigned right now
+  // because the plans they belonged to are undecided since the Sep. 9
+  // flight was canceled and rebooked for Sep. 10 (see the days array
+  // above and each outfit's own comment below). Each itemIds entry
+  // references an id from capsule above; no imageUrl or itemNames text
+  // here at all — WardrobeOutfitBoardSection resolves every item's
+  // photo (seeded or privately uploaded) at render time.
   outfits: [
     {
+      // Moved from d1 to d2 — the flight (and this outfit) is now worn
+      // on the actual rebooked travel day, Sep. 10. Pieces unchanged.
       id: 'outfit-travel-day',
       tripId: 'austin-2026',
       name: 'Travel Day to Austin',
-      dayId: 'd1',
+      dayId: 'd2',
       sortOrder: 0,
       itemIds: ['c2', 'c3', 'c8'],
       notes: 'Comfortable airport/flight outfit.',
     },
     {
+      // No longer assigned to a day — the Franklin Barbecue plan itself
+      // is undecided now that the flight moved (see d1-5/d1-6 above),
+      // so this outfit isn't auto-moved to a new date either. The
+      // record (and its pieces) stays intact for whenever Franklin is
+      // rescheduled.
       id: 'outfit-franklins-bbq',
       tripId: 'austin-2026',
       name: "Franklin's BBQ",
-      dayId: 'd1',
       sortOrder: 1,
       itemIds: ['c2', 'c4', 'c8'],
       notes: "Same shirt and sneakers as the flight — only the bottoms change, from red leggings to a mini denim skirt, for Franklin's BBQ right after arriving.",
     },
     {
+      // Was assigned to the old d2 ("Austin Exploring," a full day in
+      // Austin) — that day is now the Sep. 10 travel/arrival day
+      // instead, with no daytime Austin exploring on it (they don't
+      // land until 5:48 PM). Unassigned rather than deleted or moved to
+      // a guessed date, same treatment as outfit-franklins-bbq above.
       id: 'outfit-austin-exploring',
       tripId: 'austin-2026',
       name: 'Austin Exploring',
-      dayId: 'd2',
-      sortOrder: 0,
+      sortOrder: 2,
       itemIds: ['c5', 'c8', 'c13'],
       notes: 'Casual Austin daytime look.',
     },
@@ -450,22 +528,24 @@ export const austinTrip: Trip = {
       label: 'Decide ATL airport transportation / parking',
       category: 'transport',
       status: 'open',
-      relatedDayId: 'd1',
+      relatedDayId: 'd2', // moved with the rebooked flight
     },
     {
       id: 'open-aus-hotel-transport',
       tripId: 'austin-2026',
       label: 'Austin arrival ground transportation',
       category: 'transport',
-      // Decided: Uber AUS → Franklin Barbecue → Hyatt House (see
-      // tr-uber-aus-franklin/tr-uber-franklin-hyatt in transport, and
-      // d1-4/d1-6 in the Sep 9 schedule) — modeled as already-resolved
-      // seed data rather than left in the unresolved list. Still a real,
-      // toggleable checklist item: getEffectiveTrip lets the traveler
-      // reopen it via the checklist if the plan changes.
-      detail: 'Uber AUS → Franklin Barbecue → Hyatt House',
+      // Decided: Uber AUS → Hyatt House directly (see
+      // tr-uber-aus-hyatt in transport, and d2-4 in the Sep 10
+      // schedule) — modeled as already-resolved seed data rather than
+      // left in the unresolved list. Still a real, toggleable checklist
+      // item: getEffectiveTrip lets the traveler reopen it via the
+      // checklist if the plan changes. Updated from the original
+      // Uber AUS → Franklin Barbecue → Hyatt House plan after the Sep.
+      // 9 flight was canceled and rebooked for Sep. 10.
+      detail: 'Uber AUS Airport → Hyatt House Austin/Downtown',
       status: 'done',
-      relatedDayId: 'd1',
+      relatedDayId: 'd2',
     },
     {
       id: 'open-packing',

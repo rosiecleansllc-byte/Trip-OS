@@ -149,7 +149,7 @@ export function generateAlerts({ trip, effectiveTrip, now, realNow, presentDocKe
   // hasn't been saved on this device yet, within the next couple of
   // days (far-future items would just be noise this early).
   for (const entry of buildWalletDocEntries(effectiveTrip)) {
-    if (presentDocKeys.has(entry.privateDocumentKey)) continue
+    if (entry.cancelled || presentDocKeys.has(entry.privateDocumentKey)) continue
     const daysAway = daysUntil(entry.date, now)
     if (phase === 'active' && daysAway < -1) continue // already past, no longer actionable
     if (daysAway > 2) continue
