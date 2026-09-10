@@ -596,7 +596,13 @@ export const austinTrip: Trip = {
       tripId: 'austin-2026',
       label: 'Decide ATL airport transportation / parking',
       category: 'transport',
-      status: 'open',
+      // Decided: driving and parking at ATL for the outbound flight —
+      // modeled as already-resolved seed data, same pattern as
+      // open-aus-hotel-transport below. Still a real, toggleable
+      // checklist item: getEffectiveTrip lets the traveler reopen it via
+      // the checklist if the plan changes.
+      detail: 'Parking at ATL',
+      status: 'done',
       relatedDayId: 'd2', // moved with the rebooked flight
     },
     {
