@@ -49,6 +49,21 @@ function afterModeLabel(mode: TransportMode): string {
   return mode === 'flight' ? 'After landing' : 'After arrival'
 }
 
+// Explicit sequencing tier for a step, used to break ties between steps
+// that share a sort key (most commonly: several untimed steps, all
+// falling back to the same Infinity key below). Real times always win
+// first (see the sort itself) — this only decides order among steps
+// Trip OS has no clock time for, so it can't just be "whichever was
+// declared first in the trip's data": 1. primary transport (a real
+// point-to-point leg — flight/train/rental car) comes before 2. local
+// ground transportation (a rideshare/taxi/shuttle) comes before 3.
+// lodging arrival/checkout. Nothing here names a specific trip, city,
+// or hotel — any trip's data sorts the same way.
+function stepTier(kind: 'transport' | 'lodging', mode?: TransportMode): 1 | 2 | 3 {
+  if (kind === 'lodging') return 3
+  return mode === 'local' ? 2 : 1
+}
+
 function linkActionsOf(source: LinkActions): LinkActions {
   return {
     websiteUrl: source.websiteUrl,
@@ -67,6 +82,7 @@ function linkActionsOf(source: LinkActions): LinkActions {
 export function getTravelSequenceForDay(trip: Trip, day: DayPlan): TravelSequenceStep[] {
   interface Entry {
     key: number
+    tier: 1 | 2 | 3
     mode?: TransportMode
     step: TravelSequenceStep
   }
@@ -76,6 +92,7 @@ export function getTravelSequenceForDay(trip: Trip, day: DayPlan): TravelSequenc
     if (t.date !== day.date || t.status === 'cancelled') continue
     entries.push({
       key: timeToMinutes(t.departTime),
+      tier: stepTier('transport', t.mode),
       mode: t.mode,
       step: {
         id: t.id,
@@ -92,6 +109,7 @@ export function getTravelSequenceForDay(trip: Trip, day: DayPlan): TravelSequenc
     if (item.type !== 'lodging' || item.cancelled) continue
     entries.push({
       key: timeToMinutes(item.time),
+      tier: stepTier('lodging'),
       step: {
         id: item.id,
         kind: 'lodging',
@@ -103,14 +121,15 @@ export function getTravelSequenceForDay(trip: Trip, day: DayPlan): TravelSequenc
     })
   }
 
-  // A stable sort by time (untimed entries sort last, keeping their
-  // original insertion order among themselves) — transport entries are
-  // pushed before lodging entries above, so an untimed transport leg
-  // (e.g. a same-day rideshare) still lands ahead of an untimed lodging
-  // check-in, matching the real "arrive, then check in" sequence.
+  // Real times are authoritative and always sort first. Ties — most
+  // commonly several untimed steps, all falling back to the same
+  // Infinity key — break by stepTier (primary transport, then local
+  // ground transport, then lodging), and only then by original
+  // insertion order, so the sequence never depends on which order a
+  // trip's data happened to declare same-tier steps in.
   const sorted = entries
     .map((e, index) => ({ ...e, index }))
-    .sort((a, b) => a.key - b.key || a.index - b.index)
+    .sort((a, b) => a.key - b.key || a.tier - b.tier || a.index - b.index)
 
   return sorted.map((entry, i) => {
     const { step } = entry
