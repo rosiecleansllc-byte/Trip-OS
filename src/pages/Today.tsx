@@ -22,6 +22,7 @@ import { Lightbox } from '../components/ui/Lightbox'
 import { ManualItemMenu } from '../components/manual/ManualItemMenu'
 import { TodayAlertBanner } from '../components/alerts/TodayAlertBanner'
 import { TodayWallet } from '../components/today/TodayWallet'
+import { TravelSequenceCard } from '../components/today/TravelSequenceCard'
 import {
   daysUntil,
   findCurrentDay,
@@ -34,6 +35,7 @@ import {
 import { findNextEventSession, getSessionsForDay } from '../lib/eventSessions'
 import { computeReadiness } from '../lib/readiness'
 import { getEffectiveTrip } from '../lib/manualItems'
+import { getTravelSequenceForDay } from '../lib/travelSequence'
 import { computeLeaveBy } from '../lib/leaveBy'
 import { getTripTimeZone, nowInZone } from '../lib/timezone'
 import { useNow } from '../lib/useNow'
@@ -331,6 +333,7 @@ export function Today({ trip }: { trip: Trip }) {
     const todayWalletEntries = walletEntries.filter((e) => e.date === today.date)
     const todaySessions = getSessionsForDay(effectiveTrip, today)
     const { next: nextSession, after: afterSession } = findNextEventSession(todaySessions, now)
+    const travelSteps = getTravelSequenceForDay(effectiveTrip, today)
 
     return (
       <div className="animate-fade-in space-y-6">
@@ -470,6 +473,13 @@ export function Today({ trip }: { trip: Trip }) {
           <div>
             <SectionHeader eyebrow="Next up" title={next.label} />
             <ScheduleCard item={next} manualItem={manualItemsById.get(next.id)} trip={trip} legName={leg?.name} emphasize />
+          </div>
+        )}
+
+        {travelSteps.length > 0 && (
+          <div>
+            <SectionHeader eyebrow="Travel plan" title="Arrival plan" />
+            <TravelSequenceCard steps={travelSteps} shareMode={shareMode} />
           </div>
         )}
 

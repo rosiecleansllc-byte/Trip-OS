@@ -83,13 +83,20 @@ export const austinTrip: Trip = {
         // goes straight from the airport to the hotel instead (see
         // tr-uber-aus-hyatt / d2-4), so keeping both around would show
         // two competing "active" versions of the same ground transport.
+        // The downstream "Uber: Franklin Barbecue → Hyatt House" leg
+        // (formerly d1-6 / tr-uber-franklin-hyatt) is removed the same
+        // way, for the same reason: it was never actually taken (the
+        // trip no longer arrives in Austin the evening of the 9th), so
+        // it's obsolete transportation, not a plan still in effect —
+        // unlike Franklin Barbecue itself, which is a real event whose
+        // fate is merely undecided, not a booking that fell through.
         //
         // Franklin Barbecue itself is NOT auto-moved to Sep. 10 or any
         // other date — the plan is undecided now that the flight moved,
-        // so both Franklin-related items below are kept exactly where
-        // they were (Sep. 9, no date/time invented) and flagged via
-        // `tip` for separate review, per the same "never silently
-        // delete or guess" rule as the flight itself.
+        // so it's kept exactly where it was (Sep. 9, no date/time
+        // invented) and flagged via `tip` for separate review, per the
+        // same "never silently delete or guess" rule as the flight
+        // itself.
         {
           id: 'd1-5',
           label: 'Franklin Barbecue',
@@ -97,14 +104,6 @@ export const austinTrip: Trip = {
           location: 'Franklin Barbecue, Austin, TX',
           sortOrder: 1090,
           tip: "Affected by the Sep. 9 flight cancellation — not yet rescheduled. Review this plan separately; don't assume it still happens today.",
-        },
-        {
-          id: 'd1-6',
-          label: 'Uber: Franklin Barbecue → Hyatt House Austin/Downtown',
-          type: 'transport',
-          location: 'Franklin Barbecue, Austin, TX',
-          sortOrder: 1110,
-          tip: 'Affected by the Sep. 9 flight cancellation — depends on the Franklin plan above, which is still under review.',
         },
       ],
     },
@@ -347,22 +346,14 @@ export const austinTrip: Trip = {
       cost: null,
       location: 'Austin-Bergstrom International Airport (AUS)',
     },
-    {
-      // Franklin-related and directly downstream of the undecided
-      // Franklin plan (see d1-5/d1-6) — kept, not deleted, but marked
-      // 'pending' rather than 'confirmed' so it doesn't satisfy
-      // readiness while the Franklin plan itself is still under review.
-      id: 'tr-uber-franklin-hyatt',
-      mode: 'local',
-      from: 'Franklin Barbecue',
-      to: 'Hyatt House Austin/Downtown',
-      date: '2026-09-09',
-      carrier: 'Uber',
-      status: 'pending',
-      cost: null,
-      location: 'Franklin Barbecue, Austin, TX',
-      notes: 'Affected by the Sep. 9 flight cancellation — depends on the still-undecided Franklin Barbecue plan.',
-    },
+    // The "Franklin Barbecue → Hyatt House" Uber (formerly
+    // tr-uber-franklin-hyatt) is removed outright, not just left
+    // 'pending' — it was never actually taken once the outbound flight
+    // moved to Sep. 10, so it's obsolete transportation rather than a
+    // plan still awaiting confirmation. Franklin Barbecue's own
+    // schedule item (d1-5) and outfit (outfit-franklins-bbq) are kept
+    // untouched — this removal is scoped to the transportation leg
+    // only, per the same distinction drawn on d1 above.
   ],
 
   // Named wardrobe reference for the trip — same generic CapsuleItem
