@@ -13,7 +13,7 @@ import {
   Navigation,
   Sparkles,
 } from 'lucide-react'
-import type { ManualTripItem, ScheduleItem, Trip, VisualBoard } from '../types/trip'
+import type { EventSession, ManualTripItem, ScheduleItem, Trip, VisualBoard } from '../types/trip'
 import { ActionRow } from '../components/ui/ActionRow'
 import { Card } from '../components/ui/Card'
 import { OpenItemToggle } from '../components/ui/OpenItemToggle'
@@ -31,6 +31,7 @@ import {
   formatTime,
   tripPhase,
 } from '../lib/date'
+import { findNextEventSession, getSessionsForDay } from '../lib/eventSessions'
 import { computeReadiness } from '../lib/readiness'
 import { getEffectiveTrip } from '../lib/manualItems'
 import { computeLeaveBy } from '../lib/leaveBy'
@@ -154,6 +155,35 @@ function LaterRow({ item }: { item: ScheduleItem }) {
     <div className="flex items-center gap-3 rounded-xl border border-line bg-surface px-3.5 py-2.5">
       <span className="w-11 shrink-0 text-xs font-medium text-blue">{formatTime(item.time) ?? SCHEDULE_ICON[item.type]}</span>
       <p className="min-w-0 flex-1 truncate text-sm text-ink">{item.label}</p>
+    </div>
+  )
+}
+
+// Surfaces the next traveler-selected session of a multi-track event
+// happening today (see types/trip.ts EventSession / lib/eventSessions.ts)
+// — its own card, separate from the day's regular "Next up" schedule
+// item, since a parent event like "You × AI Summit" is one all-day
+// ScheduleItem with no timed sub-items of its own otherwise. Generic
+// across any trip/event: renders nothing event-specific beyond whatever
+// the trip's own eventSessions data provides.
+function NextSessionCard({ next, after }: { next: EventSession; after?: EventSession }) {
+  return (
+    <div>
+      <SectionHeader eyebrow="Next session" title={next.title} />
+      <Card className="p-4" accent="blue">
+        <p className="text-[11px] font-medium uppercase tracking-[0.14em] text-blue">
+          {formatTime(next.startTime)} – {formatTime(next.endTime)}
+        </p>
+        <p className="mt-0.5 text-xs text-ink-soft">
+          {next.room}
+          {next.speaker ? ` · ${next.speaker}` : ''}
+        </p>
+        {after && (
+          <p className="mt-2.5 border-t border-line pt-2 text-xs text-ink-soft">
+            Then {formatTime(after.startTime)} · {after.title} ({after.room})
+          </p>
+        )}
+      </Card>
     </div>
   )
 }
@@ -299,6 +329,8 @@ export function Today({ trip }: { trip: Trip }) {
     const restOfDay = afterNext.slice(2)
     const dayOpenItems = effectiveTrip.openItems.filter((i) => i.status === 'open' && i.relatedDayId === today.id)
     const todayWalletEntries = walletEntries.filter((e) => e.date === today.date)
+    const todaySessions = getSessionsForDay(effectiveTrip, today)
+    const { next: nextSession, after: afterSession } = findNextEventSession(todaySessions, now)
 
     return (
       <div className="animate-fade-in space-y-6">
@@ -440,6 +472,8 @@ export function Today({ trip }: { trip: Trip }) {
             <ScheduleCard item={next} manualItem={manualItemsById.get(next.id)} trip={trip} legName={leg?.name} emphasize />
           </div>
         )}
+
+        {nextSession && <NextSessionCard next={nextSession} after={afterSession} />}
 
         {todayWalletEntries.length > 0 && <TodayWallet entries={todayWalletEntries} />}
 

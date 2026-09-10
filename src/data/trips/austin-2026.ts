@@ -197,6 +197,7 @@ export const austinTrip: Trip = {
           privateDocumentType: 'ticket',
           travelMinutes: 15,
           arrivalBufferMinutes: 15,
+          personalScheduleLabel: 'My Summit Schedule',
         },
         { id: 'd4-4', label: 'Event day', type: 'free', sortOrder: 900 },
       ],
@@ -466,6 +467,83 @@ export const austinTrip: Trip = {
       sortOrder: 0,
       itemIds: ['c2', 'c3', 'c8'],
       notes: 'Same core outfit as the outbound travel day.',
+    },
+  ],
+
+  // Cecilia's personally selected You × AI Summit sessions (see
+  // types/trip.ts EventSession) — the public event's full multi-track
+  // agenda is never modeled here, only what she's actually chosen to
+  // attend, tied to the parent 'd4-3' Summit ScheduleItem above. Times
+  // reflect the Summit's current published agenda (confirmed against the
+  // traveler-supplied agenda screenshots), which shifted its afternoon
+  // slots earlier than an older cached version of the schedule.
+  eventSessions: [
+    {
+      id: 'summit-s1',
+      parentItemId: 'd4-3',
+      startTime: '09:05',
+      endTime: '09:45',
+      title: 'Mind Your Business: Find Money in Your Daily Work with AI',
+      room: 'Main Stage',
+    },
+    {
+      id: 'summit-s2',
+      parentItemId: 'd4-3',
+      startTime: '09:50',
+      endTime: '10:30',
+      title: 'Your Data, Your AI, and Your Future',
+      room: 'Main Stage',
+    },
+    {
+      id: 'summit-s3',
+      parentItemId: 'd4-3',
+      startTime: '11:00',
+      endTime: '11:40',
+      title: 'From the Pen to the Prompt: Making AI Work for You',
+      room: 'Room 1',
+    },
+    {
+      id: 'summit-s4',
+      parentItemId: 'd4-3',
+      startTime: '11:45',
+      endTime: '12:25',
+      title: 'AI Across Industries: Transforming Work, Skills, and Innovation',
+      room: 'Room 1',
+    },
+    {
+      id: 'summit-s5',
+      parentItemId: 'd4-3',
+      startTime: '13:40',
+      endTime: '14:20',
+      title: 'Build an AI-First Company',
+      room: 'Room 1',
+    },
+    {
+      id: 'summit-s6',
+      parentItemId: 'd4-3',
+      startTime: '14:25',
+      endTime: '15:05',
+      title: 'Uncovering Your Unique Genius: The Key to AI Visibility',
+      room: 'Room 1',
+      speaker: 'Fernando Labastida',
+    },
+    {
+      id: 'summit-s7',
+      parentItemId: 'd4-3',
+      startTime: '15:25',
+      endTime: '16:05',
+      title: 'Build an AI Assistant',
+      room: 'Room 2',
+      speaker: 'Chrissy McDannell',
+    },
+    {
+      id: 'summit-s8',
+      parentItemId: 'd4-3',
+      startTime: '16:10',
+      endTime: '16:45',
+      title: 'Human Opportunity and a Period of Exponential Change',
+      room: 'Main Stage',
+      speaker: 'Dr. Hope Koch',
     },
   ],
 
