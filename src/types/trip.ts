@@ -189,6 +189,11 @@ export interface EventSession {
   title: string
   room: string // room/stage/track label
   speaker?: string
+  // A short footnote shown under this session — e.g. a same-slot
+  // alternate track the traveler considered ("Alt: Build an AI
+  // Assistant, Chrissy McDannell, Room 2"). Never required; omit for
+  // the common case of a session with nothing more to add.
+  note?: string
 }
 
 export interface DayPlan {

@@ -192,6 +192,7 @@ export const austinTrip: Trip = {
           type: 'activity',
           location: 'The Performing Arts Community Center, Waco, TX',
           notes: '2 tickets.',
+          tip: 'People to find at breaks: Joseph Scaramucci (crime & community, 9:50 Room 2), Chrissy McDannell, Fernando Labastida.',
           privateDocumentKey: 'you-ai-summit-ticket',
           privateDocumentType: 'ticket',
           travelMinutes: 15,
@@ -464,77 +465,115 @@ export const austinTrip: Trip = {
   // Cecilia's personally selected You × AI Summit sessions (see
   // types/trip.ts EventSession) — the public event's full multi-track
   // agenda is never modeled here, only what she's actually chosen to
-  // attend, tied to the parent 'd4-3' Summit ScheduleItem above. Times
-  // reflect the Summit's current published agenda (confirmed against the
-  // traveler-supplied agenda screenshots), which shifted its afternoon
-  // slots earlier than an older cached version of the schedule.
+  // attend, tied to the parent 'd4-3' Summit ScheduleItem above. Synced
+  // against the official companion site
+  // (https://youxai-summit-companion.mike720945.chatgpt.site), which
+  // replaced an older cached version of the agenda — the previous
+  // Room 1/Room 2 picks at 11:00 (Dr. Mito Diaz-Espinoza) and 11:45
+  // (Renee Blackshear), plus the old 2:25 Labastida and 3:25 McDannell
+  // slots, no longer match the current published schedule and are
+  // replaced by the Main Stage lineup below. Breaks (10:35–10:55),
+  // lunch (12:25–1:35), and the afternoon break (3:10–3:15) are handled
+  // by the app's own natural schedule gaps, not modeled as sessions.
   eventSessions: [
+    {
+      id: 'summit-opening',
+      parentItemId: 'd4-3',
+      startTime: '08:00',
+      endTime: '08:15',
+      title: 'Opening welcome',
+      room: 'Main Stage',
+      speaker: 'Fernando Labastida & Mike Hamilton',
+    },
     {
       id: 'summit-s1',
       parentItemId: 'd4-3',
-      startTime: '09:05',
-      endTime: '09:45',
-      title: 'Mind Your Business: Find Money in Your Daily Work with AI',
+      startTime: '08:20',
+      endTime: '09:00',
+      title: 'Before the Algorithm, There Was Your Story',
       room: 'Main Stage',
+      speaker: 'Bryan Eisenberg',
     },
     {
       id: 'summit-s2',
+      parentItemId: 'd4-3',
+      startTime: '09:05',
+      endTime: '09:45',
+      title: 'Mine Your Business: Find Money in Your Daily Work With AI',
+      room: 'Main Stage',
+      speaker: 'Jermaine Malcolm',
+    },
+    {
+      id: 'summit-s3',
       parentItemId: 'd4-3',
       startTime: '09:50',
       endTime: '10:30',
       title: 'Your Data, Your AI, and Your Future',
       room: 'Main Stage',
-    },
-    {
-      id: 'summit-s3',
-      parentItemId: 'd4-3',
-      startTime: '11:00',
-      endTime: '11:40',
-      title: 'From the Pen to the Prompt: Making AI Work for You',
-      room: 'Room 1',
+      speaker: 'Tim Hayden',
     },
     {
       id: 'summit-s4',
       parentItemId: 'd4-3',
-      startTime: '11:45',
-      endTime: '12:25',
-      title: 'AI Across Industries: Transforming Work, Skills, and Innovation',
-      room: 'Room 1',
+      startTime: '11:00',
+      endTime: '11:40',
+      title: 'The Signals That Shape What AI Says About You',
+      room: 'Main Stage',
+      speaker: 'Tommy Landry',
     },
     {
       id: 'summit-s5',
       parentItemId: 'd4-3',
-      startTime: '13:40',
-      endTime: '14:20',
-      title: 'Build an AI-First Company',
-      room: 'Room 1',
+      startTime: '11:45',
+      endTime: '12:25',
+      title: 'Build Your AI Marketing Operating System',
+      room: 'Main Stage',
+      speaker: 'Russ Henneberry',
     },
     {
       id: 'summit-s6',
       parentItemId: 'd4-3',
-      startTime: '14:25',
-      endTime: '15:05',
-      title: 'Uncovering Your Unique Genius: The Key to AI Visibility',
-      room: 'Room 1',
-      speaker: 'Fernando Labastida',
+      startTime: '13:40',
+      endTime: '14:20',
+      title: 'BU Law session (title TBA)',
+      room: 'Main Stage',
+      speaker: 'Dr. Elizabeth Fraley',
+      note: 'Alt: Build an AI Assistant, Chrissy McDannell, Room 2.',
     },
     {
       id: 'summit-s7',
       parentItemId: 'd4-3',
-      startTime: '15:25',
-      endTime: '16:05',
-      title: 'Build an AI Assistant',
-      room: 'Room 2',
-      speaker: 'Chrissy McDannell',
+      startTime: '14:25',
+      endTime: '15:05',
+      title: 'Build Your Brand with AI',
+      room: 'Main Stage',
+      speaker: 'Andrew Lane',
     },
     {
       id: 'summit-s8',
       parentItemId: 'd4-3',
-      startTime: '16:10',
+      startTime: '15:20',
+      endTime: '16:00',
+      title: 'Build an AI-First Company',
+      room: 'Main Stage',
+      speaker: 'D. Scott Smith',
+    },
+    {
+      id: 'summit-s9',
+      parentItemId: 'd4-3',
+      startTime: '16:05',
       endTime: '16:45',
       title: 'Human Opportunity and a Period of Exponential Change',
       room: 'Main Stage',
       speaker: 'Dr. Hope Koch',
+    },
+    {
+      id: 'summit-wrap',
+      parentItemId: 'd4-3',
+      startTime: '16:50',
+      endTime: '17:00',
+      title: 'Speaker wrap & media interviews',
+      room: 'Main Stage',
     },
   ],
 
