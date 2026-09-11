@@ -23,6 +23,7 @@ export function EventSessionSchedule({ sessions, title = 'My Schedule' }: { sess
                 {session.room}
                 {session.speaker ? ` · ${session.speaker}` : ''}
               </p>
+              {session.note && <p className="mt-0.5 text-xs italic text-gray">{session.note}</p>}
             </div>
           </li>
         ))}
