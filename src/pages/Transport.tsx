@@ -8,7 +8,7 @@ import { ManualItemMenu } from '../components/manual/ManualItemMenu'
 import { formatDateCompact, formatTime } from '../lib/date'
 import { formatMoney } from '../lib/money'
 import { useAppStore } from '../store/useAppStore'
-import { redactTransport } from '../lib/share'
+import { shareSafeResources, shareSafeTransport } from '../lib/shareMode'
 import { getEffectiveTrip } from '../lib/manualItems'
 
 const MODE_META: Record<TransportMode, { label: string; icon: typeof Plane }> = {
@@ -29,7 +29,7 @@ function TransportRow({
   trip: Trip
   shareMode: boolean
 }) {
-  const t = shareMode ? redactTransport(leg) : leg
+  const t = shareSafeTransport(leg, shareMode)
   return (
     <Card className="p-4">
       <div className="flex items-start justify-between gap-3">
@@ -91,7 +91,7 @@ export function Transport({ trip }: { trip: Trip }) {
   // Public reference links (an official transit map, etc.) — not a booking,
   // so kept visually separate below the booked legs. Safe in Share mode
   // too unless a resource explicitly opts out with isPrivate.
-  const resources = (trip.resources ?? []).filter((r) => !r.isPrivate || !shareMode)
+  const resources = shareSafeResources(trip.resources ?? [], shareMode)
 
   return (
     <div className="animate-fade-in space-y-7">

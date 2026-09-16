@@ -106,7 +106,7 @@ function SpendTab({ trip, effectiveTrip }: { trip: Trip; effectiveTrip: Trip }) 
       )}
 
       <p className="pt-1 text-center text-[11px] text-gray">
-        Costs are shown in the currency they were charged in. Toggle Share mode to hide amounts.
+        Costs are shown in the currency they were charged in.
       </p>
     </div>
   )
@@ -240,20 +240,14 @@ export function WalletPage({ trip }: { trip: Trip }) {
   const effectiveTrip = getEffectiveTrip(trip, manualItems, resolvedOpenItemIds)
   const [tab, setTab] = useState<'documents' | 'spend'>('documents')
 
-  // Wallet holds nothing but private material (traveler documents and
-  // costs/payment status) — hidden entirely in Share mode, same
-  // all-or-nothing guarantee as before this PR, on both tabs.
-  if (shareMode) {
-    return (
-      <div className="animate-fade-in flex flex-col items-center gap-3 pt-20 text-center">
-        <EyeOff className="text-blue" size={26} />
-        <h1 className="font-display text-xl text-ink">Wallet is hidden in Share mode</h1>
-        <p className="max-w-xs text-sm text-ink-soft">
-          Documents, costs, and payment status stay private. Turn off Share mode to view them again.
-        </p>
-      </div>
-    )
-  }
+  // Spend is what a trip costs — family are meant to see that. Documents
+  // are the traveler's own stored confirmations and boarding passes, which
+  // they are not, so in Share mode that tab isn't offered and the page
+  // opens straight on Spend. Deriving the active tab (rather than only
+  // hiding the button) means Share mode turning on while Documents is
+  // selected can't leave the document list rendered underneath.
+  const tabs = shareMode ? (['spend'] as const) : (['documents', 'spend'] as const)
+  const activeTab = (tabs as readonly string[]).includes(tab) ? tab : tabs[0]
 
   return (
     <div className="animate-fade-in space-y-6">
@@ -262,22 +256,33 @@ export function WalletPage({ trip }: { trip: Trip }) {
         <h1 className="font-display text-2xl text-ink">Wallet</h1>
       </div>
 
-      <div className="flex gap-1 rounded-full border border-line bg-surface p-1">
-        {(['documents', 'spend'] as const).map((key) => (
-          <button
-            key={key}
-            onClick={() => setTab(key)}
-            className={clsx(
-              'flex-1 rounded-full py-2 text-sm font-medium transition-colors',
-              tab === key ? 'bg-blue text-white' : 'text-ink-soft'
-            )}
-          >
-            {key === 'documents' ? 'Documents' : 'Spend'}
-          </button>
-        ))}
-      </div>
+      {tabs.length > 1 && (
+        <div className="flex gap-1 rounded-full border border-line bg-surface p-1">
+          {tabs.map((key) => (
+            <button
+              key={key}
+              onClick={() => setTab(key)}
+              className={clsx(
+                'flex-1 rounded-full py-2 text-sm font-medium transition-colors',
+                activeTab === key ? 'bg-blue text-white' : 'text-ink-soft'
+              )}
+            >
+              {key === 'documents' ? 'Documents' : 'Spend'}
+            </button>
+          ))}
+        </div>
+      )}
 
-      {tab === 'documents' ? (
+      {shareMode && (
+        <div className="flex items-start gap-2.5 rounded-2xl border border-line bg-surface p-3.5">
+          <EyeOff className="mt-0.5 shrink-0 text-blue" size={15} />
+          <p className="text-xs text-ink-soft">
+            Stored confirmations and tickets stay private in Share mode. Costs and payment status are shown.
+          </p>
+        </div>
+      )}
+
+      {activeTab === 'documents' ? (
         <DocumentsTab trip={trip} effectiveTrip={effectiveTrip} />
       ) : (
         <SpendTab trip={trip} effectiveTrip={effectiveTrip} />

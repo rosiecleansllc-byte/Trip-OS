@@ -44,7 +44,7 @@ export function TopBar({ meta, alertBadgeCount = 0 }: { meta: TripMeta; alertBad
       </div>
       {shareMode && (
         <p className="mx-auto mt-1.5 max-w-md text-[11px] text-blue">
-          Private details are hidden — confirmation codes, costs, and personal notes.
+          Sharing the itinerary — confirmation codes, stored documents and personal notes stay private.
         </p>
       )}
     </header>

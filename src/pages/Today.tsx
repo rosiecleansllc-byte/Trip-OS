@@ -37,6 +37,7 @@ import { computeReadiness } from '../lib/readiness'
 import { getEffectiveTrip } from '../lib/manualItems'
 import { getTravelSequenceForDay } from '../lib/travelSequence'
 import { getEffectiveChecklist, getImportantUnfinishedChecklistItems } from '../lib/checklist'
+import { shareSafeScheduleItems, shareSafeWalletEntries } from '../lib/shareMode'
 import { usePrivateDocKeySet } from '../lib/walletDocs'
 import { usePackUiStore } from '../store/usePackUiStore'
 import { computeLeaveBy } from '../lib/leaveBy'
@@ -280,7 +281,13 @@ export function Today({ trip }: { trip: Trip }) {
   const [showCompleted, setShowCompleted] = useState(false)
   const [showMoreLooks, setShowMoreLooks] = useState(false)
 
-  const walletEntries = useMemo(() => sortWalletEntries(buildWalletDocEntries(effectiveTrip)), [effectiveTrip])
+  // Wallet entries point at documents stored on this device. Share mode
+  // drops them here, at the source, so no downstream surface can render an
+  // open/replace/delete control for one — see lib/shareMode.ts.
+  const walletEntries = useMemo(
+    () => shareSafeWalletEntries(sortWalletEntries(buildWalletDocEntries(effectiveTrip)), shareMode),
+    [effectiveTrip, shareMode]
+  )
 
   // A day's seeded OutfitBoards (see lib/outfits.ts) are the source of
   // truth for what today covers — title, notes, item list — with each
@@ -331,11 +338,15 @@ export function Today({ trip }: { trip: Trip }) {
     // "Next up" — it's kept visible in the day's schedule for the
     // record, but should never look like an active plan the traveler is
     // about to act on. Still appears further down in "Rest of today".
+    // Items the traveler marked private drop out entirely in Share mode,
+    // and private fields are cleared from the rest, before anything below
+    // picks a "next up" or builds a list — see lib/shareMode.ts.
+    const visibleScheduleItems = shareSafeScheduleItems(today.scheduleItems, shareMode)
     const { next } = findNextScheduleItem(
-      today.scheduleItems.filter((item) => !item.cancelled),
+      visibleScheduleItems.filter((item) => !item.cancelled),
       now
     )
-    const afterNext = today.scheduleItems.filter((item) => item.id !== next?.id)
+    const afterNext = visibleScheduleItems.filter((item) => item.id !== next?.id)
     // Beneath Next Up, show at most the following two items as a compact
     // one-line-each "Later" preview; anything past that still appears in
     // full below under "Rest of today" rather than being hidden.

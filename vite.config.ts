@@ -23,8 +23,14 @@ export default defineConfig({
         name: 'Trip OS',
         short_name: 'Trip OS',
         description: 'Trip OS — your personal travel command center.',
+        // `id` pins the app's identity independently of start_url, so a
+        // future change to start_url updates the installed app in place
+        // instead of registering a second one alongside it.
+        id: '/',
         start_url: '/',
+        scope: '/',
         display: 'standalone',
+        orientation: 'portrait',
         background_color: '#ffffff',
         theme_color: '#ffffff',
         icons: [
@@ -42,15 +48,19 @@ export default defineConfig({
         // service worker never sees at all — see the PR notes for why
         // that makes them inherently safe from ending up in this
         // manifest.
-        globPatterns: ['**/*.{js,css,html,svg,png,webmanifest}'],
-        // The OCR engine (tesseract.js's wasm core + language data),
-        // seeded trip photos, and the transit-map PDF are large and
-        // fetched lazily, not needed for the app shell to boot — the
-        // runtimeCaching CacheFirst rule below still makes them available
-        // offline after their first real use, just not baked into the
-        // initial install (one of the wasm chunks alone is well past
-        // Workbox's default 2 MiB precache-per-file limit).
-        globIgnores: ['ocr/**', 'images/**', 'documents/**'],
+        // Includes webp so the seeded trip covers, capsule photos and
+        // outfit boards are precached with the shell. They total well
+        // under a megabyte, and leaving them out meant a freshly
+        // installed Home Screen app whose first launch was offline (or on
+        // airport wifi) rendered with no imagery at all — which reads as
+        // "my data is missing" even when every record is present.
+        globPatterns: ['**/*.{js,css,html,svg,png,webp,webmanifest}'],
+        // Still excluded: the OCR engine (tesseract.js's wasm core plus
+        // language data, ~9 MB, and one chunk alone is past Workbox's
+        // 2 MiB per-file precache limit) and the transit-map PDF. Both
+        // are fetched lazily and the runtimeCaching rule below keeps them
+        // offline-available after first real use.
+        globIgnores: ['ocr/**', 'documents/**'],
         // Deep-linking straight to e.g. /today or reloading while offline
         // still needs to resolve to the app shell so React Router can
         // take over client-side.

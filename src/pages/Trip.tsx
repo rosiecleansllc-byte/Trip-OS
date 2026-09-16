@@ -11,6 +11,7 @@ import { ManualItemMenu } from '../components/manual/ManualItemMenu'
 import { WardrobeItemThumb } from '../components/wardrobe/WardrobeItemThumb'
 import { formatDateShort, formatTime, isSameISODate } from '../lib/date'
 import { getSessionsForItem } from '../lib/eventSessions'
+import { shareSafeScheduleItems } from '../lib/shareMode'
 import { useAppStore } from '../store/useAppStore'
 import { useOutfitDetailUiStore } from '../store/useOutfitDetailUiStore'
 import { getEffectiveTrip } from '../lib/manualItems'
@@ -264,7 +265,7 @@ export function TripPage({ trip }: { trip: Trip }) {
                       </p>
                     )}
                     <ul className="mt-3 space-y-2.5 border-t border-line pt-3">
-                      {day.scheduleItems.map((item) => {
+                      {shareSafeScheduleItems(day.scheduleItems, shareMode).map((item) => {
                         const sessions = getSessionsForItem(effectiveTrip, item.id)
                         return (
                           <li key={item.id} className="flex gap-2.5 text-sm">

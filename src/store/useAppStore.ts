@@ -4,6 +4,10 @@ import { defaultTripId } from '../data/tripsIndex'
 import type { ChecklistItemOverride, CustomChecklistItem, ManualTripItem, Outfit, VisualBoard } from '../types/trip'
 import type { CapsuleItemOverride } from '../lib/wardrobeOutfits'
 
+// Exported so lib/backup.ts can read and write the same blob directly
+// rather than duplicating the key string.
+export const APP_STATE_STORAGE_KEY = 'trip-os-app-state'
+
 interface AppState {
   currentTripId: string
   shareMode: boolean
@@ -232,6 +236,15 @@ export const useAppStore = create<AppState>()(
         })),
       setNotificationsRequested: (value) => set({ notificationsRequested: value }),
     }),
-    { name: 'trip-os-app-state' }
+    {
+      name: APP_STATE_STORAGE_KEY,
+      // Anchors the shape of what's written to localStorage — and of what
+      // a backup file carries (see lib/backup.ts). Without a version, a
+      // future field rename would silently drop the old data on rehydrate
+      // with no way to detect or repair it. Bump this and add a `migrate`
+      // when the persisted shape changes; every field so far has been
+      // additive, so version 1 reads version-0 blobs unchanged.
+      version: 1,
+    }
   )
 )
