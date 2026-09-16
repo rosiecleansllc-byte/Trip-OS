@@ -577,7 +577,7 @@ export const austinTrip: Trip = {
     },
   ],
 
-  packingList: [
+  checklist: [
     { id: 'pk-travel-outfit', category: 'Clothing', label: 'Travel outfit' },
     { id: 'pk-summit-outfit', category: 'Clothing', label: 'Summit outfit' },
     { id: 'pk-casual-outfits', category: 'Clothing', label: 'Casual Austin outfits' },

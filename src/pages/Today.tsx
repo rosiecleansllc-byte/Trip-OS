@@ -36,6 +36,9 @@ import { findNextEventSession, getSessionsForDay } from '../lib/eventSessions'
 import { computeReadiness } from '../lib/readiness'
 import { getEffectiveTrip } from '../lib/manualItems'
 import { getTravelSequenceForDay } from '../lib/travelSequence'
+import { getEffectiveChecklist, getImportantUnfinishedChecklistItems } from '../lib/checklist'
+import { usePrivateDocKeySet } from '../lib/walletDocs'
+import { usePackUiStore } from '../store/usePackUiStore'
 import { computeLeaveBy } from '../lib/leaveBy'
 import { getTripTimeZone, nowInZone } from '../lib/timezone'
 import { useNow } from '../lib/useNow'
@@ -242,6 +245,15 @@ export function Today({ trip }: { trip: Trip }) {
   const visualBoards = useAppStore((s) => s.visualBoards)
   const storeOutfits = useAppStore((s) => s.outfits)
   const wardrobeItemOverrides = useAppStore((s) => s.wardrobeItemOverrides)
+  const packedItems = useAppStore((s) => s.packedItems)
+  const checklistItemOverrides = useAppStore((s) => s.checklistItemOverrides)
+  const customChecklistItems = useAppStore((s) => s.customChecklistItems)
+  // One IndexedDB read covers every linked checklist item (see
+  // lib/walletDocs.ts usePrivateDocKeySet) — called here, unconditionally,
+  // even though it's only used in the pre-trip branch below, since every
+  // hook in this component runs before any phase-based early return.
+  const { keys: presentDocKeys } = usePrivateDocKeySet()
+  const requestChecklistTab = usePackUiStore((s) => s.requestChecklistTab)
   const effectiveTrip = useMemo(
     () => getEffectiveTrip(trip, manualItems, resolvedOpenItemIds),
     [trip, manualItems, resolvedOpenItemIds]
@@ -572,6 +584,11 @@ export function Today({ trip }: { trip: Trip }) {
   // "hide specific private fields, not whole sections" rule.
   const { percent, readyLines, openItems } = computeReadiness(effectiveTrip)
   const completedOpenItems = effectiveTrip.openItems.filter((i) => i.status === 'done')
+  // The checklist's own most-important unfinished items — never the
+  // whole checklist, and never once the trip is actually underway (this
+  // whole branch only ever renders pre-trip). See lib/checklist.ts.
+  const checklistItems = getEffectiveChecklist(effectiveTrip, checklistItemOverrides, customChecklistItems, packedItems, presentDocKeys)
+  const unfinishedChecklistItems = getImportantUnfinishedChecklistItems(checklistItems, 3)
 
   return (
     <div className="animate-fade-in space-y-6">
@@ -654,6 +671,28 @@ export function Today({ trip }: { trip: Trip }) {
           </div>
         )}
       </Card>
+
+      {unfinishedChecklistItems.length > 0 && (
+        <Link
+          to="/pack"
+          onClick={requestChecklistTab}
+          className="block rounded-2xl border border-line bg-surface p-4 shadow-card"
+        >
+          <div className="flex items-center gap-2">
+            <Luggage size={15} className="text-blue" />
+            <p className="text-sm font-medium text-ink">
+              {unfinishedChecklistItems.length} thing{unfinishedChecklistItems.length === 1 ? '' : 's'} before {trip.meta.name}
+            </p>
+          </div>
+          <div className="mt-2 space-y-1">
+            {unfinishedChecklistItems.map((item) => (
+              <p key={item.id} className="text-xs text-ink-soft">
+                {item.label}
+              </p>
+            ))}
+          </div>
+        </Link>
+      )}
 
       <div>
         <SectionHeader eyebrow="Get ready" title="Weather outlook" />
