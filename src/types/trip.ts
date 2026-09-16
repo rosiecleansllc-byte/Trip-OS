@@ -250,14 +250,50 @@ export interface OpenItem {
   requiresRoundTrip?: boolean
 }
 
-// One line in a packing checklist. Deliberately separate from the France
+// One line in Pack's checklist. Deliberately separate from the France
 // capsule-wardrobe/outfit-board system (CapsuleItem/OutfitBoard below,
 // which is a styled visual wardrobe planner) — a trip can have either,
-// both, or neither. Pack renders whichever the trip's data provides.
-export interface PackingItem {
+// both, or neither. The checklist itself stays a single simple
+// category → item → tap-to-check interaction (see lib/checklist.ts and
+// components/pack/ChecklistTab.tsx) no matter how many categories or
+// linked items a trip seeds; nothing here is Austin- or France-specific.
+export interface ChecklistItem {
   id: string
   category: string // freeform section heading, e.g. "Clothing", "Tech"
   label: string
+  // Shown as a subtle "Optional" tag and excluded from the checklist's
+  // own progress percentage (lib/checklist.ts computeChecklistProgress)
+  // — an unchecked optional item never drags readiness down.
+  optional?: boolean
+  // Ties this item to an existing Booking/Transport/ScheduleItem's own
+  // privateDocumentKey (see LinkActions above / lib/privateDocs.ts)
+  // instead of owning or duplicating any booking data of its own. The
+  // item reads as complete once EITHER the traveler taps it OR that
+  // document is already stored on-device (lib/checklist.ts
+  // getEffectiveChecklist) — a confirmed booking status alone is never
+  // enough, since the actual confirmation document might still be
+  // missing. Never set for a traveler-added custom item.
+  linkedDocumentKey?: string
+}
+
+// A checklist item Cecilia adds herself from inside Pack → Checklist —
+// same client-side-only storage pattern as ManualTripItem/Outfit/
+// VisualBoard below: a flat array in useAppStore, filtered by tripId at
+// read time, never merged into a trip's seeded `checklist` array.
+export interface CustomChecklistItem extends ChecklistItem {
+  tripId: string
+}
+
+// A traveler's edit to a seeded ChecklistItem (rename, recategorize,
+// toggle optional) or an explicit delete — keyed by
+// checklistItemOverrideKey(tripId, itemId) in lib/checklist.ts. A
+// trip's own `checklist` array is immutable imported seed data, so
+// edits live here instead and are merged in at read time
+// (getEffectiveChecklist), the same pattern wardrobeItemOverrides uses
+// for CapsuleItem. The item's id never changes, so packedItems' own
+// `${tripId}:${itemId}` key keeps resolving correctly across an edit.
+export type ChecklistItemOverride = Partial<Pick<ChecklistItem, 'label' | 'category' | 'optional'>> & {
+  deleted?: boolean
 }
 
 export interface Booking extends LinkActions, TravelTiming {
@@ -531,7 +567,7 @@ export interface Trip {
   // trip without one, same pattern as `outfits`.
   eventSessions?: EventSession[]
   openItems: OpenItem[]
-  packingList?: PackingItem[] // a plain checklist, for trips without a styled capsule wardrobe
+  checklist?: ChecklistItem[] // Pack's checklist — see ChecklistItem above; a trip can seed as many categories as it needs
   resources?: TravelResource[] // public reference links, e.g. an official transit map
   weatherLocations?: WeatherLocation[] // see lib/weather.ts
 }

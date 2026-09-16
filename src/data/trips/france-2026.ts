@@ -739,6 +739,79 @@ export const franceTrip: Trip = {
     { id: 'ob12', dayId: 'd12', imageUrl: '/images/outfits/day-12.webp', itemNames: ['White T-Shirt', 'Dark Jeans', 'Light Cream 3/4-Sleeve Cardigan', 'White Sneakers', 'Black Crossbody Bag'], note: 'Comfortable and simple for the journey home.' },
   ],
 
+  checklist: [
+    // Clothing
+    { id: 'chk-clothing-outfits', category: 'Clothing', label: 'France outfits / capsule finalized' },
+    { id: 'chk-clothing-sleepwear', category: 'Clothing', label: 'Sleepwear' },
+    { id: 'chk-clothing-underwear', category: 'Clothing', label: 'Underwear' },
+    { id: 'chk-clothing-walking-shoes', category: 'Clothing', label: 'Walking shoes' },
+    { id: 'chk-clothing-dress-shoes', category: 'Clothing', label: 'Dressier shoes' },
+    { id: 'chk-clothing-rain-shell', category: 'Clothing', label: 'White rain shell' },
+    { id: 'chk-clothing-scarf-accessories', category: 'Clothing', label: 'Scarf / accessories' },
+
+    // Personal
+    { id: 'chk-personal-toiletries', category: 'Personal', label: 'Toiletries' },
+    { id: 'chk-personal-medications', category: 'Personal', label: 'Medications' },
+    { id: 'chk-personal-makeup-skincare', category: 'Personal', label: 'Makeup / skincare' },
+    { id: 'chk-personal-prescription-info', category: 'Personal', label: 'Prescription information if needed', optional: true },
+
+    // Tech
+    { id: 'chk-tech-phone-charger', category: 'Tech', label: 'Phone charger' },
+    { id: 'chk-tech-portable-battery', category: 'Tech', label: 'Portable battery' },
+    { id: 'chk-tech-power-adapter', category: 'Tech', label: 'EU/France power adapter' },
+    { id: 'chk-tech-laptop', category: 'Tech', label: 'Laptop' },
+    { id: 'chk-tech-laptop-charger', category: 'Tech', label: 'Laptop charger' },
+    { id: 'chk-tech-earbuds', category: 'Tech', label: 'Earbuds' },
+    { id: 'chk-tech-offline-paris-map', category: 'Tech', label: 'Download offline Paris map' },
+    { id: 'chk-tech-offline-riviera-map', category: 'Tech', label: 'Download offline Nice/Riviera map' },
+    { id: 'chk-tech-cellular-plan', category: 'Tech', label: 'Confirm international cellular/data plan' },
+
+    // Travel
+    { id: 'chk-travel-passport', category: 'Travel', label: 'Passport' },
+    { id: 'chk-travel-wallet', category: 'Travel', label: 'Wallet' },
+    { id: 'chk-travel-flight-confirmations', category: 'Travel', label: 'Flight confirmations' },
+    { id: 'chk-travel-hotel-confirmations', category: 'Travel', label: 'Hotel confirmations' },
+    { id: 'chk-travel-attraction-confirmations', category: 'Travel', label: 'Attraction/ticket confirmations' },
+    { id: 'chk-travel-backup-payment', category: 'Travel', label: 'Backup payment method' },
+    { id: 'chk-travel-arrival-cash', category: 'Travel', label: 'Some euros / arrival cash plan' },
+
+    // Transportation
+    { id: 'chk-transport-departure-airport', category: 'Transportation', label: 'Departure-airport transportation' },
+    { id: 'chk-transport-cdg-to-hotel', category: 'Transportation', label: 'CDG → Paris hotel transportation' },
+    { id: 'chk-transport-paris-to-nice', category: 'Transportation', label: 'Paris → Nice transportation', linkedDocumentKey: 'sncf-paris-nice-confirmation' },
+    { id: 'chk-transport-riviera-local', category: 'Transportation', label: 'Riviera/local transportation plan' },
+    { id: 'chk-transport-return-to-paris', category: 'Transportation', label: 'Return transportation to Paris if applicable', linkedDocumentKey: 'sncf-paris-nice-confirmation' },
+    { id: 'chk-transport-hotel-to-cdg', category: 'Transportation', label: 'Paris hotel → CDG transportation' },
+
+    // Reservations — reference existing Trip OS bookings/transport rather
+    // than duplicating them; linkedDocumentKey matches the exact
+    // privateDocumentKey already used by that booking/transport record.
+    { id: 'chk-res-galerie-dior', category: 'Reservations', label: 'La Galerie Dior confirmation', linkedDocumentKey: 'galerie-dior-ticket' },
+    { id: 'chk-res-versailles', category: 'Reservations', label: 'Versailles confirmation', linkedDocumentKey: 'versailles-ticket' },
+    { id: 'chk-res-louvre', category: 'Reservations', label: 'Louvre confirmation', linkedDocumentKey: 'louvre-ticket' },
+    { id: 'chk-res-hotel-montparnasse', category: 'Reservations', label: 'La Maison Montparnasse confirmation', linkedDocumentKey: 'la-maison-montparnasse-confirmation' },
+    { id: 'chk-res-hotel-vert', category: 'Reservations', label: 'Hôtel Vert confirmation', linkedDocumentKey: 'hotel-vert-confirmation' },
+    { id: 'chk-res-hotel-leopold', category: 'Reservations', label: 'Hôtel Léopold confirmation', linkedDocumentKey: 'hotel-leopold-confirmation' },
+    { id: 'chk-res-hotel-balcon', category: 'Reservations', label: 'Le Balcon du Vieux Nice confirmation', linkedDocumentKey: 'le-balcon-vieux-nice-confirmation' },
+    { id: 'chk-res-hotel-moxy', category: 'Reservations', label: 'Moxy CDG confirmation', linkedDocumentKey: 'moxy-cdg-confirmation' },
+    { id: 'chk-res-flight-outbound', category: 'Reservations', label: 'Outbound flight confirmation (JFK → CDG)', linkedDocumentKey: 'france-outbound-flight-confirmation' },
+    { id: 'chk-res-flight-return', category: 'Reservations', label: 'Return flight confirmation (CDG → JFK)', linkedDocumentKey: 'france-return-flight-confirmation' },
+    { id: 'chk-res-sainte-chapelle', category: 'Reservations', label: 'Sainte-Chapelle concert confirmation', linkedDocumentKey: 'sainte-chapelle-confirmation' },
+    { id: 'chk-res-seine-cruise', category: 'Reservations', label: 'Seine cruise confirmation', linkedDocumentKey: 'seine-cruise-ticket' },
+    { id: 'chk-res-sixt', category: 'Reservations', label: 'Rental car confirmation (Sixt)', linkedDocumentKey: 'sixt-rental-car-confirmation' },
+    { id: 'chk-res-sncf', category: 'Reservations', label: 'Paris ↔ Nice train confirmation (SNCF)', linkedDocumentKey: 'sncf-paris-nice-confirmation' },
+
+    // Before You Go
+    { id: 'chk-before-checkin', category: 'Before You Go', label: 'Airline check-in' },
+    { id: 'chk-before-charge-phone', category: 'Before You Go', label: 'Charge phone' },
+    { id: 'chk-before-charge-battery', category: 'Before You Go', label: 'Charge portable battery' },
+    { id: 'chk-before-download-entertainment', category: 'Before You Go', label: 'Download flight entertainment/books', optional: true },
+    { id: 'chk-before-luggage-weight', category: 'Before You Go', label: 'Check luggage weight/airline limits' },
+    { id: 'chk-before-secure-home', category: 'Before You Go', label: 'Secure home' },
+    { id: 'chk-before-trash', category: 'Before You Go', label: 'Handle trash/perishables' },
+    { id: 'chk-before-mail', category: 'Before You Go', label: 'Mail/package plan' },
+  ],
+
   openItems: [
     {
       id: 'open-riviera-tickets',

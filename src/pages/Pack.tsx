@@ -1,6 +1,6 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { clsx } from 'clsx'
-import { Check, ImageIcon, Maximize2, Pencil, Plus } from 'lucide-react'
+import { ImageIcon, Maximize2, Pencil, Plus } from 'lucide-react'
 import type { Trip, VisualBoardType } from '../types/trip'
 import { Card } from '../components/ui/Card'
 import { SectionHeader } from '../components/ui/SectionHeader'
@@ -11,6 +11,7 @@ import { AddVisualBoardSheet } from '../components/visuals/AddVisualBoardSheet'
 import { VisualBoardCard } from '../components/visuals/VisualBoardCard'
 import { OutfitBoardSection } from '../components/visuals/OutfitBoardSection'
 import { CapsuleItemImage } from '../components/pack/CapsuleItemImage'
+import { ChecklistTab } from '../components/pack/ChecklistTab'
 import { OutfitCard } from '../components/wardrobe/OutfitCard'
 import { WardrobeOutfitBoardSection } from '../components/wardrobe/WardrobeOutfitBoardSection'
 import { getWeatherLocationForDay, isWithinForecastRange, useWeather } from '../lib/weather'
@@ -23,6 +24,7 @@ import {
   sortOutfits,
 } from '../lib/wardrobeOutfits'
 import { useAppStore } from '../store/useAppStore'
+import { usePackUiStore } from '../store/usePackUiStore'
 import { useVisualBoardUiStore } from '../store/useVisualBoardUiStore'
 import { useOutfitUiStore } from '../store/useOutfitUiStore'
 import { useOutfitDetailUiStore } from '../store/useOutfitDetailUiStore'
@@ -34,73 +36,10 @@ const SHOES_TIER: VisualBoardType[] = ['shoes']
 const ACCESSORIES_TIER: VisualBoardType[] = ['accessories']
 const OTHER_TIER: VisualBoardType[] = ['mood', 'city', 'other']
 
-function PackingChecklist({ trip }: { trip: Trip }) {
-  const packedItems = useAppStore((s) => s.packedItems)
-  const togglePacked = useAppStore((s) => s.togglePacked)
-  const items = trip.packingList ?? []
-  const packedCount = items.filter((item) => packedItems[`${trip.meta.id}:${item.id}`]).length
-  const percent = items.length > 0 ? Math.round((packedCount / items.length) * 100) : 0
-
-  const categories = Array.from(new Set(items.map((i) => i.category)))
-
-  return (
-    <div className="space-y-6">
-      <Card className="p-4">
-        <div className="flex items-center justify-between">
-          <p className="text-sm font-medium text-ink">
-            Packed {packedCount} of {items.length}
-          </p>
-          <p className="text-xs font-medium text-blue">{percent}%</p>
-        </div>
-        <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-bg-soft">
-          <div className="h-full rounded-full bg-blue transition-all" style={{ width: `${percent}%` }} />
-        </div>
-      </Card>
-
-      {categories.map((category) => {
-        const categoryItems = items.filter((i) => i.category === category)
-        return (
-          <div key={category}>
-            <SectionHeader eyebrow={`${categoryItems.length} items`} title={category} accent="red" />
-            <div className="space-y-2">
-              {categoryItems.map((item) => {
-                const key = `${trip.meta.id}:${item.id}`
-                const packed = Boolean(packedItems[key])
-                return (
-                  <button
-                    key={item.id}
-                    type="button"
-                    onClick={() => togglePacked(trip.meta.id, item.id)}
-                    className="block w-full text-left"
-                  >
-                    <Card className="flex items-center gap-3 p-3.5">
-                      <span
-                        className={clsx(
-                          'flex h-5 w-5 shrink-0 items-center justify-center rounded-full border transition-colors',
-                          packed ? 'border-blue bg-blue text-white' : 'border-line text-transparent'
-                        )}
-                      >
-                        <Check size={13} strokeWidth={3} />
-                      </span>
-                      <span className={clsx('text-sm', packed ? 'text-ink-soft line-through' : 'text-ink')}>
-                        {item.label}
-                      </span>
-                    </Card>
-                  </button>
-                )
-              })}
-            </div>
-          </div>
-        )
-      })}
-    </div>
-  )
-}
-
 type PackTab = 'capsule' | 'outfits' | 'checklist' | 'visuals'
 
 export function Pack({ trip }: { trip: Trip }) {
-  const hasChecklist = (trip.packingList?.length ?? 0) > 0
+  const hasChecklist = (trip.checklist?.length ?? 0) > 0
   const shareMode = useAppStore((s) => s.shareMode)
   const visualBoards = useAppStore((s) => s.visualBoards)
   const wardrobeItemOverrides = useAppStore((s) => s.wardrobeItemOverrides)
@@ -127,6 +66,20 @@ export function Pack({ trip }: { trip: Trip }) {
     ...(shareMode ? [] : (['visuals'] as const)),
   ]
   const [tab, setTab] = useState<PackTab>(tabs[0])
+  // Today's checklist reminder (or any future cross-page link) can land
+  // directly on the Checklist tab via usePackUiStore rather than
+  // whatever tab would otherwise default here — consumed once on
+  // mount, then cleared so navigating to /pack normally afterward
+  // still respects the traveler's own tab choice.
+  const requestedTab = usePackUiStore((s) => s.requestedTab)
+  const consumeRequestedTab = usePackUiStore((s) => s.consumeRequestedTab)
+  useEffect(() => {
+    if (requestedTab && tabs.includes(requestedTab)) {
+      setTab(requestedTab)
+      consumeRequestedTab()
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [requestedTab])
   // The selected tab is stored as plain state, but never trusted directly
   // for rendering — Share mode can turn on while 'visuals' is selected,
   // which would otherwise keep rendering private uploaded boards even
@@ -207,7 +160,7 @@ export function Pack({ trip }: { trip: Trip }) {
         </div>
       )}
 
-      {activeTab === 'checklist' && <PackingChecklist trip={trip} />}
+      {activeTab === 'checklist' && <ChecklistTab trip={trip} />}
 
       {activeTab === 'capsule' && (
         <div className="space-y-6">

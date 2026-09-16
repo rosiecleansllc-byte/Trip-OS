@@ -1,7 +1,7 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import { defaultTripId } from '../data/tripsIndex'
-import type { ManualTripItem, Outfit, VisualBoard } from '../types/trip'
+import type { ChecklistItemOverride, CustomChecklistItem, ManualTripItem, Outfit, VisualBoard } from '../types/trip'
 import type { CapsuleItemOverride } from '../lib/wardrobeOutfits'
 
 interface AppState {
@@ -61,6 +61,19 @@ interface AppState {
   // item's id, and therefore every Outfit.itemIds reference to it, never
   // changes. A key's absence means "render the seed data unmodified".
   wardrobeItemOverrides: Record<string, CapsuleItemOverride>
+  // A traveler's own additions to Pack → Checklist (see types/trip.ts
+  // CustomChecklistItem) — same flat, tripId-filtered storage as
+  // manualItems/outfits/visualBoards. Checked state still lives in
+  // packedItems below (same `${tripId}:${itemId}` key a seeded item
+  // uses), so this array only ever holds the item's own label/
+  // category/optional fields.
+  customChecklistItems: CustomChecklistItem[]
+  // A traveler's edit to a seeded ChecklistItem, or an explicit delete
+  // — keyed by checklistItemOverrideKey(tripId, itemId) (see
+  // lib/checklist.ts). A trip's own `checklist` array is immutable
+  // seed data, so edits live here instead, same pattern as
+  // wardrobeItemOverrides above.
+  checklistItemOverrides: Record<string, ChecklistItemOverride>
   // Trip Alerts are generated fresh from trip data every time Trip OS
   // opens/resumes (see lib/alerts.ts) — nothing about an alert itself is
   // ever persisted, only what the traveler did with it, keyed by
@@ -96,6 +109,11 @@ interface AppState {
   unlinkWardrobeVisual: (tripId: string, itemId: string) => void
   setWardrobeItemOverride: (tripId: string, itemId: string, override: CapsuleItemOverride) => void
   resetWardrobeItemOverride: (tripId: string, itemId: string) => void
+  addCustomChecklistItem: (item: CustomChecklistItem) => void
+  updateCustomChecklistItem: (id: string, patch: Partial<CustomChecklistItem>) => void
+  deleteCustomChecklistItem: (id: string) => void
+  setChecklistItemOverride: (tripId: string, itemId: string, override: ChecklistItemOverride) => void
+  resetChecklistItemOverride: (tripId: string, itemId: string) => void
   dismissAlert: (tripId: string, alertId: string) => void
   snoozeAlert: (tripId: string, alertId: string, untilISO: string) => void
   setNotificationsRequested: (value: boolean) => void
@@ -113,6 +131,8 @@ export const useAppStore = create<AppState>()(
       outfits: [],
       wardrobeVisualLinks: {},
       wardrobeItemOverrides: {},
+      customChecklistItems: [],
+      checklistItemOverrides: {},
       alertOverrides: {},
       notificationsRequested: false,
       setCurrentTripId: (id) => set({ currentTripId: id }),
@@ -182,6 +202,25 @@ export const useAppStore = create<AppState>()(
           const key = `${tripId}:${itemId}`
           const { [key]: _removed, ...rest } = s.wardrobeItemOverrides
           return { wardrobeItemOverrides: rest }
+        }),
+      addCustomChecklistItem: (item) => set((s) => ({ customChecklistItems: [...s.customChecklistItems, item] })),
+      updateCustomChecklistItem: (id, patch) =>
+        set((s) => ({
+          customChecklistItems: s.customChecklistItems.map((i) => (i.id === id ? { ...i, ...patch } : i)),
+        })),
+      deleteCustomChecklistItem: (id) =>
+        set((s) => ({ customChecklistItems: s.customChecklistItems.filter((i) => i.id !== id) })),
+      setChecklistItemOverride: (tripId, itemId, override) =>
+        set((s) => ({
+          checklistItemOverrides: { ...s.checklistItemOverrides, [`${tripId}:${itemId}`]: override },
+        })),
+      // Deletes the key entirely, same reasoning as resetWardrobeItemOverride
+      // — the item goes back to rendering exactly as seeded.
+      resetChecklistItemOverride: (tripId, itemId) =>
+        set((s) => {
+          const key = `${tripId}:${itemId}`
+          const { [key]: _removed, ...rest } = s.checklistItemOverrides
+          return { checklistItemOverrides: rest }
         }),
       dismissAlert: (tripId, alertId) =>
         set((s) => ({

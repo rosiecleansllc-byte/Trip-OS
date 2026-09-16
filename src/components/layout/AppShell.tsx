@@ -9,6 +9,7 @@ import { AlertCenter } from '../alerts/AlertCenter'
 import { OutfitDetailSheet } from '../wardrobe/OutfitDetailSheet'
 import { AddOutfitSheet } from '../wardrobe/AddOutfitSheet'
 import { EditCapsuleItemSheet } from '../wardrobe/EditCapsuleItemSheet'
+import { ChecklistItemSheet } from '../pack/ChecklistItemSheet'
 import { useAutoLinkWardrobeVisuals } from '../wardrobe/useAutoLinkWardrobeVisuals'
 import type { Trip } from '../../types/trip'
 import { useAppStore } from '../../store/useAppStore'
@@ -53,6 +54,7 @@ export function AppShell({
           <AddItemSheet trip={trip} />
           <AddOutfitSheet trip={trip} />
           <EditCapsuleItemSheet trip={trip} />
+          <ChecklistItemSheet trip={trip} />
         </>
       )}
       {/* Mounted globally (not just on Pack) so Trip.tsx — and any other
