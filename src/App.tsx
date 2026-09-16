@@ -2,6 +2,7 @@ import type { ReactNode } from 'react'
 import { Navigate, Route, Routes } from 'react-router-dom'
 import { AppShell } from './components/layout/AppShell'
 import { getTrip } from './data/tripsIndex'
+import { useRouteRestoration } from './lib/lastRoute'
 import { useAppStore } from './store/useAppStore'
 import { Today } from './pages/Today'
 import { TripPage } from './pages/Trip'
@@ -15,6 +16,7 @@ import { Overview } from './pages/Overview'
 function App() {
   const currentTripId = useAppStore((s) => s.currentTripId)
   const trip = getTrip(currentTripId)
+  useRouteRestoration()
 
   const withShell = (node: ReactNode) => {
     if (!trip) return <Navigate to="/" replace />

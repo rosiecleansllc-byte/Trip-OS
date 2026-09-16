@@ -9,7 +9,7 @@ import { ManualItemMenu } from '../components/manual/ManualItemMenu'
 import { formatDateCompact, formatDateTimeCompact, formatTime } from '../lib/date'
 import { formatMoney } from '../lib/money'
 import { useAppStore } from '../store/useAppStore'
-import { redactBooking } from '../lib/share'
+import { shareSafeBooking } from '../lib/shareMode'
 import { getEffectiveTrip } from '../lib/manualItems'
 
 const CATEGORY_META: Record<BookingCategory, { label: string; icon: typeof Bed }> = {
@@ -31,7 +31,7 @@ function BookingRow({
   trip: Trip
   shareMode: boolean
 }) {
-  const b = shareMode ? redactBooking(booking) : booking
+  const b = shareSafeBooking(booking, shareMode)
   const dateLabel = b.dateEnd && b.dateEnd !== b.dateStart
     ? `${formatDateCompact(b.dateStart)} – ${formatDateCompact(b.dateEnd)}`
     : formatDateCompact(b.dateStart)

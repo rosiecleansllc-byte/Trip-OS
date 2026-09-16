@@ -1,34 +1,28 @@
 import { CalendarCheck, Globe, Navigation, Phone, SquarePen, Ticket, UtensilsCrossed } from 'lucide-react'
 import type { LinkActions } from '../../types/trip'
 import { directionsUrl, telUrl } from '../../lib/links'
+import { shareSafeActions } from '../../lib/shareMode'
 import { PrivateDocumentAction } from './PrivateDocumentAction'
 
 interface ActionRowProps extends LinkActions {
   location?: string
-  shareMode?: boolean
+  // Required, never defaulted: a default would mean a call site that
+  // forgets this prop silently renders the Modify link and the private
+  // document button to whoever is holding the phone.
+  shareMode: boolean
   className?: string
 }
 
-export function ActionRow({
-  location,
-  websiteUrl,
-  ticketUrl,
-  reservationUrl,
-  menuUrl,
-  phone,
-  privateTicketUrl,
-  modifyUrl,
-  privateDocumentKey,
-  privateDocumentLabel,
-  privateDocumentType,
-  shareMode = false,
-  className = '',
-}: ActionRowProps) {
+export function ActionRow({ location, shareMode, className = '', ...links }: ActionRowProps) {
+  // One policy, applied before anything is read — see lib/shareMode.ts.
+  const { websiteUrl, ticketUrl, reservationUrl, menuUrl, phone, privateTicketUrl, modifyUrl, privateDocumentKey, privateDocumentLabel, privateDocumentType } =
+    shareSafeActions(links, shareMode)
+
   // Outside Share mode, prefer the traveler's actual purchased ticket over
-  // the generic info/purchase page. In Share mode, privateTicketUrl is
-  // never used — if that's the only ticket link available, the Ticket
-  // button is hidden entirely rather than falling back to it.
-  const resolvedTicketUrl = shareMode ? ticketUrl : (privateTicketUrl ?? ticketUrl)
+  // the generic info/purchase page. In Share mode privateTicketUrl has
+  // already been cleared above, so if that was the only ticket link the
+  // button is dropped rather than falling back to it.
+  const resolvedTicketUrl = privateTicketUrl ?? ticketUrl
 
   const actions = [
     location && { label: 'Directions', href: directionsUrl(location)!, icon: Navigation, external: true },
@@ -37,14 +31,14 @@ export function ActionRow({
     websiteUrl && { label: 'Website', href: websiteUrl, icon: Globe, external: true },
     menuUrl && { label: 'Menu', href: menuUrl, icon: UtensilsCrossed, external: true },
     phone && { label: 'Call', href: telUrl(phone)!, icon: Phone, external: false },
-    !shareMode && modifyUrl && { label: 'Modify', href: modifyUrl, icon: SquarePen, external: true },
+    modifyUrl && { label: 'Modify', href: modifyUrl, icon: SquarePen, external: true },
   ].filter((a): a is { label: string; href: string; icon: typeof Navigation; external: boolean } => Boolean(a))
 
   // The private-document action (Add/View a locally-stored ticket,
-  // reservation, or confirmation) follows the same rule as modifyUrl:
-  // rendered only outside Share mode. Unlike every other action here it's
-  // never a URL — see PrivateDocumentAction / lib/privateDocs.ts.
-  const showDocumentAction = !shareMode && Boolean(privateDocumentKey)
+  // reservation, or confirmation) follows the same rule as modifyUrl —
+  // the key is already cleared in Share mode above. Unlike every other
+  // action here it's never a URL — see PrivateDocumentAction.
+  const showDocumentAction = Boolean(privateDocumentKey)
 
   if (actions.length === 0 && !showDocumentAction) return null
 

@@ -61,6 +61,28 @@ export async function getVisualBoardImage(key: string): Promise<StoredBoardImage
   })
 }
 
+// Restore path: writes an image recovered from a backup file, which
+// arrives as a already-decoded StoredBoardImage rather than a picked File.
+export async function putStoredBoardImage(key: string, image: StoredBoardImage): Promise<void> {
+  const db = await openDb()
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(STORE_NAME, 'readwrite')
+    tx.objectStore(STORE_NAME).put(image, key)
+    tx.oncomplete = () => resolve()
+    tx.onerror = () => reject(tx.error)
+  })
+}
+
+export async function listVisualBoardImageKeys(): Promise<string[]> {
+  const db = await openDb()
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(STORE_NAME, 'readonly')
+    const req = tx.objectStore(STORE_NAME).getAllKeys()
+    req.onsuccess = () => resolve(req.result as string[])
+    req.onerror = () => reject(req.error)
+  })
+}
+
 export async function deleteVisualBoardImage(key: string): Promise<void> {
   const db = await openDb()
   return new Promise((resolve, reject) => {

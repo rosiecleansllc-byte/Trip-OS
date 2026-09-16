@@ -52,6 +52,18 @@ export async function putPrivateDoc(key: string, file: File): Promise<void> {
   })
 }
 
+// Restore path: writes a document recovered from a backup file, which
+// arrives as an already-decoded StoredDoc rather than a picked File.
+export async function putStoredDoc(key: string, doc: StoredDoc): Promise<void> {
+  const db = await openDb()
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(STORE_NAME, 'readwrite')
+    tx.objectStore(STORE_NAME).put(doc, key)
+    tx.oncomplete = () => resolve()
+    tx.onerror = () => reject(tx.error)
+  })
+}
+
 export async function getPrivateDoc(key: string): Promise<StoredDoc | undefined> {
   const db = await openDb()
   return new Promise((resolve, reject) => {

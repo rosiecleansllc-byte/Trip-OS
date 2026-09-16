@@ -1,9 +1,12 @@
+import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { CalendarDays, MapPin } from 'lucide-react'
 import { clsx } from 'clsx'
 import { trips } from '../data/tripsIndex'
 import { ImagePlaceholder } from '../components/ui/ImagePlaceholder'
 import { InstallButton } from '../components/layout/InstallButton'
+import { BackupPanel } from '../components/backup/BackupPanel'
+import { hasSavedData } from '../lib/backup'
 import { daysUntil, formatDateCompact, tripPhase } from '../lib/date'
 import { computeReadiness } from '../lib/readiness'
 import { useAppStore } from '../store/useAppStore'
@@ -21,6 +24,10 @@ const PHASE_LABEL: Record<'pre' | 'active' | 'post', string> = {
 export function TripsHome() {
   const navigate = useNavigate()
   const setCurrentTripId = useAppStore((s) => s.setCurrentTripId)
+  // Read once on mount, against the raw storage key: after Zustand
+  // rehydrates, "never saved anything here" and "saved an empty state"
+  // are indistinguishable. See lib/backup.ts hasSavedData.
+  const [hasLocalData] = useState(hasSavedData)
 
   const sorted = [...trips].sort((a, b) => a.meta.startDate.localeCompare(b.meta.startDate))
 
@@ -29,6 +36,21 @@ export function TripsHome() {
       <div className="mx-auto max-w-md px-4 pb-10 pt-[calc(1.5rem+env(safe-area-inset-top))]">
         <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-blue">Trip OS</p>
         <h1 className="font-display text-2xl text-ink">Your trips</h1>
+
+        {/* The trips below render from data compiled into the app, so a
+            device with nothing saved still looks completely normal —
+            covers, dates, even a readiness bar — and only turns out to be
+            missing her checklist, uploads and documents once she goes
+            deeper. That silent version is the confusing one, so say it
+            here instead. */}
+        {!hasLocalData && (
+          <div className="mt-4 rounded-2xl border border-blue/30 bg-blue-tint p-3.5">
+            <p className="text-xs font-medium text-ink">No saved trip data on this device yet</p>
+            <p className="mt-1 text-xs text-ink-soft">
+              If you've been using Trip OS in another browser or in Safari, export a backup there and restore it here.
+            </p>
+          </div>
+        )}
 
         <div className="mt-5 space-y-4">
           {sorted.map((trip) => {
@@ -103,6 +125,10 @@ export function TripsHome() {
 
         <div className="mt-6 flex justify-center">
           <InstallButton />
+        </div>
+
+        <div className="mt-4">
+          <BackupPanel />
         </div>
       </div>
     </div>

@@ -11,6 +11,7 @@ import {
   type EffectiveChecklistItem,
 } from '../../lib/checklist'
 import { usePrivateDocKeySet } from '../../lib/walletDocs'
+import { canShowDocumentPresence } from '../../lib/shareMode'
 import { useAppStore } from '../../store/useAppStore'
 import { useChecklistItemUiStore } from '../../store/useChecklistItemUiStore'
 
@@ -28,6 +29,7 @@ function ChecklistRow({ item, tripId }: { item: EffectiveChecklistItem; tripId: 
   const togglePacked = useAppStore((s) => s.togglePacked)
   const openEdit = useChecklistItemUiStore((s) => s.openEdit)
 
+  const showBadges = item.optional || (item.autoChecked && canShowDocumentPresence(shareMode))
   const dot = (
     <span
       className={clsx(
@@ -43,14 +45,14 @@ function ChecklistRow({ item, tripId }: { item: EffectiveChecklistItem; tripId: 
       <span className={clsx('block text-sm', item.checked ? 'text-ink-soft line-through' : 'text-ink')}>
         {item.label}
       </span>
-      {(item.optional || item.autoChecked) && (
+      {showBadges && (
         <span className="mt-0.5 flex gap-1.5">
           {item.optional && (
             <span className="rounded-full border border-line px-1.5 py-0.5 text-[9px] font-medium uppercase tracking-wide text-ink-soft no-underline">
               Optional
             </span>
           )}
-          {item.autoChecked && (
+          {item.autoChecked && canShowDocumentPresence(shareMode) && (
             <span className="rounded-full border border-blue/30 bg-blue-tint px-1.5 py-0.5 text-[9px] font-medium uppercase tracking-wide text-blue no-underline">
               Confirmation on file
             </span>
