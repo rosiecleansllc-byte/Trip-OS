@@ -743,6 +743,22 @@ export const franceTrip: Trip = {
     { id: 'ob12', dayId: 'd12', imageUrl: '/images/outfits/day-12.webp', itemNames: ['White Tee Knit', 'Cuffed Jeans', 'Beige Cardigan', 'White Sneakers', 'Black Quilted Bag'], note: 'Flight home: simple, soft and comfortable.' },
   ],
 
+  outfits: [
+    { id: 'fr-outfit-d1', tripId: 'france-2026', name: 'Travel + Arrive Paris', dayId: 'd1', sortOrder: 1, primaryForDay: true, itemIds: ['c5', 'c7', 'c14', 'c17', 'c1'], notes: 'Striped knit, cuffed jeans and white sneakers; blue trench if cool or wet.' },
+    { id: 'fr-outfit-d2-day', tripId: 'france-2026', name: 'Saint-Germain Day', dayId: 'd2', sortOrder: 1, primaryForDay: true, itemIds: ['c2', 'c7', 'c16', 'c17'], notes: 'White button-down, cuffed jeans, gold Mary Janes and black quilted bag.' },
+    { id: 'fr-outfit-d2-concert', tripId: 'france-2026', name: 'Sainte-Chapelle Concert', dayId: 'd2', sortOrder: 2, itemIds: ['c23', 'c21', 'c25', 'c17'], notes: 'Burgundy dress with the same black cropped top, burgundy patent pointed flats and black quilted bag.' },
+    { id: 'fr-outfit-d3', tripId: 'france-2026', name: 'Galerie Dior', dayId: 'd3', sortOrder: 1, primaryForDay: true, itemIds: ['c22', 'c8', 'c26', 'c25', 'c17', 'c19'], notes: 'Hunter green pleated blouse, black trousers, burgundy patent pointed flats and black quilted bag; navy blazer optional.' },
+    { id: 'fr-outfit-d4', tripId: 'france-2026', name: 'Versailles', dayId: 'd4', sortOrder: 1, primaryForDay: true, itemIds: ['c20', 'c2', 'c5', 'c7', 'c14', 'c1'], notes: 'Burgundy knit over the white button-down, striped knit over the shoulders, cuffed jeans and white sneakers.' },
+    { id: 'fr-outfit-d5', tripId: 'france-2026', name: 'Louvre + Tuileries + Seine', dayId: 'd5', sortOrder: 1, primaryForDay: true, itemIds: ['c21', 'c2', 'c7', 'c14', 'c17'], notes: 'Black cropped top layered over the white button-down with cuffed jeans and white sneakers.' },
+    { id: 'fr-outfit-d6', tripId: 'france-2026', name: 'Mont-Saint-Michel', dayId: 'd6', sortOrder: 1, primaryForDay: true, itemIds: ['c3', 'c11', 'c7', 'c14', 'c17', 'c1', 'c12'], notes: 'Weather-ready walking layers; use the blue trench or white rain shell as conditions require.' },
+    { id: 'fr-outfit-d7', tripId: 'france-2026', name: 'Mont-Saint-Michel → Paris', dayId: 'd7', sortOrder: 1, primaryForDay: true, itemIds: ['c5', 'c8', 'c14', 'c17', 'c1'], notes: 'Striped knit, black trousers, white sneakers and blue trench.' },
+    { id: 'fr-outfit-d8', tripId: 'france-2026', name: 'Paris → Nice', dayId: 'd8', sortOrder: 1, primaryForDay: true, itemIds: ['c3', 'c7', 'c11', 'c14', 'c17'], notes: 'Easy train-day layers for arrival in Nice.' },
+    { id: 'fr-outfit-d9', tripId: 'france-2026', name: 'Èze + Menton', dayId: 'd9', sortOrder: 1, primaryForDay: true, itemIds: ['c2', 'c7', 'c18', 'c14', 'c17'], notes: 'White button-down, cuffed jeans, silk scarf and walking-friendly white sneakers.' },
+    { id: 'fr-outfit-d10', tripId: 'france-2026', name: 'Nice + Villefranche-sur-Mer', dayId: 'd10', sortOrder: 1, primaryForDay: true, itemIds: ['c24', 'c16', 'c17', 'c11', 'c19'], notes: 'Navy fitted dress with gold Mary Janes; beige cardigan or navy blazer if cool.' },
+    { id: 'fr-outfit-d11', tripId: 'france-2026', name: 'Nice → Paris / CDG', dayId: 'd11', sortOrder: 1, primaryForDay: true, itemIds: ['c5', 'c8', 'c1', 'c14', 'c17'], notes: 'Striped knit, black trousers, blue trench and white sneakers.' },
+    { id: 'fr-outfit-d12', tripId: 'france-2026', name: 'Flight Home', dayId: 'd12', sortOrder: 1, primaryForDay: true, itemIds: ['c3', 'c7', 'c11', 'c14', 'c17'], notes: 'Simple, soft travel layers for the flight home.' },
+  ],
+
   checklist: [
     // Clothing
     { id: 'chk-clothing-outfits', category: 'Clothing', label: 'France outfits / capsule finalized' },
