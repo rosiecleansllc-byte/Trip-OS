@@ -1,6 +1,6 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { clsx } from 'clsx'
-import { ImageIcon, Maximize2, Pencil, Plus } from 'lucide-react'
+import { ImageIcon, Maximize2, Pencil, Plus, Trash2, Upload } from 'lucide-react'
 import type { Trip, VisualBoardType } from '../types/trip'
 import { Card } from '../components/ui/Card'
 import { SectionHeader } from '../components/ui/SectionHeader'
@@ -15,7 +15,7 @@ import { ChecklistTab } from '../components/pack/ChecklistTab'
 import { OutfitCard } from '../components/wardrobe/OutfitCard'
 import { WardrobeOutfitBoardSection } from '../components/wardrobe/WardrobeOutfitBoardSection'
 import { getWeatherLocationForDay, isWithinForecastRange, useWeather } from '../lib/weather'
-import { isWardrobeItemBoard, sortVisualBoards, uploadedWardrobeItemsForTrip } from '../lib/visualBoards'
+import { deleteVisualBoardImage, isWardrobeItemBoard, putVisualBoardImage, sortVisualBoards, uploadedWardrobeItemsForTrip, useVisualBoardImage } from '../lib/visualBoards'
 import {
   WARDROBE_CATEGORY_LABELS,
   WARDROBE_CATEGORY_ORDER,
@@ -42,6 +42,7 @@ export function Pack({ trip }: { trip: Trip }) {
   const hasChecklist = (trip.checklist?.length ?? 0) > 0
   const shareMode = useAppStore((s) => s.shareMode)
   const visualBoards = useAppStore((s) => s.visualBoards)
+  const addVisualBoard = useAppStore((s) => s.addVisualBoard)
   const wardrobeItemOverrides = useAppStore((s) => s.wardrobeItemOverrides)
   const openEditCapsuleItem = useCapsuleItemUiStore((s) => s.openEdit)
   // Seeded CapsuleItems with any traveler edit already applied (see
@@ -98,10 +99,58 @@ export function Pack({ trip }: { trip: Trip }) {
   const outfits = useAppStore((s) => s.outfits)
   const openNewOutfit = useOutfitUiStore((s) => s.openNew)
   const openOutfitDetail = useOutfitDetailUiStore((s) => s.open)
+
+  // The full-trip outfit board can be replaced or removed on this device
+  // without changing the bundled seed image. A fixed VisualBoard record
+  // acts as an override: its presence suppresses the seeded board even
+  // when its image has been removed, which gives the traveler a true
+  // delete -> upload-new-board workflow instead of the old seed snapping
+  // back immediately after deletion.
+  const masterBoardId = `master-outfit-board:${trip.meta.id}`
+  const masterBoard = visualBoards.find((b) => b.id === masterBoardId)
+  const masterBoardInputRef = useRef<HTMLInputElement>(null)
+  const [masterBoardVersion, setMasterBoardVersion] = useState(0)
+  const { url: uploadedMasterBoardUrl } = useVisualBoardImage(masterBoard?.imageKey, masterBoardVersion)
+  const masterBoardUrl = masterBoard ? uploadedMasterBoardUrl : trip.meta.outfitBoardImageUrl
+
+  const handleMasterBoardUpload = async (file: File) => {
+    const imageKey = masterBoard?.imageKey ?? `${masterBoardId}-img`
+    await putVisualBoardImage(imageKey, file)
+    if (!masterBoard) {
+      addVisualBoard({
+        id: masterBoardId,
+        tripId: trip.meta.id,
+        type: 'outfit',
+        title: `${trip.meta.name} Full Outfit Board`,
+        imageKey,
+        createdAt: new Date().toISOString(),
+        visualKind: 'board',
+      })
+    }
+    setMasterBoardVersion((v) => v + 1)
+  }
+
+  const handleMasterBoardDelete = async () => {
+    if (masterBoard?.imageKey) await deleteVisualBoardImage(masterBoard.imageKey)
+    if (!masterBoard) {
+      addVisualBoard({
+        id: masterBoardId,
+        tripId: trip.meta.id,
+        type: 'outfit',
+        title: `${trip.meta.name} Full Outfit Board`,
+        imageKey: `${masterBoardId}-img`,
+        createdAt: new Date().toISOString(),
+        visualKind: 'board',
+      })
+    }
+    setMasterBoardVersion((v) => v + 1)
+    setLightbox(null)
+  }
+
   // Boards only — wardrobe-item-kind uploads live in the Wardrobe tab
   // instead (uploadedWardrobeItems above).
   const tripVisualBoards = sortVisualBoards(
-    visualBoards.filter((b) => b.tripId === trip.meta.id && !isWardrobeItemBoard(b))
+    visualBoards.filter((b) => b.tripId === trip.meta.id && b.id !== masterBoardId && !isWardrobeItemBoard(b))
   )
   const outfitBoards = tripVisualBoards.filter((b) => OUTFIT_TIER.includes(b.type))
   const capsulePackingBoards = tripVisualBoards.filter((b) => CAPSULE_TIER.includes(b.type))
@@ -127,14 +176,57 @@ export function Pack({ trip }: { trip: Trip }) {
 
       {location && inRange && <WeatherCard label={`${location.name} outlook`} weather={weather} compact />}
 
-      {trip.meta.outfitBoardImageUrl && (
-        <button
-          onClick={() => setLightbox({ src: trip.meta.outfitBoardImageUrl!, alt: `${trip.meta.name} outfit board` })}
-          className="flex w-full items-center justify-center gap-2 rounded-full border border-blue/30 bg-blue-tint py-2.5 text-sm font-medium text-blue"
-        >
-          <Maximize2 size={15} />
-          View full outfit board
-        </button>
+      {(masterBoardUrl || !shareMode) && (
+        <div className="space-y-2">
+          {masterBoardUrl ? (
+            <button
+              type="button"
+              onClick={() => setLightbox({ src: masterBoardUrl, alt: `${trip.meta.name} outfit board` })}
+              className="flex w-full items-center justify-center gap-2 rounded-full border border-blue/30 bg-blue-tint py-2.5 text-sm font-medium text-blue"
+            >
+              <Maximize2 size={15} />
+              View full outfit board
+            </button>
+          ) : (
+            <div className="rounded-2xl border border-dashed border-line px-5 py-4 text-center text-xs text-ink-soft">
+              No full outfit board saved.
+            </div>
+          )}
+
+          {!shareMode && (
+            <div className="flex gap-2">
+              <input
+                ref={masterBoardInputRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={(event) => {
+                  const file = event.target.files?.[0]
+                  if (file) void handleMasterBoardUpload(file)
+                  event.currentTarget.value = ''
+                }}
+              />
+              <button
+                type="button"
+                onClick={() => masterBoardInputRef.current?.click()}
+                className="flex flex-1 items-center justify-center gap-2 rounded-full border border-blue/30 bg-white py-2 text-xs font-medium text-blue"
+              >
+                <Upload size={14} />
+                {masterBoardUrl ? 'Replace board' : 'Upload full board'}
+              </button>
+              {masterBoardUrl && (
+                <button
+                  type="button"
+                  onClick={() => void handleMasterBoardDelete()}
+                  className="flex items-center justify-center gap-2 rounded-full border border-red/30 bg-white px-4 py-2 text-xs font-medium text-red"
+                >
+                  <Trash2 size={14} />
+                  Delete
+                </button>
+              )}
+            </div>
+          )}
+        </div>
       )}
 
       {tabs.length > 1 && (
@@ -245,7 +337,7 @@ export function Pack({ trip }: { trip: Trip }) {
               <WardrobeOutfitBoardSection trip={trip} shareMode={shareMode} />
             </div>
           )}
-          <OutfitBoardSection trip={trip} />
+          {!hasSeededOutfits && <OutfitBoardSection trip={trip} />}
 
           {/* Freely-editable custom outfits (see types/trip.ts Outfit) —
               never seeded, built by picking from this trip's own wardrobe
