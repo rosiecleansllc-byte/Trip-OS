@@ -1,5 +1,6 @@
-import type { Trip } from '../types/trip'
+import type { ChecklistItemOverride, CustomChecklistItem, Trip } from '../types/trip'
 import { daysUntil, formatTime, isSameISODate, tripPhase } from './date'
+import { getEffectiveChecklist, getUndoneHomeTasks } from './checklist'
 import { computeLeaveBy } from './leaveBy'
 import { getTripTimeZone, zonedTimeToUtc } from './timezone'
 import { buildWalletDocEntries } from './walletDocs'
@@ -20,6 +21,7 @@ export type AlertType =
   | 'missing-document'
   | 'cancellation-deadline'
   | 'readiness'
+  | 'home-readiness'
 
 export type AlertPriority = 'critical' | 'important' | 'info'
 export type AlertGroup = 'now' | 'today' | 'upcoming'
@@ -58,9 +60,24 @@ export interface GenerateAlertsInput {
   // independent of which wall clock the traveler happens to be reading.
   realNow: Date
   presentDocKeys: Set<string>
+  // Checklist state (see lib/checklist.ts) — only used to find still-
+  // unchecked items flagged ChecklistItem.homeTask, for the
+  // home-readiness alert below.
+  checklistItemOverrides: Record<string, ChecklistItemOverride>
+  customChecklistItems: CustomChecklistItem[]
+  packedItems: Record<string, boolean>
 }
 
-export function generateAlerts({ trip, effectiveTrip, now, realNow, presentDocKeys }: GenerateAlertsInput): TripAlert[] {
+export function generateAlerts({
+  trip,
+  effectiveTrip,
+  now,
+  realNow,
+  presentDocKeys,
+  checklistItemOverrides,
+  customChecklistItems,
+  packedItems,
+}: GenerateAlertsInput): TripAlert[] {
   const alerts: TripAlert[] = []
   const phase = tripPhase(trip.meta.startDate, trip.meta.endDate, now)
   const today = effectiveTrip.days.find((d) => isSameISODate(d.date, now))
@@ -208,6 +225,46 @@ export function generateAlerts({ trip, effectiveTrip, now, realNow, presentDocKe
         detail: oi.detail,
         isPrivate: false,
       })
+    }
+  }
+
+  // Home readiness — literal home-securing checklist items (Secure home,
+  // trash/perishables, mail/package plan; see ChecklistItem.homeTask)
+  // still unchecked as departure nears. Uses realNow's own local
+  // calendar day, same basis as every "N days away" countdown already
+  // shown elsewhere (e.g. Today's own countdown, TripsHome) — the
+  // traveler is still at home right up to departure, so the device's
+  // local day is the right one to count against, not the destination's.
+  //
+  // Deliberately NOT gated to phase === 'pre': by the morning of
+  // departure day the trip has already flipped to 'active' (the day's
+  // own itinerary, e.g. an early-morning flight, is "today"), but the
+  // traveler may well still be standing in the house. Checked instead
+  // against daysToDeparture directly, and cut off once the trip is truly
+  // underway (daysToDeparture < 0) so it can't linger for the rest of a
+  // multi-week trip. Escalates to a critical "now" alert on departure day
+  // itself, which is what actually rings the browser-notification alarm
+  // in AlertCenter (group: 'now' + priority: 'critical').
+  if (phase !== 'post') {
+    const daysToDeparture = daysUntil(trip.meta.startDate, realNow)
+    if (daysToDeparture >= 0 && daysToDeparture <= 1) {
+      const checklist = getEffectiveChecklist(effectiveTrip, checklistItemOverrides, customChecklistItems, packedItems, presentDocKeys)
+      const undoneHomeTasks = getUndoneHomeTasks(checklist)
+      if (undoneHomeTasks.length > 0) {
+        const summary = undoneHomeTasks.map((t) => t.label).join(', ')
+        alerts.push({
+          id: 'home-readiness',
+          type: 'home-readiness',
+          priority: daysToDeparture <= 0 ? 'critical' : 'important',
+          group: daysToDeparture <= 0 ? 'now' : 'upcoming',
+          title:
+            undoneHomeTasks.length === 1
+              ? `Before you leave: ${undoneHomeTasks[0].label}`
+              : `${undoneHomeTasks.length} home tasks still undone`,
+          detail: undoneHomeTasks.length === 1 ? undefined : summary,
+          isPrivate: false,
+        })
+      }
     }
   }
 

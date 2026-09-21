@@ -22,11 +22,24 @@ import { useAppStore } from '../../store/useAppStore'
 export function useTripAlerts(trip: Trip, effectiveTrip: Trip, now: Date, realNow: Date): { alerts: TripAlert[] } {
   const shareMode = useAppStore((s) => s.shareMode)
   const alertOverrides = useAppStore((s) => s.alertOverrides)
+  const checklistItemOverrides = useAppStore((s) => s.checklistItemOverrides)
+  const customChecklistItems = useAppStore((s) => s.customChecklistItems)
+  const packedItems = useAppStore((s) => s.packedItems)
   const { keys: presentDocKeys } = usePrivateDocKeySet()
 
   const raw = useMemo(
-    () => generateAlerts({ trip, effectiveTrip, now, realNow, presentDocKeys }),
-    [trip, effectiveTrip, now, realNow, presentDocKeys]
+    () =>
+      generateAlerts({
+        trip,
+        effectiveTrip,
+        now,
+        realNow,
+        presentDocKeys,
+        checklistItemOverrides,
+        customChecklistItems,
+        packedItems,
+      }),
+    [trip, effectiveTrip, now, realNow, presentDocKeys, checklistItemOverrides, customChecklistItems, packedItems]
   )
 
   const alerts = useMemo(

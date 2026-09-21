@@ -2,7 +2,7 @@
 import pkg from '/opt/node22/lib/node_modules/playwright/index.js'
 const { chromium } = pkg
 
-const BASE = 'http://localhost:5184'
+const BASE = 'http://localhost:5186'
 const results = []
 const check = (name, pass, detail = '') => {
   results.push({ name, pass, detail })
