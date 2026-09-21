@@ -90,6 +90,7 @@ export const franceTrip: Trip = {
         { id: 'd1-3', label: 'Check in, settle in', type: 'lodging', location: 'La Maison Montparnasse, Paris', websiteUrl: 'https://lamaisonmontparnasse.fr/en/homepage/', notes: 'Allow 2½–3 hours from landing through immigration, baggage, taxi, and check-in — expect to be settled around 5:00–5:30 PM.', privateDocumentKey: 'la-maison-montparnasse-confirmation', privateDocumentType: 'confirmation' },
         { id: 'd1-4', time: '19:30', label: 'Dinner: Le Procope', type: 'meal', location: 'Le Procope, Paris', websiteUrl: 'https://www.procope.com/en/', reservationUrl: 'https://www.procope.com/en/o/reserver/', tip: 'Your first-night Paris dinner — the later time gives you margin after the flight.', privateDocumentKey: 'le-procope-ticket', privateDocumentType: 'ticket' },
       ],
+      deadlines: [{ id: 'd1-dl-atelier', label: 'Atelier Maître Albert — cancel by 12:30 PM Paris time to avoid the late-cancellation/no-show charge', datetime: '2026-09-26T12:30' }],
       outfitBoardId: 'ob1',
     },
     {
