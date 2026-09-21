@@ -274,6 +274,13 @@ export interface ChecklistItem {
   // enough, since the actual confirmation document might still be
   // missing. Never set for a traveler-added custom item.
   linkedDocumentKey?: string
+  // Marks this item as one of the literal home-securing tasks (e.g.
+  // "Secure home", "Handle trash/perishables", "Mail/package plan") —
+  // never the whole "Before You Go" category, just the tasks that are
+  // actually about the house itself. Drives the home-readiness alert
+  // (lib/alerts.ts) that fires on departure day if any of these are
+  // still unchecked. Never set for a traveler-added custom item.
+  homeTask?: boolean
 }
 
 // A checklist item Cecilia adds herself from inside Pack → Checklist —

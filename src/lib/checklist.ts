@@ -15,6 +15,9 @@ export interface EffectiveChecklistItem {
   label: string
   optional: boolean
   linkedDocumentKey?: string
+  // See ChecklistItem.homeTask in types/trip.ts — never true for a
+  // traveler-added custom item.
+  homeTask: boolean
   isCustom: boolean
   // True once EITHER the traveler tapped it (packedItems) OR — for a
   // linked item — its confirmation document is already stored on this
@@ -70,6 +73,7 @@ export function getEffectiveChecklist(
       label: item.label,
       optional: Boolean(item.optional),
       linkedDocumentKey: item.linkedDocumentKey,
+      homeTask: Boolean(item.homeTask),
       isCustom,
       checked: manuallyChecked || autoChecked,
       autoChecked,
@@ -77,6 +81,14 @@ export function getEffectiveChecklist(
   }
 
   return [...seeded.map((i) => resolve(i, false)), ...customForTrip.map((i) => resolve(i, true))]
+}
+
+// The still-unchecked literal home-securing tasks (e.g. "Secure home",
+// "Handle trash/perishables") — feeds the home-readiness alert in
+// lib/alerts.ts. Optional home tasks are excluded the same way they're
+// excluded from readiness everywhere else.
+export function getUndoneHomeTasks(items: EffectiveChecklistItem[]): EffectiveChecklistItem[] {
+  return items.filter((i) => i.homeTask && !i.optional && !i.checked)
 }
 
 export function checklistCategoriesInOrder(items: EffectiveChecklistItem[]): string[] {

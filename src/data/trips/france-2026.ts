@@ -828,9 +828,9 @@ export const franceTrip: Trip = {
     { id: 'chk-before-charge-battery', category: 'Before You Go', label: 'Charge portable battery' },
     { id: 'chk-before-download-entertainment', category: 'Before You Go', label: 'Download flight entertainment/books', optional: true },
     { id: 'chk-before-luggage-weight', category: 'Before You Go', label: 'Check luggage weight/airline limits' },
-    { id: 'chk-before-secure-home', category: 'Before You Go', label: 'Secure home' },
-    { id: 'chk-before-trash', category: 'Before You Go', label: 'Handle trash/perishables' },
-    { id: 'chk-before-mail', category: 'Before You Go', label: 'Mail/package plan' },
+    { id: 'chk-before-secure-home', category: 'Before You Go', label: 'Secure home', homeTask: true },
+    { id: 'chk-before-trash', category: 'Before You Go', label: 'Handle trash/perishables', homeTask: true },
+    { id: 'chk-before-mail', category: 'Before You Go', label: 'Mail/package plan', homeTask: true },
   ],
 
   openItems: [
