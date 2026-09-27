@@ -197,7 +197,7 @@ export const franceTrip: Trip = {
         { id: 'd7-2', time: '12:00', label: 'Depart for Paris', type: 'transport', tip: 'Blake is driving, so you control departure time — normal traffic and one short break puts you back around 4:30–5:00 PM.' },
         { id: 'd7-3', time: '18:00', label: 'Return the rental car', type: 'transport', privateDocumentKey: 'sixt-rental-car-confirmation', privateDocumentType: 'confirmation' },
         { id: 'd7-4', label: 'Check in at Hôtel Léopold', type: 'lodging', location: 'Hôtel Léopold, Paris', websiteUrl: 'https://www.leopoldhotelparis.com/en/', tip: 'Moving Léopold to Oct. 2 means an evening and breakfast here instead of leaving before sunrise.', privateDocumentKey: 'hotel-leopold-confirmation', privateDocumentType: 'confirmation' },
-        { id: 'd7-5', label: 'Dinner near Montparnasse / Saint-Germain', type: 'meal', notes: 'Keep it casual — no hard reservation tonight.' },
+        { id: 'd7-5', time: '20:00', label: 'Dinner: La Maison du Jardin', type: 'meal', location: 'La Maison du Jardin, Paris', notes: 'Confirmed for 3 at 8:00 PM.' },
       ],
       outfitBoardId: 'ob7',
     },
