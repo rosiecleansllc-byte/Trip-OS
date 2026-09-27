@@ -84,7 +84,7 @@ function ScheduleCard({
   const shareMode = useAppStore((s) => s.shareMode)
   const leaveBy = emphasize ? computeLeaveBy(item.time, item) : undefined
   return (
-    <Card className={emphasize ? 'p-4' : 'flex items-start gap-3 p-3.5'} accent={emphasize ? 'blue' : undefined}>
+    <Card className={emphasize ? 'p-4' : 'p-3.5'} accent={emphasize ? 'blue' : undefined}>
       {emphasize ? (
         <div className="flex items-start justify-between gap-2">
           <div>
@@ -110,11 +110,11 @@ function ScheduleCard({
           {!shareMode && manualItem && <ManualItemMenu item={manualItem} trip={trip} className="shrink-0" />}
         </div>
       ) : (
-        <>
-          <span className="mt-0.5 w-11 shrink-0 text-xs font-medium text-blue">
+        <div className="flex items-start gap-3">
+          <span className="mt-0.5 w-14 shrink-0 text-xs font-medium leading-5 text-blue">
             {formatTime(item.time) ?? SCHEDULE_ICON[item.type]}
           </span>
-          <p className={clsx('min-w-0 flex-1 text-sm font-medium text-ink', item.cancelled && 'text-ink-soft line-through')}>
+          <p className={clsx('min-w-0 flex-1 break-words text-sm font-medium leading-5 text-ink', item.cancelled && 'text-ink-soft line-through')}>
             {item.label}
             {item.cancelled && (
               <span className="ml-1.5 rounded-full border border-line bg-bg-soft px-1.5 py-0.5 align-middle text-[9px] font-medium uppercase tracking-wide text-ink-soft no-underline">
@@ -123,7 +123,7 @@ function ScheduleCard({
             )}
           </p>
           {!shareMode && manualItem && <ManualItemMenu item={manualItem} trip={trip} className="shrink-0" />}
-        </>
+        </div>
       )}
       {emphasize && item.travelMinutes != null && (
         <p className="mt-2 flex items-center gap-1.5 text-xs text-ink-soft">
