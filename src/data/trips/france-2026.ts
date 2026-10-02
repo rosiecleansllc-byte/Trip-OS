@@ -205,6 +205,7 @@ export const franceTrip: Trip = {
         { id: 'd7-5', label: 'Drive Honfleur → Paris', type: 'transport' },
         { id: 'd7-6', time: '21:00', label: 'Return rental car — extended return time', type: 'transport', notes: 'Rental return extended from 6:00 PM to 9:00 PM.', privateDocumentKey: 'sixt-rental-car-confirmation', privateDocumentType: 'confirmation' },
         { id: 'd7-7', label: 'Check in at Hôtel Léopold', type: 'lodging', location: 'Hôtel Léopold, Paris', websiteUrl: 'https://www.leopoldhotelparis.com/en/', notes: 'Check in after returning the rental car.', privateDocumentKey: 'hotel-leopold-confirmation', privateDocumentType: 'confirmation' },
+        { id: 'd7-8', time: '20:00', label: 'Dinner: La Maison du Jardin', type: 'meal', location: 'La Maison du Jardin, Paris', cancelled: true, notes: 'Reservation canceled after the Honfleur dinner plan replaced it.' },
       ],
       outfitBoardId: 'ob7',
     },
