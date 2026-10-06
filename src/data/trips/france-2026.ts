@@ -86,7 +86,7 @@ export const franceTrip: Trip = {
         { id: 'd1-3', label: 'Check in, settle in', type: 'lodging', location: 'La Maison Montparnasse, Paris', websiteUrl: 'https://lamaisonmontparnasse.fr/en/homepage/', notes: 'Allow 2½–3 hours from landing through immigration, baggage, taxi, and check-in — expect to be settled around 5:00–5:30 PM.', privateDocumentKey: 'la-maison-montparnasse-confirmation', privateDocumentType: 'confirmation' },
         { id: 'd1-4', time: '19:30', label: 'Dinner: Le Procope', type: 'meal', location: 'Le Procope, Paris', websiteUrl: 'https://www.procope.com/en/', reservationUrl: 'https://www.procope.com/en/o/reserver/', tip: 'Your first-night Paris dinner — the later time gives you margin after the flight.', privateDocumentKey: 'le-procope-ticket', privateDocumentType: 'ticket' },
       ],
-      deadlines: [{ id: 'd1-dl-atelier', label: 'Atelier Maître Albert — cancel by 12:30 PM Paris time to avoid the late-cancellation/no-show charge', datetime: '2026-09-26T12:30' }],
+      deadlines: [{ id: 'd1-dl-atelier', label: 'Atelier Maître Albert cancellation deadline', datetime: '2026-09-26T12:30', done: true }],
       outfitBoardId: 'ob1',
     },
     {
@@ -148,7 +148,7 @@ export const franceTrip: Trip = {
         { id: 'd4-5', label: 'Return to Paris', type: 'transport', notes: 'Aim to be back around 6:00–6:30 PM.' },
         { id: 'd4-6', time: '19:30', label: 'Dinner: Joséphine Chez Dumonet', type: 'meal', location: 'Joséphine Chez Dumonet, Paris', websiteUrl: 'https://www.josephinechezdumonet.fr/', phone: '+33 1 45 48 52 40', notes: '€75 card hold — decision deadline is 4:00 PM Paris time today. Reminder is already scheduled so you can cancel if Versailles runs long.', privateDocumentKey: 'josephine-dumonet-ticket', privateDocumentType: 'ticket', travelMinutes: 20, arrivalBufferMinutes: 10 },
       ],
-      deadlines: [{ id: 'd4-dl1', label: 'Joséphine Chez Dumonet — confirm or cancel by 4:00 PM Paris time', datetime: '2026-09-29T16:00' }],
+      deadlines: [{ id: 'd4-dl1', label: 'Joséphine Chez Dumonet cancellation deadline', datetime: '2026-09-29T16:00', done: true }],
       outfitBoardId: 'ob4',
     },
     {
