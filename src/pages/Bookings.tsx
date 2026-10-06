@@ -1,4 +1,4 @@
-import { AlertTriangle, Award, Bed, CheckCircle2, ClipboardList, Ticket, UtensilsCrossed } from 'lucide-react'
+import { AlertTriangle, Award, Bed, CheckCircle2, ClipboardList, RotateCcw, Ticket, Trash2, UtensilsCrossed } from 'lucide-react'
 import type { Booking, BookingCategory, ManualTripItem, Trip } from '../types/trip'
 import { ActionRow } from '../components/ui/ActionRow'
 import { Card } from '../components/ui/Card'
@@ -26,11 +26,13 @@ function BookingRow({
   manualItem,
   trip,
   shareMode,
+  onRemove,
 }: {
   booking: Booking
   manualItem?: ManualTripItem
   trip: Trip
   shareMode: boolean
+  onRemove?: () => void
 }) {
   const b = shareSafeBooking(booking, shareMode)
   const dateLabel = b.dateEnd && b.dateEnd !== b.dateStart
@@ -70,7 +72,8 @@ function BookingRow({
       {!shareMode && b.notes && <p className="mt-2 text-xs text-ink-soft">{b.notes}</p>}
       {b.tip && <p className="mt-2 text-xs italic text-gray">{b.tip}</p>}
 
-      <ActionRow
+      <div className="flex flex-wrap items-center gap-2">
+        <ActionRow
         location={b.address}
         websiteUrl={b.websiteUrl}
         ticketUrl={b.ticketUrl}
@@ -85,6 +88,16 @@ function BookingRow({
         shareMode={shareMode}
         className="mt-3"
       />
+        {!shareMode && onRemove && (b.status === 'pending' || b.status === 'optional') && (
+          <button
+            type="button"
+            onClick={onRemove}
+            className="mt-3 inline-flex items-center gap-1 rounded-full border border-red/30 px-2.5 py-1 text-xs font-medium text-red"
+          >
+            <Trash2 size={12} /> Remove
+          </button>
+        )}
+      </div>
 
       {deadlineIsUpcoming && b.cancellationDeadline && (
         <div className="mt-2.5 flex items-center gap-1.5 rounded-lg bg-red-tint px-2.5 py-1.5 text-xs text-red">
@@ -100,15 +113,27 @@ export function Bookings({ trip }: { trip: Trip }) {
   const shareMode = useAppStore((s) => s.shareMode)
   const manualItems = useAppStore((s) => s.manualItems)
   const resolvedOpenItemIds = useAppStore((s) => s.resolvedOpenItemIds)
+  const hiddenBookingIds = useAppStore((s) => s.hiddenBookingIds)
+  const hideBooking = useAppStore((s) => s.hideBooking)
+  const restoreBooking = useAppStore((s) => s.restoreBooking)
   const effectiveTrip = getEffectiveTrip(trip, manualItems, resolvedOpenItemIds)
   const manualItemsById = new Map(manualItems.filter((i) => i.tripId === trip.meta.id).map((i) => [i.id, i]))
 
+  const bookingSortKey = (b: Booking) => `${b.dateStart}T${b.time ?? '23:59'}`
+  const visibleBookings = effectiveTrip.bookings
+    .filter((b) => !hiddenBookingIds[`${trip.meta.id}:${b.id}`])
+    .sort((a, b) => bookingSortKey(a).localeCompare(bookingSortKey(b)))
+
   const order: BookingCategory[] = ['hotel', 'dining', 'ticket', 'activity', 'other']
   const byCategory = order
-    .map((cat) => ({ cat, items: effectiveTrip.bookings.filter((b) => b.category === cat) }))
+    .map((cat) => ({ cat, items: visibleBookings.filter((b) => b.category === cat) }))
     .filter((g) => g.items.length > 0)
 
-  const pendingCount = effectiveTrip.bookings.filter((b) => b.status === 'pending').length
+  const hiddenBookings = effectiveTrip.bookings
+    .filter((b) => hiddenBookingIds[`${trip.meta.id}:${b.id}`])
+    .sort((a, b) => bookingSortKey(a).localeCompare(bookingSortKey(b)))
+
+  const pendingCount = visibleBookings.filter((b) => b.status === 'pending').length
   const openItems = effectiveTrip.openItems
     .filter((i) => i.status === 'open')
     .sort((a, b) => (a.priority === 'high' ? 0 : 1) - (b.priority === 'high' ? 0 : 1))
@@ -132,9 +157,25 @@ export function Bookings({ trip }: { trip: Trip }) {
           <div key={cat}>
             <SectionHeader eyebrow={`${items.length} ${items.length === 1 ? 'item' : 'items'}`} title={meta.label} />
             <div className="space-y-2.5">
-              {items.map((b) => (
-                <BookingRow key={b.id} booking={b} manualItem={manualItemsById.get(b.id)} trip={trip} shareMode={shareMode} />
-              ))}
+              {items.map((b) => {
+                const manualItem = manualItemsById.get(b.id)
+                return (
+                  <BookingRow
+                    key={b.id}
+                    booking={b}
+                    manualItem={manualItem}
+                    trip={trip}
+                    shareMode={shareMode}
+                    onRemove={
+                      !manualItem && (b.status === 'pending' || b.status === 'optional')
+                        ? () => {
+                            if (window.confirm(`Remove ${b.name} from this trip?`)) hideBooking(trip.meta.id, b.id)
+                          }
+                        : undefined
+                    }
+                  />
+                )
+              })}
             </div>
           </div>
         )
@@ -157,7 +198,31 @@ export function Bookings({ trip }: { trip: Trip }) {
         </div>
       )}
 
-      {completedItems.length > 0 && (
+      {!shareMode && hiddenBookings.length > 0 && (
+        <div>
+          <SectionHeader title="Removed" action={<RotateCcw size={16} className="text-ink-soft" />} />
+          <p className="mb-2 text-xs text-ink-soft">Optional or pending reservations you removed from this trip.</p>
+          <div className="space-y-2.5">
+            {hiddenBookings.map((b) => (
+              <Card key={b.id} className="flex items-center justify-between gap-3 p-3.5 opacity-70">
+                <div className="min-w-0">
+                  <p className="text-sm text-ink">{b.name}</p>
+                  <p className="text-xs text-ink-soft">{formatDateCompact(b.dateStart)}{b.time ? ` · ${formatTime(b.time)}` : ''}</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => restoreBooking(trip.meta.id, b.id)}
+                  className="inline-flex shrink-0 items-center gap-1 rounded-full border border-line px-2.5 py-1 text-xs font-medium text-blue"
+                >
+                  <RotateCcw size={12} /> Restore
+                </button>
+              </Card>
+            ))}
+          </div>
+        </div>
+      )}
+
+            {completedItems.length > 0 && (
         <div>
           <SectionHeader title="Completed" action={<CheckCircle2 size={16} className="text-blue" />} />
           <div className="space-y-2.5">
