@@ -60,6 +60,13 @@ export function Privacy() {
           </section>
 
           <section>
+            <h2 className="font-display text-xl">Contact</h2>
+            <p className="mt-2 text-ink-soft">
+              For Trip OS privacy or support questions, contact <a className="text-blue underline" href="mailto:tripod.support@gmail.com">tripod.support@gmail.com</a>.
+            </p>
+          </section>
+
+          <section>
             <h2 className="font-display text-xl">Changes to this policy</h2>
             <p className="mt-2 text-ink-soft">
               If Trip OS later adds accounts, cloud sync, analytics, payments, advertising, or other services that change how information is handled, this policy and the applicable app-store privacy disclosures will be updated before those features are released.
