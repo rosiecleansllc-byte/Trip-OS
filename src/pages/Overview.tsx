@@ -96,9 +96,9 @@ export function Overview({ trip }: { trip: Trip }) {
           <div className="flex items-center justify-between">
             <p className="text-sm text-ink-soft">
               {phase === 'active'
-                ? 'In progress'
+                ? 'Today'
                 : phase === 'post'
-                  ? 'Completed'
+                  ? 'Remember'
                   : countdown > 0
                     ? `${countdown} day${countdown === 1 ? '' : 's'} away`
                     : 'Today'}
