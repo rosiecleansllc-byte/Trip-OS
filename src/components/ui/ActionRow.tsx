@@ -1,4 +1,4 @@
-import { CalendarCheck, Globe, Navigation, Phone, SquarePen, Ticket, UtensilsCrossed } from 'lucide-react'
+import { Activity, CalendarCheck, Globe, Navigation, Phone, SquarePen, Ticket, UtensilsCrossed } from 'lucide-react'
 import type { LinkActions } from '../../types/trip'
 import { directionsUrl, telUrl } from '../../lib/links'
 import { shareSafeActions } from '../../lib/shareMode'
@@ -15,7 +15,7 @@ interface ActionRowProps extends LinkActions {
 
 export function ActionRow({ location, shareMode, className = '', ...links }: ActionRowProps) {
   // One policy, applied before anything is read — see lib/shareMode.ts.
-  const { websiteUrl, ticketUrl, reservationUrl, menuUrl, phone, privateTicketUrl, modifyUrl, privateDocumentKey, privateDocumentLabel, privateDocumentType } =
+  const { websiteUrl, statusUrl, ticketUrl, reservationUrl, menuUrl, phone, privateTicketUrl, modifyUrl, privateDocumentKey, privateDocumentLabel, privateDocumentType } =
     shareSafeActions(links, shareMode)
 
   // Outside Share mode, prefer the traveler's actual purchased ticket over
@@ -26,6 +26,7 @@ export function ActionRow({ location, shareMode, className = '', ...links }: Act
 
   const actions = [
     location && { label: 'Directions', href: directionsUrl(location)!, icon: Navigation, external: true },
+    statusUrl && { label: 'Live status', href: statusUrl, icon: Activity, external: true },
     resolvedTicketUrl && { label: 'Ticket', href: resolvedTicketUrl, icon: Ticket, external: true },
     reservationUrl && { label: 'Reservation', href: reservationUrl, icon: CalendarCheck, external: true },
     websiteUrl && { label: 'Website', href: websiteUrl, icon: Globe, external: true },
