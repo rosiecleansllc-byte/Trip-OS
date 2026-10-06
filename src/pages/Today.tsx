@@ -530,7 +530,7 @@ export function Today({ trip }: { trip: Trip }) {
           </div>
         )}
 
-        <DayRunPlan day={today} now={now} preferDriving={mobilityPreferences.preferRideshare || mobilityPreferences.reduceWalking} />
+        <DayRunPlan trip={effectiveTrip} day={today} now={now} preferDriving={mobilityPreferences.preferRideshare || mobilityPreferences.reduceWalking} />
 
                 {nextSession && <NextSessionCard next={nextSession} after={afterSession} />}
 
