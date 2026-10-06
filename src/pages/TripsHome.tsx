@@ -12,9 +12,9 @@ import { computeReadiness } from '../lib/readiness'
 import { useAppStore } from '../store/useAppStore'
 
 const PHASE_LABEL: Record<'pre' | 'active' | 'post', string> = {
-  pre: 'Upcoming',
-  active: 'In progress',
-  post: 'Completed',
+  pre: 'Get Ready',
+  active: 'Today',
+  post: 'Remember',
 }
 
 // Tapping a trip here opens its cover/overview page (see Overview.tsx),
