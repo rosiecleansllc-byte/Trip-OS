@@ -67,6 +67,7 @@ function stepTier(kind: 'transport' | 'lodging', mode?: TransportMode): 1 | 2 | 
 function linkActionsOf(source: LinkActions): LinkActions {
   return {
     websiteUrl: source.websiteUrl,
+    statusUrl: source.statusUrl,
     ticketUrl: source.ticketUrl,
     reservationUrl: source.reservationUrl,
     menuUrl: source.menuUrl,
