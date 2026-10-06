@@ -58,6 +58,21 @@ export function TripsHome() {
             const countdown = daysUntil(trip.meta.startDate)
             const dayCount = trip.days.length
             const readiness = computeReadiness(trip)
+            const todayIndex = trip.days.findIndex((d) => daysUntil(d.date) === 0)
+            const progressPercent =
+              phase === 'post'
+                ? 100
+                : phase === 'active'
+                  ? Math.max(1, Math.round(((todayIndex >= 0 ? todayIndex + 1 : 1) / Math.max(dayCount, 1)) * 100))
+                  : readiness.percent
+            const progressLabel =
+              phase === 'post'
+                ? 'Trip complete'
+                : phase === 'active'
+                  ? todayIndex >= 0
+                    ? `Day ${todayIndex + 1} of ${dayCount}`
+                    : 'Trip in progress'
+                  : `${readiness.percent}% ready`
 
             return (
               <button
@@ -111,10 +126,10 @@ export function TripsHome() {
                       <div className="h-1.5 overflow-hidden rounded-full bg-bg-soft">
                         <div
                           className="h-full rounded-full bg-blue transition-all"
-                          style={{ width: `${readiness.percent}%` }}
+                          style={{ width: `${progressPercent}%` }}
                         />
                       </div>
-                      <p className="mt-1 text-[11px] text-ink-soft">{readiness.percent}% ready</p>
+                      <p className="mt-1 text-[11px] text-ink-soft">{progressLabel}</p>
                     </div>
                   </div>
                 </div>
