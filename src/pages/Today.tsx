@@ -28,6 +28,7 @@ import {
   findCurrentDay,
   findNextDay,
   findNextScheduleItem,
+  scheduleSortValue,
   formatDateLong,
   formatTime,
   tripPhase,
@@ -342,11 +343,32 @@ export function Today({ trip }: { trip: Trip }) {
     // and private fields are cleared from the rest, before anything below
     // picks a "next up" or builds a list — see lib/shareMode.ts.
     const visibleScheduleItems = shareSafeScheduleItems(today.scheduleItems, shareMode)
-    const { next } = findNextScheduleItem(
-      visibleScheduleItems.filter((item) => !item.cancelled),
-      now
-    )
-    const afterNext = visibleScheduleItems.filter((item) => item.id !== next?.id)
+    // Always normalize the day's schedule before deciding what is "next".
+    // Seeded/manual data can mix timed and untimed rows; relying on source
+    // declaration order can make a completed morning item reappear under
+    // "Coming up / Later" (for example a 7:55 AM train at noon).
+    //
+    // Real times sort first, then explicit sortOrder hints, then untimed
+    // items keep their authored relative order. This mirrors date.ts's
+    // scheduleSortValue contract and fixes ordering generically for every
+    // trip/day rather than special-casing a city or itinerary.
+    const orderedScheduleItems = visibleScheduleItems
+      .map((item, index) => ({ item, index }))
+      .sort((a, b) => scheduleSortValue(a.item) - scheduleSortValue(b.item) || a.index - b.index)
+      .map(({ item }) => item)
+
+    const activeScheduleItems = orderedScheduleItems.filter((item) => !item.cancelled)
+    const { next } = findNextScheduleItem(activeScheduleItems, now)
+
+    // "Later" must mean later than the current Next Up item, never simply
+    // "every other item today". Using the tail after Next Up prevents
+    // completed morning plans from resurfacing as future plans. Cancelled
+    // rows that are genuinely later in the day can still remain visible.
+    const nextIndex = next ? orderedScheduleItems.findIndex((item) => item.id === next.id) : -1
+    const afterNext =
+      nextIndex >= 0
+        ? orderedScheduleItems.slice(nextIndex + 1)
+        : []
     // Beneath Next Up, show at most the following two items as a compact
     // one-line-each "Later" preview; anything past that still appears in
     // full below under "Rest of today" rather than being hidden.
