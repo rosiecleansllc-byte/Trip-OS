@@ -574,7 +574,7 @@ export const franceTrip: Trip = {
       from: 'Gare Montparnasse',
       to: 'Versailles-Chantiers',
       date: '2026-09-29',
-      status: 'pending',
+      status: 'confirmed',
       carrier: 'Transilien Line N',
       cost: null,
       location: 'Gare Montparnasse, Paris',
