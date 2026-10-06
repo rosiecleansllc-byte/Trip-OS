@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { CalendarDays, MapPin } from 'lucide-react'
 import { clsx } from 'clsx'
 import { trips } from '../data/tripsIndex'
@@ -129,6 +129,12 @@ export function TripsHome() {
 
         <div className="mt-4">
           <BackupPanel />
+        </div>
+
+        <div className="mt-6 flex justify-center">
+          <Link to="/privacy" className="text-xs text-ink-soft underline underline-offset-4">
+            Privacy Policy
+          </Link>
         </div>
       </div>
     </div>
