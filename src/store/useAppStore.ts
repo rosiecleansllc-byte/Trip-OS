@@ -94,6 +94,14 @@ interface AppState {
   // always re-read live from Notification.permission, this only
   // remembers that the app shouldn't ask again unprompted.
   notificationsRequested: boolean
+  mobilityPreferences: {
+    reduceWalking: boolean
+    avoidStairs: boolean
+    preferElevators: boolean
+    preferRideshare: boolean
+    slowerPace: boolean
+  }
+  setMobilityPreference: (key: 'reduceWalking' | 'avoidStairs' | 'preferElevators' | 'preferRideshare' | 'slowerPace', value: boolean) => void
   setCurrentTripId: (id: string) => void
   toggleShareMode: () => void
   setShareMode: (value: boolean) => void
@@ -139,6 +147,15 @@ export const useAppStore = create<AppState>()(
       checklistItemOverrides: {},
       alertOverrides: {},
       notificationsRequested: false,
+      mobilityPreferences: {
+        reduceWalking: false,
+        avoidStairs: false,
+        preferElevators: false,
+        preferRideshare: false,
+        slowerPace: false,
+      },
+      setMobilityPreference: (key, value) =>
+        set((s) => ({ mobilityPreferences: { ...s.mobilityPreferences, [key]: value } })),
       setCurrentTripId: (id) => set({ currentTripId: id }),
       toggleShareMode: () => set((s) => ({ shareMode: !s.shareMode })),
       setShareMode: (value) => set({ shareMode: value }),
