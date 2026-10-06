@@ -11,6 +11,7 @@ import { formatMoney } from '../lib/money'
 import { useAppStore } from '../store/useAppStore'
 import { shareSafeBooking } from '../lib/shareMode'
 import { getEffectiveTrip } from '../lib/manualItems'
+import { getTripTimeZone, zonedTimeToUtc } from '../lib/timezone'
 
 const CATEGORY_META: Record<BookingCategory, { label: string; icon: typeof Bed }> = {
   hotel: { label: 'Stays', icon: Bed },
@@ -36,7 +37,12 @@ function BookingRow({
     ? `${formatDateCompact(b.dateStart)} – ${formatDateCompact(b.dateEnd)}`
     : formatDateCompact(b.dateStart)
 
-  const hasOpenDeadline = Boolean(b.cancellationDeadline) && b.status !== 'cancelled'
+  const deadlineIsUpcoming = Boolean(
+    b.cancellationDeadline &&
+      b.status !== 'cancelled' &&
+      zonedTimeToUtc(b.cancellationDeadline, getTripTimeZone(trip, b.legId)).getTime() >= Date.now()
+  )
+  const hasOpenDeadline = deadlineIsUpcoming
 
   return (
     <Card accent={hasOpenDeadline ? 'red' : undefined} className="p-4">
@@ -80,7 +86,7 @@ function BookingRow({
         className="mt-3"
       />
 
-      {b.cancellationDeadline && b.status !== 'cancelled' && (
+      {deadlineIsUpcoming && b.cancellationDeadline && (
         <div className="mt-2.5 flex items-center gap-1.5 rounded-lg bg-red-tint px-2.5 py-1.5 text-xs text-red">
           <AlertTriangle size={13} />
           Cancel/confirm by {formatDateTimeCompact(b.cancellationDeadline)}
