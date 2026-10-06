@@ -12,6 +12,7 @@ import { Pack } from './pages/Pack'
 import { WalletPage } from './pages/Wallet'
 import { TripsHome } from './pages/TripsHome'
 import { Overview } from './pages/Overview'
+import { Privacy } from './pages/Privacy'
 
 function App() {
   const currentTripId = useAppStore((s) => s.currentTripId)
@@ -31,6 +32,7 @@ function App() {
   return (
     <Routes>
       <Route path="/" element={<TripsHome />} />
+      <Route path="/privacy" element={<Privacy />} />
       <Route path="/overview" element={withShell(trip && <Overview trip={trip} />)} />
       <Route path="/today" element={withShell(trip && <Today trip={trip} />)} />
       <Route path="/trip" element={withShell(trip && <TripPage trip={trip} />)} />
