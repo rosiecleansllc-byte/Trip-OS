@@ -26,11 +26,7 @@ export const franceTrip: Trip = {
     ],
     homeCurrency: 'USD',
     tripCurrency: 'EUR',
-    status: 'upcoming',
-    weatherDisclaimer:
-      'Still too far out for a dependable day-by-day forecast — plan for layers and some rain flexibility. Early autumn in France can swing from late warmth to sudden cooler, wetter spells.',
-    budgetNote:
-      'Cash lodging subtotal is ~$2,916 (Hôtel Vert and the Moxy were rebooked with points). Beyond that: food, Paris local transit/taxis/Bolt, rental-car fuel/tolls/parking, Riviera local transit, and incidentals — a sensible remaining allowance for all three is roughly $1,800–$2,500.',
+    status: 'active',
     outfitBoardImageUrl: '/images/outfits/france-2026-master-board.webp',
     coverImageUrl: '/images/trip-covers/france-2026.webp',
     coverAlt: 'France 2026 vintage travel stamp illustration of the Eiffel Tower and a hot air balloon',
