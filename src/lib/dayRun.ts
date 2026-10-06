@@ -44,9 +44,19 @@ export function buildDayRouteMapUrl(
   day: DayPlan,
   travelMode: 'walking' | 'driving' = 'walking'
 ): string | undefined {
-  const transportLocations = trip.transport
-    .filter((t) => t.date === day.date && t.status !== 'cancelled')
-    .flatMap((t) => [t.location, t.from, t.to])
+  const dayTransport = trip.transport.filter((t) => t.date === day.date && t.status !== 'cancelled')
+  const hasLongHaul = dayTransport.some((t) => t.mode === 'train' || t.mode === 'flight')
+
+  // A day route map is for the ground movement the traveler needs to make
+  // around the itinerary, not for drawing an impossible walking route
+  // across a long-haul train/flight segment. For train/flight legs, start
+  // from the arrival point; local/car legs can contribute both ends.
+  const transportLocations = dayTransport
+    .flatMap((t) =>
+      t.mode === 'train' || t.mode === 'flight'
+        ? [t.to]
+        : [t.location, t.from, t.to]
+    )
     .filter((value): value is string => Boolean(value))
 
   const scheduleLocations = day.scheduleItems
@@ -66,7 +76,7 @@ export function buildDayRouteMapUrl(
     api: '1',
     origin,
     destination,
-    travelmode: travelMode,
+    travelmode: hasLongHaul ? 'driving' : travelMode,
   })
   if (waypoints.length > 0) params.set('waypoints', waypoints.join('|'))
   return `https://www.google.com/maps/dir/?${params.toString()}`
