@@ -101,7 +101,10 @@ interface AppState {
     preferRideshare: boolean
     slowerPace: boolean
   }
+  hiddenBookingIds: Record<string, boolean>
   setMobilityPreference: (key: 'reduceWalking' | 'avoidStairs' | 'preferElevators' | 'preferRideshare' | 'slowerPace', value: boolean) => void
+  hideBooking: (tripId: string, bookingId: string) => void
+  restoreBooking: (tripId: string, bookingId: string) => void
   setCurrentTripId: (id: string) => void
   toggleShareMode: () => void
   setShareMode: (value: boolean) => void
@@ -154,8 +157,17 @@ export const useAppStore = create<AppState>()(
         preferRideshare: false,
         slowerPace: false,
       },
+      hiddenBookingIds: {},
       setMobilityPreference: (key, value) =>
         set((s) => ({ mobilityPreferences: { ...s.mobilityPreferences, [key]: value } })),
+      hideBooking: (tripId, bookingId) =>
+        set((s) => ({ hiddenBookingIds: { ...s.hiddenBookingIds, [`${tripId}:${bookingId}`]: true } })),
+      restoreBooking: (tripId, bookingId) =>
+        set((s) => {
+          const key = `${tripId}:${bookingId}`
+          const { [key]: _removed, ...rest } = s.hiddenBookingIds
+          return { hiddenBookingIds: rest }
+        }),
       setCurrentTripId: (id) => set({ currentTripId: id }),
       toggleShareMode: () => set((s) => ({ shareMode: !s.shareMode })),
       setShareMode: (value) => set({ shareMode: value }),
