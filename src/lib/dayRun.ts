@@ -1,4 +1,4 @@
-import type { DayPlan, ScheduleItem } from '../types/trip'
+import type { DayPlan, ScheduleItem, Trip } from '../types/trip'
 import { computeLeaveBy } from './leaveBy'
 import { scheduleSortValue } from './date'
 
@@ -39,10 +39,21 @@ export function buildDayRunPlan(day: DayPlan, now: Date): DayRunStep[] {
   })
 }
 
-export function buildDayRouteMapUrl(day: DayPlan, travelMode: 'walking' | 'driving' = 'walking'): string | undefined {
-  const locations = day.scheduleItems
+export function buildDayRouteMapUrl(
+  trip: Trip,
+  day: DayPlan,
+  travelMode: 'walking' | 'driving' = 'walking'
+): string | undefined {
+  const transportLocations = trip.transport
+    .filter((t) => t.date === day.date && t.status !== 'cancelled')
+    .flatMap((t) => [t.location, t.from, t.to])
+    .filter((value): value is string => Boolean(value))
+
+  const scheduleLocations = day.scheduleItems
     .filter((item) => !item.cancelled && item.location)
     .map((item) => item.location!)
+
+  const locations = [...transportLocations, ...scheduleLocations]
     .filter((value, index, list) => list.indexOf(value) === index)
 
   if (locations.length < 2) return undefined
