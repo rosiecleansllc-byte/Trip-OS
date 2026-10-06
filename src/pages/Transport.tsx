@@ -59,6 +59,7 @@ function TransportRow({
       <ActionRow
         location={t.location}
         websiteUrl={t.websiteUrl}
+        statusUrl={t.statusUrl}
         ticketUrl={t.ticketUrl}
         phone={t.phone}
         privateTicketUrl={t.privateTicketUrl}
