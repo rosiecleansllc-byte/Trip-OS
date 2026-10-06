@@ -599,10 +599,10 @@ export function Today({ trip }: { trip: Trip }) {
           Revisit the full itinerary any time in the Trip tab, or start planning the next one.
         </p>
         <Link
-          to="/trip"
+          to="/remember"
           className="mt-2 rounded-full bg-blue px-5 py-2 text-sm font-medium text-white"
         >
-          Relive the timeline
+          Remember the trip
         </Link>
       </div>
     )
