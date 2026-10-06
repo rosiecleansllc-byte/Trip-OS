@@ -197,6 +197,8 @@ export function AddItemSheet({ trip }: { trip: Trip }) {
   const [lightboxOpen, setLightboxOpen] = useState(false)
   const [ocrNotice, setOcrNotice] = useState<'filled' | 'failed' | null>(null)
   const [ocrProgress, setOcrProgress] = useState(0)
+  const [pasteMode, setPasteMode] = useState(false)
+  const [pastedConfirmation, setPastedConfirmation] = useState('')
   const uploadInputRef = useRef<HTMLInputElement>(null)
   const replaceInputRef = useRef<HTMLInputElement>(null)
   const previewUrlRef = useRef<string | null>(null)
@@ -240,6 +242,8 @@ export function AddItemSheet({ trip }: { trip: Trip }) {
       setOcrNotice(null)
       setResolveCandidates(null)
       setScreenshotError(null)
+      setPasteMode(false)
+      setPastedConfirmation('')
     }
   }, [step, editingItem])
 
@@ -268,6 +272,8 @@ export function AddItemSheet({ trip }: { trip: Trip }) {
     setOcrNotice(null)
     setResolveCandidates(null)
     setScreenshotError(null)
+    setPasteMode(false)
+    setPastedConfirmation('')
     pickType(t)
   }
 
@@ -276,6 +282,8 @@ export function AddItemSheet({ trip }: { trip: Trip }) {
     setPendingScreenshot(null)
     setOcrNotice(null)
     setScreenshotError(null)
+    setPasteMode(false)
+    setPastedConfirmation('')
     enterForm()
   }
 
@@ -327,6 +335,17 @@ export function AddItemSheet({ trip }: { trip: Trip }) {
     // form, so a prior "filled from screenshot" banner no longer applies.
     setPendingScreenshot(file)
     setOcrNotice(null)
+  }
+
+  const handlePasteConfirmation = () => {
+    if (!type || !pastedConfirmation.trim()) return
+    const parsed = parseFieldsForType(type, pastedConfirmation, trip.meta.startDate)
+    const next = formFromParsed(trip, parsed)
+    next.notes = [next.notes, 'Imported from pasted confirmation text. Review before saving.'].filter(Boolean).join('\n')
+    setForm(next)
+    setOcrNotice('filled')
+    setPasteMode(false)
+    enterForm()
   }
 
   const handleSave = async () => {
@@ -551,6 +570,37 @@ export function AddItemSheet({ trip }: { trip: Trip }) {
                     <span className="block text-xs text-ink-soft">Use a screenshot or image to fill this in</span>
                   </span>
                 </button>
+                <button
+                  type="button"
+                  onClick={() => setPasteMode((v) => !v)}
+                  className="flex w-full items-center gap-3 rounded-xl border border-line p-4 text-left"
+                >
+                  <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-bg-soft text-blue">
+                    <Sparkles size={18} />
+                  </span>
+                  <span>
+                    <span className="block text-sm font-medium text-ink">Paste confirmation</span>
+                    <span className="block text-xs text-ink-soft">Paste an email or booking message and Trip OS will fill what it can</span>
+                  </span>
+                </button>
+                {pasteMode && (
+                  <div className="rounded-xl border border-line bg-bg-soft p-3">
+                    <textarea
+                      value={pastedConfirmation}
+                      onChange={(e) => setPastedConfirmation(e.target.value)}
+                      className={clsx(inputClass, 'min-h-28 resize-none bg-surface')}
+                      placeholder="Paste the confirmation email or message here…"
+                    />
+                    <button
+                      type="button"
+                      disabled={!pastedConfirmation.trim()}
+                      onClick={handlePasteConfirmation}
+                      className="mt-2 w-full rounded-full bg-blue py-2.5 text-sm font-medium text-white disabled:opacity-40"
+                    >
+                      Read confirmation
+                    </button>
+                  </div>
+                )}
                 <button
                   type="button"
                   onClick={handleEnterManually}
