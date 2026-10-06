@@ -4,6 +4,7 @@ import { getEffectiveChecklist, getUndoneHomeTasks } from './checklist'
 import { computeLeaveBy } from './leaveBy'
 import { getTripTimeZone, zonedTimeToUtc } from './timezone'
 import { buildWalletDocEntries } from './walletDocs'
+import { getTravelAdvisoriesForTransport } from './travelAdvisories'
 
 // Trip Alerts, generated fresh from trip data every time Trip OS opens
 // or resumes — see the AppState.alertOverrides comment in useAppStore.ts
@@ -16,6 +17,7 @@ export type AlertType =
   | 'leave-soon'
   | 'upcoming'
   | 'travel-day'
+  | 'travel-advisory'
   | 'checkin'
   | 'checkout'
   | 'missing-document'
@@ -134,6 +136,25 @@ export function generateAlerts({
         title: `${t.carrier ? `${t.carrier} ` : ''}${t.from} → ${t.to} today${t.departTime ? ` at ${formatTime(t.departTime)}` : ''}`,
         isPrivate: false,
       })
+    }
+
+    // Route-specific operational advisories (for example, known ticket-gate
+    // quirks) are generated from transport data rather than hard-coded into
+    // Today. This lets the same evidence-backed guidance follow any future
+    // trip that uses the affected route.
+    for (const t of effectiveTrip.transport) {
+      if (t.date !== today.date || t.status === 'cancelled') continue
+      for (const advisory of getTravelAdvisoriesForTransport(t)) {
+        alerts.push({
+          id: `travel-advisory:${t.id}:${advisory.id}`,
+          type: 'travel-advisory',
+          priority: 'important',
+          group: 'today',
+          title: advisory.title,
+          detail: advisory.detail,
+          isPrivate: false,
+        })
+      }
     }
 
     // Check-in / checkout — hotel bookings starting or ending today.
