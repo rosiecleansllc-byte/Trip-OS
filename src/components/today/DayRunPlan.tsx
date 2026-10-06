@@ -1,21 +1,23 @@
 import { CheckCircle2, Clock3, Map } from 'lucide-react'
-import type { DayPlan } from '../../types/trip'
+import type { DayPlan, Trip } from '../../types/trip'
 import { formatTime } from '../../lib/date'
 import { buildDayRouteMapUrl, buildDayRunPlan } from '../../lib/dayRun'
 import { Card } from '../ui/Card'
 import { SectionHeader } from '../ui/SectionHeader'
 
 export function DayRunPlan({
+  trip,
   day,
   now,
   preferDriving,
 }: {
+  trip: Trip
   day: DayPlan
   now: Date
   preferDriving: boolean
 }) {
   const steps = buildDayRunPlan(day, now)
-  const routeUrl = buildDayRouteMapUrl(day, preferDriving ? 'driving' : 'walking')
+  const routeUrl = buildDayRouteMapUrl(trip, day, preferDriving ? 'driving' : 'walking')
   if (steps.length === 0) return null
 
   return (
