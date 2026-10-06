@@ -521,7 +521,7 @@ export const franceTrip: Trip = {
       legId: 'riviera',
       dateStart: '2026-10-05',
       time: '12:30',
-      status: 'pending',
+      status: 'cancelled',
       cost: null,
       address: 'Olivula, 11 Quai de l’Amiral Courbet, Villefranche-sur-Mer',
       websiteUrl: 'https://www.olivula-restaurant.fr/en/',
