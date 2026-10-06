@@ -100,6 +100,7 @@ export interface Deadline {
 // rendered only outside Share mode, with no public fallback.
 export interface LinkActions {
   websiteUrl?: string
+  statusUrl?: string // public — official live flight/train/service status page when available
   ticketUrl?: string // public — the info/purchase page anyone can use
   reservationUrl?: string
   menuUrl?: string
