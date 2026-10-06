@@ -1,5 +1,5 @@
 import { Link, useNavigate } from 'react-router-dom'
-import { CalendarDays, MapPin, Users } from 'lucide-react'
+import { CalendarDays, MapPin, Share2, Users } from 'lucide-react'
 import { clsx } from 'clsx'
 import type { Trip } from '../types/trip'
 import { Card } from '../components/ui/Card'
@@ -10,11 +10,12 @@ import { computeReadiness } from '../lib/readiness'
 import { getEffectiveTrip } from '../lib/manualItems'
 import { getWeatherLocationForDay, isWithinForecastRange, useWeather } from '../lib/weather'
 import { useAppStore } from '../store/useAppStore'
+import { MobilityPreferencesCard } from '../components/trip/MobilityPreferencesCard'
 
 const PHASE_LABEL: Record<'pre' | 'active' | 'post', string> = {
-  pre: 'Upcoming',
-  active: 'In progress',
-  post: 'Completed',
+  pre: 'Get Ready',
+  active: 'Today',
+  post: 'Remember',
 }
 
 // The trip's cover/landing page — a quiet "open the passport" moment
@@ -36,6 +37,22 @@ export function Overview({ trip }: { trip: Trip }) {
   const primaryLocation = getWeatherLocationForDay(effectiveTrip, effectiveTrip.days[0]?.id ?? '')
   const inRange = Boolean(primaryLocation) && isWithinForecastRange(trip.meta.startDate)
   const weather = useWeather(inRange ? primaryLocation : undefined)
+
+  const shareTrip = async () => {
+    const url = `${window.location.origin}/today?share=1`
+    const payload = { title: trip.meta.name, text: `Follow ${trip.meta.name} in Trip OS`, url }
+    if (navigator.share) {
+      try {
+        await navigator.share(payload)
+        return
+      } catch {
+        // User canceled or share sheet unavailable; fall through to copy.
+      }
+    }
+    await navigator.clipboard?.writeText(url)
+  }
+
+  const primaryActionLabel = phase === 'pre' ? 'Get Ready' : phase === 'post' ? 'Remember the Trip' : 'Open Today'
 
   return (
     <div className="animate-fade-in -mx-4 -mt-4">
@@ -104,11 +121,21 @@ export function Overview({ trip }: { trip: Trip }) {
 
         <button
           type="button"
-          onClick={() => navigate('/today')}
+          onClick={() => navigate(phase === 'post' ? '/remember' : '/today')}
           className="w-full rounded-full bg-blue py-3.5 text-sm font-medium text-white"
         >
-          Enter Trip
+          {primaryActionLabel}
         </button>
+
+        <button
+          type="button"
+          onClick={shareTrip}
+          className="flex w-full items-center justify-center gap-2 rounded-full border border-line py-3 text-sm font-medium text-blue"
+        >
+          <Share2 size={15} /> Share trip safely
+        </button>
+
+        <MobilityPreferencesCard />
 
         <div className="grid grid-cols-3 gap-2.5">
           <Link to="/today">
