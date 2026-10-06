@@ -23,6 +23,7 @@ import { ManualItemMenu } from '../components/manual/ManualItemMenu'
 import { TodayAlertBanner } from '../components/alerts/TodayAlertBanner'
 import { TodayWallet } from '../components/today/TodayWallet'
 import { TravelSequenceCard } from '../components/today/TravelSequenceCard'
+import { DayRunPlan } from '../components/today/DayRunPlan'
 import {
   daysUntil,
   findCurrentDay,
@@ -249,6 +250,7 @@ export function Today({ trip }: { trip: Trip }) {
   const wardrobeItemOverrides = useAppStore((s) => s.wardrobeItemOverrides)
   const packedItems = useAppStore((s) => s.packedItems)
   const checklistItemOverrides = useAppStore((s) => s.checklistItemOverrides)
+  const mobilityPreferences = useAppStore((s) => s.mobilityPreferences)
   const customChecklistItems = useAppStore((s) => s.customChecklistItems)
   // One IndexedDB read covers every linked checklist item (see
   // lib/walletDocs.ts usePrivateDocKeySet) — called here, unconditionally,
@@ -528,7 +530,9 @@ export function Today({ trip }: { trip: Trip }) {
           </div>
         )}
 
-        {nextSession && <NextSessionCard next={nextSession} after={afterSession} />}
+        <DayRunPlan day={today} now={now} preferDriving={mobilityPreferences.preferRideshare || mobilityPreferences.reduceWalking} />
+
+                {nextSession && <NextSessionCard next={nextSession} after={afterSession} />}
 
         {todayWalletEntries.length > 0 && <TodayWallet entries={todayWalletEntries} />}
 
