@@ -182,7 +182,7 @@ export const franceTrip: Trip = {
         { id: 'd6-1', time: '08:00', label: 'Pick up rental car near Gare Montparnasse', type: 'transport', tip: 'Blake is driving — VW Polo or similar automatic, roomy enough packing light, cheaper than the SUV.', privateDocumentKey: 'sixt-rental-car-confirmation', privateDocumentType: 'confirmation' },
         { id: 'd6-2', label: 'Drive to Mont-Saint-Michel', type: 'transport', notes: 'Allow roughly 4–4½ hours including a break; estimated arrival 12:30–1:00 PM.' },
         { id: 'd6-3', label: 'Check in at Hôtel Vert, leave luggage', type: 'lodging', location: 'Hôtel Vert, Le Mont-Saint-Michel', websiteUrl: 'https://vert.hotelmontsaintmichel.org/en/', phone: '+33 2 33 60 09 33', tip: 'Right by the free Mont-Saint-Michel shuttle zone.', privateDocumentKey: 'hotel-vert-confirmation', privateDocumentType: 'confirmation' },
-        { id: 'd6-4', label: 'Shuttle to the Mont — village, Grande Rue, bay views', type: 'activity', location: 'Le Mont-Saint-Michel', websiteUrl: 'https://www.abbaye-mont-saint-michel.fr/en/', notes: 'Abbey interior only if same-day tickets are available and Mom feels up to the stairs — otherwise just enjoy the village. The Mont is still worth it either way. Stay long enough for the quieter late-afternoon/evening atmosphere since you’re sleeping nearby.' },
+        { id: 'd6-4', label: 'Shuttle to the Mont — village, Grande Rue, bay views', type: 'activity', location: 'Le Mont-Saint-Michel', websiteUrl: 'https://www.abbaye-mont-saint-michel.fr/en/', notes: 'Village and bay views were the focus; the Abbey interior was skipped.' },
       ],
       outfitBoardId: 'ob6',
     },
