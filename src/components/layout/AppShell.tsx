@@ -1,4 +1,5 @@
-import type { PropsWithChildren } from 'react'
+import { useEffect, type PropsWithChildren } from 'react'
+import { useLocation } from 'react-router-dom'
 import { TopBar } from './TopBar'
 import { BottomNav } from './BottomNav'
 import { OfflineBanner } from './OfflineBanner'
@@ -24,6 +25,13 @@ export function AppShell({
   children,
 }: PropsWithChildren<{ trip: Trip; pendingCount?: number }>) {
   const shareMode = useAppStore((s) => s.shareMode)
+  const setShareMode = useAppStore((s) => s.setShareMode)
+  const location = useLocation()
+  useEffect(() => {
+    const params = new URLSearchParams(location.search)
+    if (params.get('share') === '1') setShareMode(true)
+  }, [location.search, setShareMode])
+
   const manualItems = useAppStore((s) => s.manualItems)
   const resolvedOpenItemIds = useAppStore((s) => s.resolvedOpenItemIds)
   const effectiveTrip = getEffectiveTrip(trip, manualItems, resolvedOpenItemIds)
