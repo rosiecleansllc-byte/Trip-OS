@@ -218,7 +218,7 @@ export const franceTrip: Trip = {
         { id: 'd8-2', label: 'Taxi/Bolt to Gare de Lyon', type: 'transport', location: 'Gare de Lyon, Paris' },
         { id: 'd8-3', time: '09:10', label: 'TGV INOUI to Nice-Ville', type: 'transport', websiteUrl: 'https://www.sncf-connect.com/en-en', tip: 'Direct, 5 hr 54 min, arriving 3:04 PM.', privateDocumentKey: 'sncf-paris-nice-confirmation', privateDocumentType: 'confirmation' },
         { id: 'd8-4', label: 'Check in at Le Balcon du Vieux Nice', type: 'lodging', location: 'Le Balcon du Vieux Nice, Nice', privateDocumentKey: 'le-balcon-vieux-nice-confirmation', privateDocumentType: 'confirmation' },
-        { id: 'd8-5', label: 'Vieux Nice, Cours Saleya, Promenade des Anglais, dinner', type: 'activity', tip: 'Le Panier is a nice option if you decide to reserve; otherwise keep arrival dinner flexible.' },
+        { id: 'd8-5', label: 'Vieux Nice, Cours Saleya, Promenade des Anglais, dinner', type: 'activity' },
       ],
       outfitBoardId: 'ob8',
     },
