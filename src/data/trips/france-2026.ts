@@ -525,7 +525,7 @@ export const franceTrip: Trip = {
       cost: null,
       address: 'Olivula, 11 Quai de l’Amiral Courbet, Villefranche-sur-Mer',
       websiteUrl: 'https://www.olivula-restaurant.fr/en/',
-      notes: 'Requested via Facebook for 3 guests, terrace/harbor view if possible. Waiting on their reply — not locked in yet.',
+      notes: 'Villefranche was dropped when the Riviera plan changed to Monaco.',
     },
     {
       id: 'bk-dinner-le-panier',
@@ -533,11 +533,11 @@ export const franceTrip: Trip = {
       name: 'Le Panier — Nice',
       legId: 'riviera',
       dateStart: '2026-10-03',
-      status: 'optional',
+      status: 'cancelled',
       cost: null,
       address: 'Le Panier, Nice',
       websiteUrl: 'https://restaurantlepanier.com/en/',
-      tip: 'Nice-to-have if you decide to reserve for arrival night; otherwise keep it flexible.',
+      tip: 'Optional arrival-night idea that was not used.',
     },
   ],
 
