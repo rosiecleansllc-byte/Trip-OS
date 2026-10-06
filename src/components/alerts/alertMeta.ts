@@ -1,10 +1,11 @@
-import { AlertTriangle, Bell, Calendar, DoorOpen, FileWarning, Home, LogOut, Navigation, PlaneTakeoff } from 'lucide-react'
+import { AlertTriangle, Bell, Calendar, DoorOpen, FileWarning, Home, LogOut, Navigation, PlaneTakeoff, TicketCheck } from 'lucide-react'
 import type { AlertPriority, AlertType } from '../../lib/alerts'
 
 export const ALERT_TYPE_ICON: Record<AlertType, typeof Bell> = {
   'leave-soon': Navigation,
   upcoming: Calendar,
   'travel-day': PlaneTakeoff,
+  'travel-advisory': TicketCheck,
   checkin: DoorOpen,
   checkout: LogOut,
   'missing-document': FileWarning,
