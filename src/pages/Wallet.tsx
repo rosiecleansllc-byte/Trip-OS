@@ -4,6 +4,7 @@ import { Award, CircleDollarSign, EyeOff, Search, Wallet as WalletIcon } from 'l
 import type { Booking, Transport, Trip } from '../types/trip'
 import { Card } from '../components/ui/Card'
 import { SectionHeader } from '../components/ui/SectionHeader'
+import { BookingCurrencies, CurrencyTools } from '../components/wallet/CurrencyTools'
 import { WalletDocCard } from '../components/wallet/WalletDocCard'
 import { formatMoney } from '../lib/money'
 import { useAppStore } from '../store/useAppStore'
@@ -49,6 +50,7 @@ function SpendTab({ trip, effectiveTrip }: { trip: Trip; effectiveTrip: Trip }) 
 
   return (
     <div className="space-y-7">
+      <BookingCurrencies trip={trip} />
       <div>
         <SectionHeader title="Paid so far" />
         <div className="grid grid-cols-2 gap-3">
@@ -104,6 +106,8 @@ function SpendTab({ trip, effectiveTrip }: { trip: Trip; effectiveTrip: Trip }) 
           <p className="mt-1.5 text-sm text-ink-soft">{trip.meta.budgetNote}</p>
         </Card>
       )}
+
+      <CurrencyTools key={trip.meta.id} trip={trip} paid={paidByCurrency} remaining={remainingByCurrency} initialAmount={items.find(item => item.cost)?.cost?.amount ?? 1} />
 
       <p className="pt-1 text-center text-[11px] text-gray">
         Costs are shown in the currency they were charged in.
