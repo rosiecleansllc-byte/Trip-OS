@@ -1,7 +1,8 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { CalendarDays, MapPin } from 'lucide-react'
+import { CalendarDays, MapPin, Plus } from 'lucide-react'
 import { clsx } from 'clsx'
+import { AddTripForm } from '../components/AddTripForm'
 import { trips } from '../data/tripsIndex'
 import { ImagePlaceholder } from '../components/ui/ImagePlaceholder'
 import { InstallButton } from '../components/layout/InstallButton'
@@ -23,19 +24,31 @@ const PHASE_LABEL: Record<'pre' | 'active' | 'post', string> = {
 // button.
 export function TripsHome() {
   const navigate = useNavigate()
+  const [addingTrip, setAddingTrip] = useState(false)
+  const customTrips = useAppStore((s) => s.customTrips)
+  const addTrip = useAppStore((s) => s.addTrip)
   const setCurrentTripId = useAppStore((s) => s.setCurrentTripId)
   // Read once on mount, against the raw storage key: after Zustand
   // rehydrates, "never saved anything here" and "saved an empty state"
   // are indistinguishable. See lib/backup.ts hasSavedData.
   const [hasLocalData] = useState(hasSavedData)
 
-  const sorted = [...trips].sort((a, b) => a.meta.startDate.localeCompare(b.meta.startDate))
+  const sorted = [...trips, ...Object.values(customTrips)].sort((a, b) => {
+    const phaseOrder = { active: 0, pre: 1, post: 2 }
+    const pa = tripPhase(a.meta.startDate, a.meta.endDate)
+    const pb = tripPhase(b.meta.startDate, b.meta.endDate)
+    return phaseOrder[pa] - phaseOrder[pb] || (pa === 'post' ? b.meta.endDate.localeCompare(a.meta.endDate) : a.meta.startDate.localeCompare(b.meta.startDate))
+  })
 
   return (
     <div className="min-h-dvh bg-bg">
       <div className="mx-auto max-w-md px-4 pb-10 pt-[calc(1.5rem+env(safe-area-inset-top))]">
         <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-blue">Trip OS</p>
-        <h1 className="font-display text-2xl text-ink">Your trips</h1>
+        <div className="flex items-center justify-between gap-3">
+          <h1 className="font-display text-2xl text-ink">Your trips</h1>
+          <button type="button" onClick={() => setAddingTrip(true)} aria-expanded={addingTrip} className="flex items-center gap-1.5 rounded-xl bg-blue px-3 py-2.5 text-sm font-medium text-white"><Plus size={16} /> Add Trip</button>
+        </div>
+        {addingTrip && <AddTripForm onCancel={() => setAddingTrip(false)} onCreate={(trip) => { addTrip(trip); navigate('/overview') }} />}
 
         {/* The trips below render from data compiled into the app, so a
             device with nothing saved still looks completely normal —
