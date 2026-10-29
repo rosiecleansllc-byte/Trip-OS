@@ -18,6 +18,8 @@ interface AppState {
   removeOwnedTripShare: (tripId: string, shareId: string) => void
   rememberReceivedTripShare: (share: ReceivedTripShare) => void
   hideReceivedTripShare: (shareId: string) => void
+  tripCoverPositions: Record<string, { x: number; y: number }>
+  setTripCoverPosition: (tripId: string, position: { x: number; y: number }) => void
   tripTitles: Record<string, string>
   renameTrip: (tripId: string, title: string) => void
   customTrips: Record<string, Trip>
@@ -156,6 +158,12 @@ export const useAppStore = create<AppState>()(
       removeOwnedTripShare: (tripId, shareId) => set(s => ({ ownedTripShares: { ...s.ownedTripShares, [tripId]: (s.ownedTripShares[tripId] ?? []).filter(share => share.id !== shareId) } })),
       rememberReceivedTripShare: (share) => set(s => ({ receivedTripShares: { ...s.receivedTripShares, [share.id]: share } })),
       hideReceivedTripShare: (shareId) => set(s => { const shares = { ...s.receivedTripShares }; delete shares[shareId]; return { receivedTripShares: shares } }),
+      tripCoverPositions: {},
+      setTripCoverPosition: (tripId, position) => {
+        if (!Number.isFinite(position.x) || !Number.isFinite(position.y)) return
+        const clamp = (value: number) => Math.max(0, Math.min(100, value))
+        set(s => ({ tripCoverPositions: { ...s.tripCoverPositions, [tripId]: { x: clamp(position.x), y: clamp(position.y) } } }))
+      },
       tripTitles: {},
       renameTrip: (tripId, title) => {
         const name = title.trim()
