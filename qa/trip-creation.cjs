@@ -1,0 +1,52 @@
+// Node-only regression checks for trip creation, persisted-state migration,
+// and additive backup restoration. File bytes are outside this test's scope.
+const fs = require('node:fs')
+const assert = require('node:assert/strict')
+const ts = require('typescript')
+require.extensions['.ts'] = (module, filename) => module._compile(ts.transpileModule(fs.readFileSync(filename, 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022, jsx: ts.JsxEmit.ReactJSX } }).outputText, filename)
+const memory = new Map()
+global.localStorage = { getItem: k => memory.get(k) ?? null, setItem: (k, v) => memory.set(k, v), removeItem: k => memory.delete(k) }
+global.window = { localStorage: global.localStorage }
+// Empty file stores let these checks exercise the real backup state merge.
+global.indexedDB = { open() { const request = {}; queueMicrotask(() => { request.result = { transaction() { return { objectStore() { return { getAllKeys() { const r = {}; queueMicrotask(() => { r.result = []; r.onsuccess() }); return r } } } } } }; request.onsuccess() }); return request } }
+const key = 'trip-os-app-state'
+const oldState = { currentTripId: 'france-2026', packedItems: { 'france-2026:passport': true }, manualItems: [{ id: 'existing', tripId: 'france-2026', title: 'Keep my booking' }], wardrobeVisualLinks: { photo: 'keep' } }
+localStorage.setItem(key, JSON.stringify({ state: oldState, version: 1 }))
+const { useAppStore } = require('../src/store/useAppStore.ts')
+const { createTrip } = require('../src/lib/createTrip.ts')
+const { createBackup, restoreBackup } = require('../src/lib/backup.ts')
+const { peruTrip } = require('../src/data/trips/peru-2026.ts')
+const input = { name: 'New trip', destination: 'Lima', startDate: '2026-11-05', endDate: '2026-11-16', timeZone: 'America/Lima', currency: 'PEN', travelers: 'Cecilia, Blake' }
+async function run() {
+  await useAppStore.persist.rehydrate()
+  assert.deepEqual(useAppStore.getState().packedItems, oldState.packedItems)
+  assert.deepEqual(useAppStore.getState().manualItems, oldState.manualItems)
+  assert.deepEqual(useAppStore.getState().customTrips, {})
+  const trip = createTrip(input, 'custom-test')
+  assert.equal(trip.days.length, 12)
+  assert.equal(trip.days.at(-1).date, input.endDate)
+  assert.equal(trip.meta.travelers.length, 2)
+  for (const patch of [{ startDate: '2026-02-30' }, { endDate: '2026-11-01' }, { timeZone: 'bad-zone' }, { name: ' ' }, { currency: 'usd' }]) assert.throws(() => createTrip({ ...input, ...patch }))
+  assert.equal(createTrip({ ...input, endDate: input.startDate }).days.length, 1)
+  assert.notEqual(createTrip(input).meta.id, createTrip(input).meta.id)
+  useAppStore.getState().addTrip(trip)
+  await useAppStore.persist.rehydrate()
+  assert.equal(useAppStore.getState().currentTripId, 'custom-test')
+  assert.deepEqual(useAppStore.getState().customTrips['custom-test'], trip)
+  const backup = await createBackup()
+  assert.deepEqual(backup.appState.state.customTrips['custom-test'], trip)
+  localStorage.setItem(key, JSON.stringify({ version: 2, state: { ...oldState, customTrips: { other: createTrip(input, 'other') } } }))
+  await restoreBackup(backup)
+  await restoreBackup(backup)
+  await useAppStore.persist.rehydrate()
+  assert.deepEqual(Object.keys(useAppStore.getState().customTrips).sort(), ['custom-test', 'other'])
+  assert.deepEqual(useAppStore.getState().manualItems, oldState.manualItems)
+  assert.deepEqual(useAppStore.getState().wardrobeVisualLinks, oldState.wardrobeVisualLinks)
+  assert.equal(peruTrip.transport.length, 4)
+  assert.equal(peruTrip.transport[1].number, 'CM263')
+  assert.equal(peruTrip.days[1].scheduleItems[0].time, '01:20')
+  assert.equal(peruTrip.days.at(-1).date, '2026-11-16')
+  assert(!JSON.stringify(peruTrip).includes('confirmationCode'))
+  console.log('PASS: creation, date validation, unique IDs, v1 migration, persistence, backup merge/idempotency, existing data preservation, Peru flights')
+}
+run().catch(e => { console.error(e); process.exitCode = 1 })

@@ -1,7 +1,7 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import { defaultTripId } from '../data/tripsIndex'
-import type { ChecklistItemOverride, CustomChecklistItem, ManualTripItem, Outfit, VisualBoard } from '../types/trip'
+import type { ChecklistItemOverride, CustomChecklistItem, ManualTripItem, Outfit, VisualBoard, Trip } from '../types/trip'
 import type { CapsuleItemOverride } from '../lib/wardrobeOutfits'
 
 // Exported so lib/backup.ts can read and write the same blob directly
@@ -9,6 +9,8 @@ import type { CapsuleItemOverride } from '../lib/wardrobeOutfits'
 export const APP_STATE_STORAGE_KEY = 'trip-os-app-state'
 
 interface AppState {
+  customTrips: Record<string, Trip>
+  addTrip: (trip: Trip) => void
   currentTripId: string
   shareMode: boolean
   // Packing checklist state, keyed by `${tripId}:${packingItemId}`. Plain
@@ -137,6 +139,8 @@ interface AppState {
 export const useAppStore = create<AppState>()(
   persist(
     (set) => ({
+      customTrips: {},
+      addTrip: (trip) => set((s) => ({ customTrips: { ...s.customTrips, [trip.meta.id]: trip }, currentTripId: trip.meta.id })),
       currentTripId: defaultTripId,
       shareMode: false,
       packedItems: {},
@@ -272,8 +276,10 @@ export const useAppStore = create<AppState>()(
       // future field rename would silently drop the old data on rehydrate
       // with no way to detect or repair it. Bump this and add a `migrate`
       // when the persisted shape changes; every field so far has been
-      // additive, so version 1 reads version-0 blobs unchanged.
-      version: 1,
+      // additive. Version 2 adds customTrips; Zustand merges migrated
+      // legacy state onto the defaults without replacing existing data.
+      version: 2,
+      migrate: (state) => state as AppState,
     }
   )
 )

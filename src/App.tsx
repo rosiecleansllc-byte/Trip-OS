@@ -17,7 +17,8 @@ import { Remember } from './pages/Remember'
 
 function App() {
   const currentTripId = useAppStore((s) => s.currentTripId)
-  const trip = getTrip(currentTripId)
+  const customTrip = useAppStore((s) => s.customTrips[currentTripId])
+  const trip = customTrip ?? getTrip(currentTripId)
   useRouteRestoration()
 
   const withShell = (node: ReactNode) => {

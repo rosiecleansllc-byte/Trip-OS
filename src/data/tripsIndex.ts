@@ -1,11 +1,12 @@
 import type { Trip } from '../types/trip'
 import { tripPhase } from '../lib/date'
 import { franceTrip } from './trips/france-2026'
+import { peruTrip } from './trips/peru-2026'
 import { austinTrip } from './trips/austin-2026'
 
 // Registry of all trips. Adding a new trip is: create a file under
 // src/data/trips/, then add it here. No other code needs to change.
-export const trips: Trip[] = [austinTrip, franceTrip]
+export const trips: Trip[] = [peruTrip, austinTrip, franceTrip]
 
 // The trip to land on by default. Never hardcodes a specific trip id —
 // it's recomputed from today's date against each trip's own start/end, so
