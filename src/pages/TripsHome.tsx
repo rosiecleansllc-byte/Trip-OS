@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { CalendarDays, MapPin, Plus } from 'lucide-react'
 import { clsx } from 'clsx'
+import { SharedTripImport } from '../components/trip/SharedTripImport'
 import { AddTripForm } from '../components/AddTripForm'
 import { trips } from '../data/tripsIndex'
 import { TripCoverImage } from '../components/trip/TripCoverArtwork'
@@ -93,6 +94,7 @@ export function TripsHome() {
                 key={trip.meta.id}
                 type="button"
                 onClick={() => {
+                  useAppStore.getState().setShareMode(false)
                   setCurrentTripId(trip.meta.id)
                   navigate('/overview')
                 }}
@@ -150,6 +152,9 @@ export function TripsHome() {
           <InstallButton />
         </div>
 
+        <div className="mt-4">
+          <SharedTripImport />
+        </div>
         <div className="mt-4">
           <BackupPanel />
         </div>

@@ -28,7 +28,7 @@ export function TopBar({ meta, alertBadgeCount = 0 }: { meta: TripMeta; alertBad
         </Link>
         <div className="flex shrink-0 items-center gap-1.5">
           <AlertBell count={alertBadgeCount} />
-          <button
+          {!meta.sharedLinkId && <button
             onClick={toggleShareMode}
             className={clsx(
               'flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition-colors',
@@ -38,13 +38,13 @@ export function TopBar({ meta, alertBadgeCount = 0 }: { meta: TripMeta; alertBad
             )}
           >
             {shareMode ? <Eye size={14} /> : <EyeOff size={14} />}
-            {shareMode ? 'Share mode' : 'Share'}
-          </button>
+            {shareMode ? 'Private hidden' : 'Hide private'}
+          </button>}
         </div>
       </div>
       {shareMode && (
         <p className="mx-auto mt-1.5 max-w-md text-[11px] text-blue">
-          Sharing the itinerary — confirmation codes, stored documents and personal notes stay private.
+          {meta.sharedLinkId ? 'Shared itinerary · Read-only. Access is controlled by the owner.' : 'Private details are hidden on this device. To send this itinerary, use Share trip on the trip overview.'}
         </p>
       )}
     </header>

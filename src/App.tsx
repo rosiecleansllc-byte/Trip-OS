@@ -14,18 +14,23 @@ import { WalletPage } from './pages/Wallet'
 import { TripsHome } from './pages/TripsHome'
 import { Overview } from './pages/Overview'
 import { Privacy } from './pages/Privacy'
+import { useReceivedTrip } from './lib/revocableSharing'
+import { Link } from 'react-router-dom'
+import { SharedTripPage } from './components/trip/SharedTripImport'
 import { Remember } from './pages/Remember'
 
 function App() {
   const currentTripId = useAppStore((s) => s.currentTripId)
   const customTrip = useAppStore((s) => s.customTrips[currentTripId])
   const title = useAppStore((s) => s.tripTitles[currentTripId])
-  const originalTrip = customTrip ?? getTrip(currentTripId)
+  const received = useReceivedTrip(currentTripId)
+  const originalTrip = received.isShared ? received.trip : customTrip ?? getTrip(currentTripId)
   const savedTrip = originalTrip && title ? { ...originalTrip, meta: { ...originalTrip.meta, name: title } } : originalTrip
   const trip = savedTrip ? withStandardPackingChecklist(savedTrip) : undefined
   useRouteRestoration()
 
   const withShell = (node: ReactNode) => {
+    if (!trip && received.isShared) return <div className="mx-auto max-w-md space-y-4 px-4 py-8"><p role="status" className="text-sm text-ink">{received.error ?? 'Verifying shared-trip access…'}</p><Link to="/" className="text-blue underline">Your trips</Link></div>
     if (!trip) return <Navigate to="/" replace />
     const pendingCount = trip.bookings.filter((b) => b.status === 'pending').length
     return (
@@ -38,6 +43,8 @@ function App() {
   return (
     <Routes>
       <Route path="/" element={<TripsHome />} />
+      <Route path="/shared" element={<SharedTripPage />} />
+      <Route path="/shared/:shareId" element={<SharedTripPage />} />
       <Route path="/privacy" element={<Privacy />} />
       <Route path="/overview" element={withShell(trip && <Overview trip={trip} />)} />
       <Route path="/remember" element={withShell(trip && <Remember trip={trip} />)} />
