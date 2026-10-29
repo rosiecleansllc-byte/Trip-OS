@@ -7,13 +7,13 @@ export function Privacy() {
         <Link to="/" className="text-sm font-medium text-blue">← Trip OS</Link>
         <p className="mt-5 text-[11px] font-semibold uppercase tracking-[0.14em] text-blue">Privacy</p>
         <h1 className="font-display text-3xl text-ink">Privacy Policy</h1>
-        <p className="mt-1 text-xs text-ink-soft">Effective October 6, 2026</p>
+        <p className="mt-1 text-xs text-ink-soft">Effective October 29, 2026</p>
 
         <div className="mt-6 space-y-6 text-sm leading-6 text-ink">
           <section>
             <h2 className="font-display text-xl">Designed to keep trip data on your device</h2>
             <p className="mt-2 text-ink-soft">
-              Trip OS is a travel-planning app designed primarily around device-local storage. The current app does not require an account and does not send your saved itineraries, packing state, uploaded travel documents, or wardrobe images to a Trip OS server.
+              Trip OS is a travel-planning app designed primarily around device-local storage. The app does not require an account. Your saved trips stay on your device unless you explicitly create a sharing link. Packing progress, private travel documents, and uploaded images are not included in shared links.
             </p>
           </section>
 
@@ -21,6 +21,19 @@ export function Privacy() {
             <h2 className="font-display text-xl">What is stored locally</h2>
             <p className="mt-2 text-ink-soft">
               Trip preferences, checklist state, traveler-added itinerary items, alert choices, and similar app state are stored in your browser or app storage. Private confirmations, tickets, receipts, PDFs, and traveler-uploaded images are stored locally using IndexedDB. These files remain on that device unless you choose to export a backup.
+            </p>
+          </section>
+
+          <section>
+            <h2 className="font-display text-xl">Optional trip-sharing links</h2>
+            <p className="mt-2 text-ink-soft">
+              Creating a sharing link sends a filtered copy of the selected itinerary to this app’s Netlify hosting and storage service. It can include the trip title, traveler names, destinations, dates, activities, booking costs, transport details, and public venue links. Private notes, confirmation codes, reservation-management links, wallet documents, and uploaded photos are excluded.
+            </p>
+            <p className="mt-2 text-ink-soft">
+              Anyone who has a sharing link can open it until you select Stop sharing or the link expires 90 days after creation. Create separate labeled links if you want to stop access separately. Recipients view a read-only online itinerary; access is checked when opened, on resume, and within 30 seconds while visible. An offline or unverified shared view is hidden. Stopping access cannot erase screenshots or copies someone already made. Hiding a received trip removes it from that device’s list and does not revoke anyone else’s access.
+            </p>
+            <p className="mt-2 text-ink-soft">
+              Sharing controls are saved on the device that creates the link and included in its private backups. The recipient does not receive those controls. Keep your private backups private: they can contain documents and sharing-control keys. Shared links contain the itinerary as it was when created; later edits are not automatically synchronized.
             </p>
           </section>
 
@@ -55,7 +68,7 @@ export function Privacy() {
           <section>
             <h2 className="font-display text-xl">Retention and deletion</h2>
             <p className="mt-2 text-ink-soft">
-              Device-local data remains until you delete it through Trip OS where a delete control is provided, clear the app or browser storage, or uninstall the app. Backup files remain wherever you chose to save them until you delete those copies yourself. Because the current version has no Trip OS user account or server-side personal-data store, there is no separate server account to delete.
+              Device-local data remains until you delete it through Trip OS where a delete control is provided, clear the app or browser storage, or uninstall the app. Backup files remain wherever you chose to save them until you delete those copies yourself. There is no separate user account to delete. Stop sharing deletes the corresponding itinerary from the active sharing store. Expiration disables a link after 90 days; it does not itself guarantee deletion of the stored copy. Use Stop sharing when you want to remove that shared copy.
             </p>
           </section>
 
