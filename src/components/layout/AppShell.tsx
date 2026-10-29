@@ -48,11 +48,11 @@ export function AppShell({
   useAutoLinkWardrobeVisuals(trip)
 
   return (
-    <div className="min-h-dvh bg-bg">
-      <div className="mx-auto flex min-h-dvh max-w-md flex-col">
+    <div className="app-shell flex flex-col overflow-hidden bg-bg">
+      <div className="mx-auto flex min-h-0 w-full max-w-md flex-1 flex-col">
         <TopBar meta={trip.meta} alertBadgeCount={alerts.length} />
         <OfflineBanner />
-        <main className="flex-1 px-4 pb-28 pt-4">{children}</main>
+        <main key={location.pathname} className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 pb-24 pt-4">{children}</main>
       </div>
       {/* Manual add/edit is a Cecilia-only authoring tool — hidden in Share
           mode along with every other private/edit control in the app. */}

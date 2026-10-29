@@ -12,7 +12,7 @@ export function TopBar({ meta, alertBadgeCount = 0 }: { meta: TripMeta; alertBad
   return (
     <header
       className={clsx(
-        'sticky top-0 z-20 border-b px-4 pt-[calc(0.75rem+env(safe-area-inset-top))] pb-3 backdrop-blur transition-colors supports-[backdrop-filter]:bg-opacity-90',
+        'sticky top-0 z-20 shrink-0 border-b px-4 pt-[calc(0.75rem+env(safe-area-inset-top))] pb-3 backdrop-blur transition-colors supports-[backdrop-filter]:bg-opacity-90',
         shareMode ? 'border-blue/30 bg-blue-tint' : 'border-line bg-bg/95'
       )}
     >
