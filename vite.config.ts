@@ -65,6 +65,7 @@ export default defineConfig({
         // still needs to resolve to the app shell so React Router can
         // take over client-side.
         navigateFallback: '/index.html',
+        navigateFallbackDenylist: [/^\/\.netlify\/functions\//],
         runtimeCaching: [
           {
             urlPattern: /^https:\/\/fonts\.googleapis\.com\/.*/i,

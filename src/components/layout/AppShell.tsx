@@ -56,7 +56,7 @@ export function AppShell({
       </div>
       {/* Manual add/edit is a Cecilia-only authoring tool — hidden in Share
           mode along with every other private/edit control in the app. */}
-      {!shareMode && (
+      {!shareMode && !trip.meta.sharedLinkId && (
         <>
           <AddItemFab />
           <AddItemSheet trip={trip} />

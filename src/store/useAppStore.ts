@@ -8,7 +8,16 @@ import type { CapsuleItemOverride } from '../lib/wardrobeOutfits'
 // rather than duplicating the key string.
 export const APP_STATE_STORAGE_KEY = 'trip-os-app-state'
 
+export interface OwnedTripShare { id: string; manageToken: string; label: string; createdAt: string }
+export interface ReceivedTripShare { id: string; name: string; destination: string }
+
 interface AppState {
+  ownedTripShares: Record<string, OwnedTripShare[]>
+  receivedTripShares: Record<string, ReceivedTripShare>
+  addOwnedTripShare: (tripId: string, share: OwnedTripShare) => void
+  removeOwnedTripShare: (tripId: string, shareId: string) => void
+  rememberReceivedTripShare: (share: ReceivedTripShare) => void
+  hideReceivedTripShare: (shareId: string) => void
   tripTitles: Record<string, string>
   renameTrip: (tripId: string, title: string) => void
   customTrips: Record<string, Trip>
@@ -141,6 +150,12 @@ interface AppState {
 export const useAppStore = create<AppState>()(
   persist(
     (set) => ({
+      ownedTripShares: {},
+      receivedTripShares: {},
+      addOwnedTripShare: (tripId, share) => set(s => ({ ownedTripShares: { ...s.ownedTripShares, [tripId]: [...(s.ownedTripShares[tripId] ?? []), share] } })),
+      removeOwnedTripShare: (tripId, shareId) => set(s => ({ ownedTripShares: { ...s.ownedTripShares, [tripId]: (s.ownedTripShares[tripId] ?? []).filter(share => share.id !== shareId) } })),
+      rememberReceivedTripShare: (share) => set(s => ({ receivedTripShares: { ...s.receivedTripShares, [share.id]: share } })),
+      hideReceivedTripShare: (shareId) => set(s => { const shares = { ...s.receivedTripShares }; delete shares[shareId]; return { receivedTripShares: shares } }),
       tripTitles: {},
       renameTrip: (tripId, title) => {
         const name = title.trim()
@@ -284,9 +299,9 @@ export const useAppStore = create<AppState>()(
       // future field rename would silently drop the old data on rehydrate
       // with no way to detect or repair it. Bump this and add a `migrate`
       // when the persisted shape changes; every field so far has been
-      // additive. Version 3 adds tripTitles; Zustand merges migrated
+      // additive. Version 4 adds sharing controls; Zustand merges migrated
       // legacy state onto the defaults without replacing existing data.
-      version: 3,
+      version: 4,
       migrate: (state) => state as AppState,
     }
   )

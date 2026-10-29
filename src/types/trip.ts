@@ -383,6 +383,8 @@ export interface OutfitBoard {
 }
 
 export interface TripMeta {
+  sharedSnapshotAt?: string // details last shared by the owner
+  sharedLinkId?: string // online, revocable shared view; never an editable copy
   id: string
   name: string
   destinationLabel: string

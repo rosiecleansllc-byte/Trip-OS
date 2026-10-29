@@ -1,5 +1,5 @@
 import { Link, useNavigate } from 'react-router-dom'
-import { CalendarDays, MapPin, Share2, Users } from 'lucide-react'
+import { CalendarDays, MapPin, Users } from 'lucide-react'
 import { clsx } from 'clsx'
 import type { Trip } from '../types/trip'
 import { Card } from '../components/ui/Card'
@@ -10,6 +10,7 @@ import { computeReadiness } from '../lib/readiness'
 import { getEffectiveTrip } from '../lib/manualItems'
 import { getWeatherLocationForDay, isWithinForecastRange, useWeather } from '../lib/weather'
 import { useAppStore } from '../store/useAppStore'
+import { ShareTripButton } from '../components/trip/ShareTripButton'
 import { TripTitleEditor } from '../components/trip/TripTitleEditor'
 import { MobilityPreferencesCard } from '../components/trip/MobilityPreferencesCard'
 
@@ -38,20 +39,6 @@ export function Overview({ trip }: { trip: Trip }) {
   const inRange = Boolean(primaryLocation) && isWithinForecastRange(trip.meta.startDate)
   const weather = useWeather(inRange ? primaryLocation : undefined)
 
-  const shareTrip = async () => {
-    const url = `${window.location.origin}/today?share=1`
-    const payload = { title: trip.meta.name, text: `Follow ${trip.meta.name} in Trip OS`, url }
-    if (navigator.share) {
-      try {
-        await navigator.share(payload)
-        return
-      } catch {
-        // User canceled or share sheet unavailable; fall through to copy.
-      }
-    }
-    await navigator.clipboard?.writeText(url)
-  }
-
   const primaryActionLabel = phase === 'pre' ? 'Get Ready' : phase === 'post' ? 'Remember the Trip' : 'Open Today'
 
   return (
@@ -70,6 +57,7 @@ export function Overview({ trip }: { trip: Trip }) {
       </div>
 
       <div className="space-y-5 px-4 pb-6 pt-5">
+        {trip.meta.sharedSnapshotAt && <p className="rounded-xl border border-line p-3 text-xs text-ink-soft">Shared itinerary · {new Date(trip.meta.sharedSnapshotAt).toLocaleDateString()}. Read-only link. The owner can stop sharing; access is checked online while you view it.</p>}
         <TripCoverEditor key={trip.meta.id} trip={trip} />
         <div>
           <TripTitleEditor key={trip.meta.id} trip={trip} />
@@ -122,13 +110,7 @@ export function Overview({ trip }: { trip: Trip }) {
           {primaryActionLabel}
         </button>
 
-        <button
-          type="button"
-          onClick={shareTrip}
-          className="flex w-full items-center justify-center gap-2 rounded-full border border-line py-3 text-sm font-medium text-blue"
-        >
-          <Share2 size={15} /> Share trip safely
-        </button>
+        <ShareTripButton trip={effectiveTrip} />
 
         <MobilityPreferencesCard />
 
