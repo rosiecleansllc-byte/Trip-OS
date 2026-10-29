@@ -19,7 +19,9 @@ import { Remember } from './pages/Remember'
 function App() {
   const currentTripId = useAppStore((s) => s.currentTripId)
   const customTrip = useAppStore((s) => s.customTrips[currentTripId])
-  const savedTrip = customTrip ?? getTrip(currentTripId)
+  const title = useAppStore((s) => s.tripTitles[currentTripId])
+  const originalTrip = customTrip ?? getTrip(currentTripId)
+  const savedTrip = originalTrip && title ? { ...originalTrip, meta: { ...originalTrip.meta, name: title } } : originalTrip
   const trip = savedTrip ? withStandardPackingChecklist(savedTrip) : undefined
   useRouteRestoration()
 

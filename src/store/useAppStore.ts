@@ -9,6 +9,8 @@ import type { CapsuleItemOverride } from '../lib/wardrobeOutfits'
 export const APP_STATE_STORAGE_KEY = 'trip-os-app-state'
 
 interface AppState {
+  tripTitles: Record<string, string>
+  renameTrip: (tripId: string, title: string) => void
   customTrips: Record<string, Trip>
   addTrip: (trip: Trip) => void
   currentTripId: string
@@ -139,6 +141,12 @@ interface AppState {
 export const useAppStore = create<AppState>()(
   persist(
     (set) => ({
+      tripTitles: {},
+      renameTrip: (tripId, title) => {
+        const name = title.trim()
+        if (!name || name.length > 100) throw new Error('Enter a trip title between 1 and 100 characters.')
+        set((s) => ({ tripTitles: { ...s.tripTitles, [tripId]: name } }))
+      },
       customTrips: {},
       addTrip: (trip) => set((s) => ({ customTrips: { ...s.customTrips, [trip.meta.id]: trip }, currentTripId: trip.meta.id })),
       currentTripId: defaultTripId,
@@ -276,9 +284,9 @@ export const useAppStore = create<AppState>()(
       // future field rename would silently drop the old data on rehydrate
       // with no way to detect or repair it. Bump this and add a `migrate`
       // when the persisted shape changes; every field so far has been
-      // additive. Version 2 adds customTrips; Zustand merges migrated
+      // additive. Version 3 adds tripTitles; Zustand merges migrated
       // legacy state onto the defaults without replacing existing data.
-      version: 2,
+      version: 3,
       migrate: (state) => state as AppState,
     }
   )
