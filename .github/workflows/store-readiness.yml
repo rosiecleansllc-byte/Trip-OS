@@ -31,5 +31,8 @@ jobs:
       - name: Sharing privacy and revocation checks
         run: npm run test:sharing
 
+      - name: Currency arithmetic and persistence checks
+        run: node qa/currency.cjs
+
       - name: Typecheck and build
         run: npm run build

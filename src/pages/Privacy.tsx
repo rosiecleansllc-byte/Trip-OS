@@ -47,7 +47,7 @@ export function Privacy() {
           <section>
             <h2 className="font-display text-xl">External services</h2>
             <p className="mt-2 text-ink-soft">
-              Trip OS may request public weather data from Open-Meteo for destinations included in an itinerary. It may also load web fonts from Google Fonts in the web version. Tapping directions, reservation, ticket, website, or other external links opens third-party services you choose to visit. Those services operate under their own privacy policies.
+              Trip OS may request public weather data from Open-Meteo for destinations included in an itinerary. Wallet may request reference exchange rates from ExchangeRate-API using USD as the base currency; booking amounts and itinerary details are not sent with that request. It may also load web fonts from Google Fonts in the web version. Tapping directions, reservation, ticket, website, or other external links opens third-party services you choose to visit. Those services operate under their own privacy policies.
             </p>
           </section>
 

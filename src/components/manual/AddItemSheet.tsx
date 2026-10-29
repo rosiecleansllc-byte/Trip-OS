@@ -22,6 +22,7 @@ import { createManualItem, findManualItemsForOpenItem, findOpenItemsToUnresolve,
 import { OCR_MIN_CONFIDENCE, recognizeImage } from '../../lib/ocr'
 import { parseFieldsForType, type ParsedFields } from '../../lib/ocrParse'
 import { putPrivateDoc } from '../../lib/privateDocs'
+import { CurrencySelect } from '../ui/CurrencySelect'
 import { Lightbox } from '../ui/Lightbox'
 
 const TYPE_META: Record<ManualItemType, { label: string; icon: typeof Bed; hint: string }> = {
@@ -102,7 +103,7 @@ function emptyForm(trip: Trip): FormState {
     notes: '',
     status: 'planned',
     cost: '',
-    currency: trip.meta.tripCurrency,
+    currency: trip.meta.homeCurrency,
     confirmationCode: '',
     transportMode: 'car',
     carrier: '',
@@ -807,6 +808,10 @@ export function AddItemSheet({ trip }: { trip: Trip }) {
                     </select>
                   </Field>
                 </div>
+
+                <Field label="Charged currency">
+                  <CurrencySelect label="Charged currency" value={form.currency} onChange={value => set('currency', value)} className={inputClass} />
+                </Field>
 
                 {type !== 'other' && (
                   <Field label="Confirmation code">

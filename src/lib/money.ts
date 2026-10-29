@@ -4,12 +4,13 @@ const SYMBOLS: Record<string, string> = {
   EUR: '€',
   USD: '$',
   GBP: '£',
+  PEN: 'S/ ',
 }
 
 export function formatMoney(money?: Money | null): string {
   if (!money) return 'TBD'
   const symbol = SYMBOLS[money.currency] ?? `${money.currency} `
-  return `${symbol}${money.amount.toLocaleString('en-US', { maximumFractionDigits: 0 })}`
+  return `${symbol}${money.amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
 }
 
 export function currencySymbol(currency: string): string {
