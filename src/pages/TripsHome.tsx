@@ -26,6 +26,7 @@ export function TripsHome() {
   const navigate = useNavigate()
   const [addingTrip, setAddingTrip] = useState(false)
   const customTrips = useAppStore((s) => s.customTrips)
+  const tripTitles = useAppStore((s) => s.tripTitles)
   const addTrip = useAppStore((s) => s.addTrip)
   const setCurrentTripId = useAppStore((s) => s.setCurrentTripId)
   // Read once on mount, against the raw storage key: after Zustand
@@ -33,7 +34,7 @@ export function TripsHome() {
   // are indistinguishable. See lib/backup.ts hasSavedData.
   const [hasLocalData] = useState(hasSavedData)
 
-  const sorted = [...trips, ...Object.values(customTrips)].sort((a, b) => {
+  const sorted = [...trips, ...Object.values(customTrips)].map(trip => tripTitles[trip.meta.id] ? { ...trip, meta: { ...trip.meta, name: tripTitles[trip.meta.id] } } : trip).sort((a, b) => {
     const phaseOrder = { active: 0, pre: 1, post: 2 }
     const pa = tripPhase(a.meta.startDate, a.meta.endDate)
     const pb = tripPhase(b.meta.startDate, b.meta.endDate)

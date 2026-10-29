@@ -10,6 +10,7 @@ import { computeReadiness } from '../lib/readiness'
 import { getEffectiveTrip } from '../lib/manualItems'
 import { getWeatherLocationForDay, isWithinForecastRange, useWeather } from '../lib/weather'
 import { useAppStore } from '../store/useAppStore'
+import { TripTitleEditor } from '../components/trip/TripTitleEditor'
 import { MobilityPreferencesCard } from '../components/trip/MobilityPreferencesCard'
 
 const PHASE_LABEL: Record<'pre' | 'active' | 'post', string> = {
@@ -71,7 +72,7 @@ export function Overview({ trip }: { trip: Trip }) {
       <div className="space-y-5 px-4 pb-6 pt-5">
         <TripCoverEditor key={trip.meta.id} trip={trip} />
         <div>
-          <h1 className="font-display text-3xl text-ink">{trip.meta.name}</h1>
+          <TripTitleEditor key={trip.meta.id} trip={trip} />
           <p className="mt-1 flex items-center gap-1.5 text-sm text-ink-soft">
             <MapPin size={14} className="text-blue" />
             {trip.meta.destinationLabel}
