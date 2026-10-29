@@ -1,3 +1,4 @@
+import { standardPackingChecklist } from './packingTemplate'
 import type { Trip } from '../types/trip'
 
 export interface NewTripInput {
@@ -28,7 +29,6 @@ export function createTrip(input: NewTripInput, id = `trip-${globalThis.crypto?.
       legId: `${id}-destination`, title: i === 0 ? 'Departure day' : i === dayCount - 1 ? 'Return day' : `Day ${i + 1}`, outfitNote: '', scheduleItems: [] })),
     bookings: [], transport: [], capsule: [], outfitBoards: [],
     openItems: [{ id: `${id}-planning`, tripId: id, label: 'Add your bookings and daily plans', category: 'other', status: 'open' }],
-    checklist: [{ id: `${id}-documents`, category: 'Travel essentials', label: 'Travel documents and confirmations' },
-      { id: `${id}-packing`, category: 'Travel essentials', label: 'Pack clothes, toiletries, and chargers' }],
+    checklist: standardPackingChecklist(),
   }
 }
