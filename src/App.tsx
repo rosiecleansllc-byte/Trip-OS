@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react'
 import { Navigate, Route, Routes } from 'react-router-dom'
 import { AppShell } from './components/layout/AppShell'
+import { withStandardPackingChecklist } from './lib/packingTemplate'
 import { getTrip } from './data/tripsIndex'
 import { useRouteRestoration } from './lib/lastRoute'
 import { useAppStore } from './store/useAppStore'
@@ -18,7 +19,8 @@ import { Remember } from './pages/Remember'
 function App() {
   const currentTripId = useAppStore((s) => s.currentTripId)
   const customTrip = useAppStore((s) => s.customTrips[currentTripId])
-  const trip = customTrip ?? getTrip(currentTripId)
+  const savedTrip = customTrip ?? getTrip(currentTripId)
+  const trip = savedTrip ? withStandardPackingChecklist(savedTrip) : undefined
   useRouteRestoration()
 
   const withShell = (node: ReactNode) => {

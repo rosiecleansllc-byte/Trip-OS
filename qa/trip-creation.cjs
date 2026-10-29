@@ -16,6 +16,9 @@ const { useAppStore } = require('../src/store/useAppStore.ts')
 const { createTrip } = require('../src/lib/createTrip.ts')
 const { createBackup, restoreBackup } = require('../src/lib/backup.ts')
 const { peruTrip } = require('../src/data/trips/peru-2026.ts')
+const { withStandardPackingChecklist } = require('../src/lib/packingTemplate.ts')
+const { getEffectiveChecklist } = require('../src/lib/checklist.ts')
+const { franceTrip } = require('../src/data/trips/france-2026.ts')
 const input = { name: 'New trip', destination: 'Lima', startDate: '2026-11-05', endDate: '2026-11-16', timeZone: 'America/Lima', currency: 'PEN', travelers: 'Cecilia, Blake' }
 async function run() {
   await useAppStore.persist.rehydrate()
@@ -47,6 +50,23 @@ async function run() {
   assert.equal(peruTrip.days[1].scheduleItems[0].time, '01:20')
   assert.equal(peruTrip.days.at(-1).date, '2026-11-16')
   assert(!JSON.stringify(peruTrip).includes('confirmationCode'))
+  const expectedCategories = [...new Set(franceTrip.checklist.map(item => item.category))]
+  assert.deepEqual([...new Set(trip.checklist.map(item => item.category))], expectedCategories)
+  assert(trip.checklist.length >= 40)
+  assert(trip.checklist.some(item => item.homeTask))
+  assert(!/France|Paris|Riviera|CDG|euros|SNCF|Dior|Louvre/.test(JSON.stringify(trip.checklist)))
+  const legacy = { ...trip, checklist: [{ id: 'keep-legacy', category: 'My items', label: 'Keep my item' }] }
+  const expanded = withStandardPackingChecklist(legacy, new Date('2026-10-29T12:00:00'))
+  assert.equal(legacy.checklist.length, 1)
+  assert(expanded.checklist.some(item => item.id === 'keep-legacy'))
+  assert.equal(withStandardPackingChecklist(expanded, new Date('2026-10-29T12:00:00')).checklist.length, expanded.checklist.length)
+  assert.equal(withStandardPackingChecklist(franceTrip, new Date('2026-10-29T12:00:00')), franceTrip)
+  const effective = getEffectiveChecklist(peruTrip, { 'peru-2026:chk-personal-toiletries': { deleted: true } }, [], { 'france-2026:chk-travel-passport': true, 'peru-2026:chk-tech-phone-charger': true }, new Set())
+  assert.equal(effective.find(item => item.id === 'chk-travel-passport').checked, false)
+  assert.equal(effective.find(item => item.id === 'chk-tech-phone-charger').checked, true)
+  assert(!effective.some(item => item.id === 'chk-personal-toiletries'))
+  assert.equal(new Set(peruTrip.checklist.map(item => item.id)).size, peruTrip.checklist.length)
+  console.log('PASS: packing template, all France categories, trip isolation, retained overrides, additive legacy upgrade, completed-trip preservation')
   console.log('PASS: creation, date validation, unique IDs, v1 migration, persistence, backup merge/idempotency, existing data preservation, Peru flights')
 }
 run().catch(e => { console.error(e); process.exitCode = 1 })

@@ -25,4 +25,6 @@ peruTrip.openItems = [
   { id: 'peru-transfers', tripId: 'peru-2026', label: 'Add airport and local transfers', category: 'transport', status: 'open' },
   { id: 'peru-plans', tripId: 'peru-2026', label: 'Add daily plans and reservations', category: 'other', status: 'open' },
 ]
-peruTrip.checklist!.push({ id: 'peru-flight-doc', category: 'Travel essentials', label: 'Save updated flight confirmation', linkedDocumentKey: 'peru-2026-flights' })
+// Keep the existing confirmation item's ID so its saved check still applies.
+peruTrip.checklist = peruTrip.checklist!.filter(item => item.id !== 'chk-res-flight')
+peruTrip.checklist.push({ id: 'peru-flight-doc', category: 'Reservations', label: 'Save updated flight confirmation', linkedDocumentKey: 'peru-2026-flights' })
