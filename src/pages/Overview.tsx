@@ -3,7 +3,7 @@ import { CalendarDays, MapPin, Share2, Users } from 'lucide-react'
 import { clsx } from 'clsx'
 import type { Trip } from '../types/trip'
 import { Card } from '../components/ui/Card'
-import { ImagePlaceholder } from '../components/ui/ImagePlaceholder'
+import { TripCoverImage, TripCoverEditor } from '../components/trip/TripCoverArtwork'
 import { WeatherCard } from '../components/ui/WeatherCard'
 import { daysUntil, formatDateLong, tripPhase } from '../lib/date'
 import { computeReadiness } from '../lib/readiness'
@@ -21,9 +21,8 @@ const PHASE_LABEL: Record<'pre' | 'active' | 'post', string> = {
 // The trip's cover/landing page — a quiet "open the passport" moment
 // before diving into Today's operational view, reached by tapping a trip
 // on Trips Home (see TripsHome.tsx) rather than jumping straight into
-// /today. Read-only: nothing here mutates trip state, so it needs no
-// extra Share-mode handling beyond what AppShell already does (hiding the
-// add/edit FAB) — cover art, dates, readiness, and weather are all public.
+// /today. Uploaded cover artwork is device-local and hidden in Share mode;
+// the cover editor enforces the same privacy boundary.
 export function Overview({ trip }: { trip: Trip }) {
   const navigate = useNavigate()
   const manualItems = useAppStore((s) => s.manualItems)
@@ -57,13 +56,7 @@ export function Overview({ trip }: { trip: Trip }) {
   return (
     <div className="animate-fade-in -mx-4 -mt-4">
       <div className="relative h-72 w-full overflow-hidden">
-        <ImagePlaceholder
-          label={trip.meta.coverAlt ?? `${trip.meta.name} cover artwork`}
-          imageUrl={trip.meta.coverImageUrl}
-          fit="cover"
-          className="h-full w-full"
-          style={trip.meta.coverPosition ? { objectPosition: trip.meta.coverPosition } : undefined}
-        />
+        <TripCoverImage trip={trip} />
         <div className="pointer-events-none absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-ink/60 to-transparent" />
         <span
           className={clsx(
@@ -76,6 +69,7 @@ export function Overview({ trip }: { trip: Trip }) {
       </div>
 
       <div className="space-y-5 px-4 pb-6 pt-5">
+        <TripCoverEditor key={trip.meta.id} trip={trip} />
         <div>
           <h1 className="font-display text-3xl text-ink">{trip.meta.name}</h1>
           <p className="mt-1 flex items-center gap-1.5 text-sm text-ink-soft">

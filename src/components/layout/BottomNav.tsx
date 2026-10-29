@@ -13,7 +13,7 @@ const TABS = [
 
 export function BottomNav({ pendingCount = 0 }: { pendingCount?: number }) {
   return (
-    <nav className="fixed inset-x-0 bottom-0 z-30 border-t border-line bg-surface/95 backdrop-blur supports-[backdrop-filter]:bg-surface/80">
+    <nav className="relative z-30 shrink-0 border-t border-line bg-surface pb-[env(safe-area-inset-bottom)]">
       <div className="mx-auto flex max-w-md">
         {TABS.map(({ to, label, icon: Icon }) => (
           <NavLink
@@ -21,7 +21,7 @@ export function BottomNav({ pendingCount = 0 }: { pendingCount?: number }) {
             to={to}
             className={({ isActive }) =>
               clsx(
-                'flex flex-1 flex-col items-center gap-1 py-2.5 pb-[calc(0.5rem+env(safe-area-inset-bottom))] text-[10.5px] font-medium transition-colors',
+                'flex flex-1 flex-col items-center gap-1 py-2.5 text-[10.5px] font-medium transition-colors',
                 isActive ? 'text-blue' : 'text-ink'
               )
             }

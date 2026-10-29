@@ -4,7 +4,7 @@ import { CalendarDays, MapPin, Plus } from 'lucide-react'
 import { clsx } from 'clsx'
 import { AddTripForm } from '../components/AddTripForm'
 import { trips } from '../data/tripsIndex'
-import { ImagePlaceholder } from '../components/ui/ImagePlaceholder'
+import { TripCoverImage } from '../components/trip/TripCoverArtwork'
 import { InstallButton } from '../components/layout/InstallButton'
 import { BackupPanel } from '../components/backup/BackupPanel'
 import { hasSavedData } from '../lib/backup'
@@ -99,13 +99,7 @@ export function TripsHome() {
               >
                 <div className="overflow-hidden rounded-3xl border border-line bg-surface shadow-[0_1px_2px_rgba(17,17,17,0.04)]">
                   <div className="relative h-48 w-full overflow-hidden">
-                    <ImagePlaceholder
-                      label={trip.meta.coverAlt ?? `${trip.meta.name} cover artwork`}
-                      imageUrl={trip.meta.coverImageUrl}
-                      fit="cover"
-                      className="h-full w-full"
-                      style={trip.meta.coverPosition ? { objectPosition: trip.meta.coverPosition } : undefined}
-                    />
+                    <TripCoverImage trip={trip} />
                     <div className="pointer-events-none absolute inset-x-0 bottom-0 h-20 bg-gradient-to-t from-ink/70 to-transparent" />
                     <span
                       className={clsx(

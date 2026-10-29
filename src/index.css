@@ -68,3 +68,11 @@ body {
 .animate-fade-in {
   animation: fade-in 0.35s ease-out both;
 }
+
+/* Keep the navigation in its own viewport row. Only the page content
+   scrolls, so iOS browser chrome/safe areas cannot put the bar over cards.
+   The vh fallback supports older Safari; dvh follows expanding toolbars. */
+.app-shell {
+  height: 100vh;
+  height: 100dvh;
+}
