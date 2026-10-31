@@ -6,7 +6,7 @@ import { Card } from '../components/ui/Card'
 import { TripCoverImage, TripCoverEditor } from '../components/trip/TripCoverArtwork'
 import { WeatherCard } from '../components/ui/WeatherCard'
 import { daysUntil, formatDateLong, tripPhase } from '../lib/date'
-import { computeReadiness } from '../lib/readiness'
+import { useReadinessCalculator } from '../lib/useReadinessCalculator'
 import { getEffectiveTrip } from '../lib/manualItems'
 import { getWeatherLocationForDay, isWithinForecastRange, useWeather } from '../lib/weather'
 import { useAppStore } from '../store/useAppStore'
@@ -26,6 +26,7 @@ const PHASE_LABEL: Record<'pre' | 'active' | 'post', string> = {
 // /today. Uploaded cover artwork is device-local and hidden in Share mode;
 // the cover editor enforces the same privacy boundary.
 export function Overview({ trip }: { trip: Trip }) {
+  const computeReadiness = useReadinessCalculator()
   const navigate = useNavigate()
   const manualItems = useAppStore((s) => s.manualItems)
   const resolvedOpenItemIds = useAppStore((s) => s.resolvedOpenItemIds)
@@ -33,7 +34,7 @@ export function Overview({ trip }: { trip: Trip }) {
 
   const phase = tripPhase(trip.meta.startDate, trip.meta.endDate)
   const countdown = daysUntil(trip.meta.startDate)
-  const readiness = computeReadiness(effectiveTrip)
+  const readiness = computeReadiness(trip)
 
   const primaryLocation = getWeatherLocationForDay(effectiveTrip, effectiveTrip.days[0]?.id ?? '')
   const inRange = Boolean(primaryLocation) && isWithinForecastRange(trip.meta.startDate)

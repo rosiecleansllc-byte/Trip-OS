@@ -80,7 +80,7 @@ export function getEffectiveChecklist(
     }
   }
 
-  return [...seeded.map((i) => resolve(i, false)), ...customForTrip.map((i) => resolve(i, true))]
+  return [...seeded.map((i) => resolve(i, false)), ...customForTrip.map((i) => resolve(i, true)), resolve({ id: 'chk-departed-home', category: 'Before You Go', label: 'Packed and left the house' }, false)]
 }
 
 // The still-unchecked literal home-securing tasks (e.g. "Secure home",
