@@ -35,7 +35,7 @@ import {
   tripPhase,
 } from '../lib/date'
 import { findNextEventSession, getSessionsForDay } from '../lib/eventSessions'
-import { computeReadiness } from '../lib/readiness'
+import { useReadinessCalculator } from '../lib/useReadinessCalculator'
 import { getEffectiveTrip } from '../lib/manualItems'
 import { getTravelSequenceForDay } from '../lib/travelSequence'
 import { getEffectiveChecklist, getImportantUnfinishedChecklistItems } from '../lib/checklist'
@@ -242,6 +242,7 @@ function TodayOutfitCard({
 }
 
 export function Today({ trip }: { trip: Trip }) {
+  const computeReadiness = useReadinessCalculator()
   const manualItems = useAppStore((s) => s.manualItems)
   const resolvedOpenItemIds = useAppStore((s) => s.resolvedOpenItemIds)
   const shareMode = useAppStore((s) => s.shareMode)
@@ -619,7 +620,7 @@ export function Today({ trip }: { trip: Trip }) {
   // feeds into readyLines/openItems (see lib/readiness.ts), so this card
   // is safe to show in Share mode too, same as the rest of the app's
   // "hide specific private fields, not whole sections" rule.
-  const { percent, readyLines, openItems } = computeReadiness(effectiveTrip)
+  const { percent, readyLines, openItems } = computeReadiness(trip)
   const completedOpenItems = effectiveTrip.openItems.filter((i) => i.status === 'done')
   // The checklist's own most-important unfinished items — never the
   // whole checklist, and never once the trip is actually underway (this
@@ -651,12 +652,12 @@ export function Today({ trip }: { trip: Trip }) {
           <p className="font-display text-xl text-ink">Trip Ready · {percent}%</p>
           <span
             className={
-              percent >= 70
+              percent === 100
                 ? 'rounded-full bg-blue-tint px-2.5 py-1 text-[11px] font-medium uppercase tracking-wide text-blue'
                 : 'rounded-full bg-red-tint px-2.5 py-1 text-[11px] font-medium uppercase tracking-wide text-red'
             }
           >
-            {percent >= 70 ? 'Ready' : 'Needs attention'}
+            {percent === 100 ? 'Ready' : 'Getting ready'}
           </span>
         </div>
         <div className="mt-2.5 h-1.5 overflow-hidden rounded-full bg-bg-soft">

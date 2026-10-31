@@ -1,14 +1,9 @@
+import type { EffectiveChecklistItem } from './checklist'
 import type { Booking, OpenItem, Transport, Trip } from '../types/trip'
 import { formatDateCompact } from './date'
 
-// Trip readiness reflects whether the trip is actually planned — confirmed
-// bookings/transport vs. genuinely unresolved OpenItems — never whether a
-// confirmed document has been copied into this device's IndexedDB yet.
-// That distinction matters: a flight can be fully "Ready" while its
-// private-document button still says "Add confirmation", because the
-// traveler already has the booking, she just hasn't loaded the file into
-// *this* browser. Booking/Transport `status` is the source of truth for
-// "confirmed"; privateDocumentKey/IndexedDB state never factors in here.
+// Readiness combines confirmed plans, unresolved tasks and the required packing
+// checklist. Full readiness also requires explicit departure confirmation.
 
 function isConfirmed(status: Booking['status']): boolean {
   return status === 'confirmed' || status === 'paid'
@@ -59,7 +54,7 @@ export interface Readiness {
   openItems: OpenItem[] // open (unresolved) items, high priority first
 }
 
-export function computeReadiness(trip: Trip): Readiness {
+export function computeReadiness(trip: Trip, checklist: EffectiveChecklistItem[] = []): Readiness {
   const readyLines = [...readableTransportLines(trip.transport), ...trip.bookings.filter((b) => isConfirmed(b.status)).map(readableBookingLine)]
 
   const openItems = (trip.openItems ?? [])
@@ -71,10 +66,14 @@ export function computeReadiness(trip: Trip): Readiness {
   // ones (a missing flight, undecided ground transport) twice as much as
   // routine prep (packing) — so a couple of big unresolved gaps pull the
   // percentage down much further than one optional task left unchecked.
-  const readyPoints = readyLines.length
+  const required = checklist.filter(item => !item.optional)
+  const incomplete = required.filter(item => !item.checked).length
+  const departed = required.some(item => item.id === "chk-departed-home" && item.checked)
+  const readyPoints = readyLines.length + required.length - incomplete
   const neededWeight = openItems.reduce((sum, i) => sum + (i.priority === 'high' ? 2 : 1), 0)
-  const total = readyPoints + neededWeight
-  const percent = total === 0 ? 100 : Math.round((readyPoints / total) * 100)
+  const total = readyPoints + neededWeight + incomplete
+  const score = total === 0 ? 0 : Math.round((readyPoints / total) * 100)
+  const percent = departed && incomplete === 0 && neededWeight === 0 ? 100 : Math.min(99, score)
 
   return { percent, readyLines, openItems }
 }

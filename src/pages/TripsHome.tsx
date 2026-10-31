@@ -10,7 +10,7 @@ import { InstallButton } from '../components/layout/InstallButton'
 import { BackupPanel } from '../components/backup/BackupPanel'
 import { hasSavedData } from '../lib/backup'
 import { daysUntil, formatDateCompact, tripPhase } from '../lib/date'
-import { computeReadiness } from '../lib/readiness'
+import { useReadinessCalculator } from '../lib/useReadinessCalculator'
 import { useAppStore } from '../store/useAppStore'
 
 const PHASE_LABEL: Record<'pre' | 'active' | 'post', string> = {
@@ -24,6 +24,7 @@ const PHASE_LABEL: Record<'pre' | 'active' | 'post', string> = {
 // operational trip screens, reached from there via its own "Enter Trip"
 // button.
 export function TripsHome() {
+  const computeReadiness = useReadinessCalculator()
   const navigate = useNavigate()
   const [addingTrip, setAddingTrip] = useState(false)
   const customTrips = useAppStore((s) => s.customTrips)
