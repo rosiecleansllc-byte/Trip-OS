@@ -40,5 +40,8 @@ jobs:
       - name: Itinerary import checks
         run: node qa/itinerary-import.cjs
 
+      - name: PDF stream compatibility checks
+        run: node qa/pdf-stream-compat.cjs
+
       - name: Typecheck and build
         run: npm run build
