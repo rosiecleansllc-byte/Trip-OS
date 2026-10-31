@@ -31,7 +31,7 @@ export async function recognizeImage(
   image: File | Blob,
   onProgress?: (p: OcrProgress) => void
 ): Promise<OcrResult> {
-  const { createWorker, OEM } = await import('tesseract.js')
+  const { createWorker, OEM, PSM } = await import('tesseract.js')
   const worker = await createWorker('eng', OEM.LSTM_ONLY, {
     workerPath: '/ocr/worker.min.js',
     corePath: '/ocr/core/tesseract-core-simd-lstm.wasm.js',
@@ -42,6 +42,7 @@ export async function recognizeImage(
     },
   })
   try {
+    await worker.setParameters({ tessedit_pageseg_mode: PSM.SPARSE_TEXT })
     const { data } = await worker.recognize(image)
     return { text: data.text, confidence: data.confidence }
   } finally {

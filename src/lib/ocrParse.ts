@@ -252,7 +252,7 @@ export function extractConfirmationCode(text: string): string | undefined {
     const idx = lower.indexOf(label)
     if (idx === -1) continue
     const rest = text.slice(idx + label.length)
-    const code = rest.match(/[:\s#-]*([A-Z0-9]{4,10})\b/)
+    const code = rest.match(/[:\s#-]*([A-Z0-9][A-Z0-9-]{3,29})\b/)
     if (code && !/^\d{4}$/.test(code[1])) return code[1] // skip bare 4-digit years/times
   }
   return undefined
@@ -304,7 +304,7 @@ export function extractPartySize(text: string): string | undefined {
 }
 
 export function extractTicketQuantity(text: string): string | undefined {
-  const m = text.match(/\b(\d{1,2})\s*(?:tickets?|x\s*ticket|admissions?)\b/i) || text.match(/\bqty:?\s*(\d{1,2})\b/i)
+  const m = text.match(/\b(\d{1,2})\s*(?:tickets?|x\s*ticket|admissions?|adults?|children|travelers?|travellers?)\b/i) || text.match(/\bqty:?\s*(\d{1,2})\b/i)
   return m?.[1]
 }
 
@@ -318,12 +318,13 @@ const SKIP_TITLE_LINE = /^(confirmation|confirmed|booking|reservation|receipt|or
 // the brand name," not "this line mentions the brand anywhere," so a
 // venue that happens to be named after a company isn't wrongly excluded.
 const BRANDING_NAMES = [
-  'booking.com', 'luma', 'lu.ma', 'covermanager', 'google', 'expedia',
+  'viator', 'viator.com', 'booking.com', 'luma', 'lu.ma', 'covermanager', 'google', 'expedia',
   'opentable', 'resy', 'airbnb', 'vrbo', 'hotels.com', 'tripadvisor',
   'eventbrite', 'ticketmaster', 'stubhub', 'yelp', 'grubhub', 'doordash',
 ]
 
 function isBrandingLine(line: string): boolean {
+  if (/\b(?:viator(?:\.com)?|tripadvisor)\b/i.test(line)) return true
   const norm = line.toLowerCase().replace(/[^a-z0-9. ]/g, '').trim()
   return BRANDING_NAMES.some((b) => {
     const bn = b.toLowerCase()
@@ -334,10 +335,12 @@ function isBrandingLine(line: string): boolean {
 function isSubstantiveLine(l: string): boolean {
   return (
     l.length >= 3 &&
-    l.length <= 80 &&
+    l.length <= 200 &&
     !SKIP_TITLE_LINE.test(l) &&
     !isBrandingLine(l) &&
     !/^\d+$/.test(l) &&
+    !extractDate(l, "2026-01-01") &&
+    /[a-z]{3}/i.test(l) &&
     !/^[$€£]/.test(l) &&
     !/\d{1,2}:\d{2}/.test(l)
   )
@@ -349,7 +352,7 @@ function substantiveLines(text: string): string[] {
 
 function cleanTitleValue(raw: string): string | undefined {
   const value = raw.trim().replace(/[.:,]+$/, '')
-  if (value.length < 2 || value.length > 80) return undefined
+  if (value.length < 2 || value.length > 200) return undefined
   if (isBrandingLine(value)) return undefined
   return value
 }
@@ -408,14 +411,51 @@ function guessVenue(text: string, title: string | undefined, address: string | u
   // the title (it may carry a label prefix the title itself doesn't, e.g.
   // "Event: You x AI Summit" vs. title "You x AI Summit"), then take the
   // next remaining substantive line that isn't the address either.
-  return substantiveLines(text).find((l) => l !== address && !(title && l.includes(title)))
+  const labeled = text.split('\n').map(line => line.match(/^(?:venue|location|meeting point)\s*:\s*(.+)/i)?.[1]?.trim()).find(Boolean)
+  return labeled && labeled !== title && labeled !== address && !isBrandingLine(labeled) ? labeled : undefined
 }
 
 function paymentIndicatesPaid(text: string): boolean {
   return /\b(paid in full|payment (received|confirmed)|amount charged|charged to)\b/i.test(text)
 }
 
+// Screenshots include browser chrome, rewards dates and navigation. Keep
+// booking evidence, and rejoin a stacked calendar badge before date parsing.
+export function bookingContent(text: string): string {
+  const lines = text.split('\n').map(line => line.trim()).filter(Boolean)
+  const footer = lines.findIndex(line => /(?:cha.ching|you.ve earned|available from|viator rewards)/i.test(line))
+  const body = (footer < 0 ? lines : lines.slice(0, footer)).filter(line =>
+    !isBrandingLine(line) &&
+    !/^(?:you.re in for|we.ve sent|search for|.*search for a place|log in|a tripadvisor company|manage booking|get ticket|ask gemini|new tab|all tabs)/i.test(line))
+  for (let i = 0; i < body.length; i++) {
+    if (!(body[i].toLowerCase() in MONTHS)) continue
+    const dayIndex = body.findIndex((line, j) => j > i && j <= i + 3 && /^\d{1,2}$/.test(line))
+    const yearIndex = body.findIndex((line, j) => j > dayIndex && j <= i + 6 && /^20\d{2}$/.test(line))
+    if (dayIndex < 0 || yearIndex < 0) continue
+    body[i] = `${body[i]} ${body[dayIndex]}, ${body[yearIndex]}`
+    body[dayIndex] = ''; body[yearIndex] = ''
+  }
+  // Calendar badges can interleave with a title in the adjacent column.
+  // Once their date/number lines are removed, join the title's wrapped lines.
+  if (/viator/i.test(text)) {
+    const confirmed = body.findIndex(line => /^confirmed$/i.test(line))
+    if (confirmed >= 0) {
+      const parts: string[] = []
+      let end = confirmed + 1
+      for (; end < body.length; end++) {
+        const line = body[end]
+        if (!line) continue
+        if (/\d{1,2}:\d{2}|^(?:order|booking|total|premium day trip \()/i.test(line)) break
+        parts.push(line)
+      }
+      if (parts.length) body.splice(confirmed + 1, end - confirmed - 1, parts.join(' '))
+    }
+  }
+  return body.filter(Boolean).join('\n')
+}
+
 export function parseFieldsForType(type: ManualItemType, text: string, tripStartDate: string): ParsedFields {
+  text = bookingContent(text)
   const cost = extractCost(text)
   const confirmationCode = extractConfirmationCode(text)
   const phone = extractPhone(text)
@@ -483,6 +523,8 @@ export function parseFieldsForType(type: ManualItemType, text: string, tripStart
     address,
     confirmationCode,
     partySize: extractTicketQuantity(text),
+    cost: cost.cost,
+    currency: cost.currency,
     status: paymentIndicatesPaid(text) ? 'paid' : 'confirmed',
   }
 }
