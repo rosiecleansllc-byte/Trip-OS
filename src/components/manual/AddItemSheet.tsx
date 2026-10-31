@@ -23,6 +23,7 @@ import { OCR_MIN_CONFIDENCE, recognizeImage } from '../../lib/ocr'
 import { parseFieldsForType, type ParsedFields } from '../../lib/ocrParse'
 import { putPrivateDoc } from '../../lib/privateDocs'
 import { CurrencySelect } from '../ui/CurrencySelect'
+import { ImportItinerary } from './ImportItinerary'
 import { Lightbox } from '../ui/Lightbox'
 
 const TYPE_META: Record<ManualItemType, { label: string; icon: typeof Bed; hint: string }> = {
@@ -154,6 +155,7 @@ function formFromParsed(trip: Trip, parsed: ParsedFields): FormState {
 }
 
 export function AddItemSheet({ trip }: { trip: Trip }) {
+  const [importing, setImporting] = useState(false)
   const step = useManualItemUiStore((s) => s.step)
   const type = useManualItemUiStore((s) => s.type)
   const editingItem = useManualItemUiStore((s) => s.editingItem)
@@ -263,6 +265,7 @@ export function AddItemSheet({ trip }: { trip: Trip }) {
     }
   }, [step])
 
+  if (importing) return <ImportItinerary trip={trip} onClose={() => setImporting(false)} />
   if (step === 'closed') return null
 
   const set = <K extends keyof FormState>(key: K, value: FormState[K]) => setForm((f) => ({ ...f, [key]: value }))
@@ -525,6 +528,7 @@ export function AddItemSheet({ trip }: { trip: Trip }) {
               </button>
             </div>
             <div className="space-y-2">
+              <button type="button" onClick={() => setImporting(true)} className="w-full rounded-xl border border-blue p-3.5 text-left text-blue">Import itinerary · PDF or text<br /><span className="text-xs">Review and add multiple events at once</span></button>
               {(Object.keys(TYPE_META) as ManualItemType[]).map((t) => {
                 const meta = TYPE_META[t]
                 const Icon = meta.icon

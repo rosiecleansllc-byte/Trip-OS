@@ -37,5 +37,8 @@ jobs:
       - name: Screenshot extraction checks
         run: node qa/ocr-extraction.cjs
 
+      - name: Itinerary import checks
+        run: node qa/itinerary-import.cjs
+
       - name: Typecheck and build
         run: npm run build
