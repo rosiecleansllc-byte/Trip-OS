@@ -36,7 +36,8 @@ export function isManualId(id: string): boolean {
 export function createManualItem(
   input: Omit<ManualTripItem, 'id' | 'createdAt' | 'privateDocumentKey' | 'privateDocumentType'>
 ): ManualTripItem {
-  const id = `${MANUAL_PREFIX}${crypto.randomUUID()}`
+  const unique = typeof crypto.randomUUID === 'function' ? crypto.randomUUID() : `${Date.now().toString(36)}-${Array.from(crypto.getRandomValues(new Uint32Array(4)), n => n.toString(36)).join('-')}`
+  const id = `${MANUAL_PREFIX}${unique}`
   return {
     ...input,
     id,
