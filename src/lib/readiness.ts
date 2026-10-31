@@ -61,18 +61,17 @@ export function computeReadiness(trip: Trip, checklist: EffectiveChecklistItem[]
     .filter((i) => i.status === 'open')
     .sort((a, b) => (a.priority === 'high' ? 0 : 1) - (b.priority === 'high' ? 0 : 1))
 
-  // Simple, transparent weighting: every confirmed leg/booking is one
-  // "ready" point; every open item counts against readiness, high-priority
-  // ones (a missing flight, undecided ground transport) twice as much as
-  // routine prep (packing) — so a couple of big unresolved gaps pull the
-  // percentage down much further than one optional task left unchecked.
+  // Planning is the bulk of preparation; a long packing list must not
+  // outweigh confirmed flights and lodging just because it has more rows.
   const required = checklist.filter(item => !item.optional)
+  const preparation = required.filter(item => item.id !== 'chk-departed-home')
   const incomplete = required.filter(item => !item.checked).length
-  const departed = required.some(item => item.id === "chk-departed-home" && item.checked)
-  const readyPoints = readyLines.length + required.length - incomplete
-  const neededWeight = openItems.reduce((sum, i) => sum + (i.priority === 'high' ? 2 : 1), 0)
-  const total = readyPoints + neededWeight + incomplete
-  const score = total === 0 ? 0 : Math.round((readyPoints / total) * 100)
+  const departed = required.some(item => item.id === 'chk-departed-home' && item.checked)
+  const neededWeight = openItems.reduce((sum, item) => sum + (item.priority === 'high' ? 2 : 1), 0)
+  const planningTotal = readyLines.length + neededWeight
+  const planning = planningTotal ? readyLines.length / planningTotal : 0
+  const packing = preparation.length ? preparation.filter(item => item.checked).length / preparation.length : 0
+  const score = Math.round(80 * planning + 15 * packing + (departed ? 5 : 0))
   const percent = departed && incomplete === 0 && neededWeight === 0 ? 100 : Math.min(99, score)
 
   return { percent, readyLines, openItems }
