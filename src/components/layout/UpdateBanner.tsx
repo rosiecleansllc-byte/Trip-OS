@@ -13,7 +13,7 @@ export function UpdateBanner() {
   if (!needRefresh) return null
 
   return (
-    <div className="fixed inset-x-0 bottom-[calc(4.75rem+env(safe-area-inset-bottom))] z-30 flex justify-center px-4">
+    <div className="fixed inset-x-0 bottom-[calc(4.75rem+env(safe-area-inset-bottom))] z-[100] flex justify-center px-4">
       <button
         type="button"
         onClick={() => updateServiceWorker(true)}
