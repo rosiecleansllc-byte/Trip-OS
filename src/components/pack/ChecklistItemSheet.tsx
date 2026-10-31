@@ -46,7 +46,7 @@ export function ChecklistItemSheet({ trip }: { trip: Trip }) {
   const { keys: presentDocKeys } = usePrivateDocKeySet()
 
   const allItems = getEffectiveChecklist(trip, checklistItemOverrides, customChecklistItems, packedItems, presentDocKeys)
-  const existingCategories = checklistCategoriesInOrder(allItems)
+  const existingCategories = Array.from(new Set([...checklistCategoriesInOrder(allItems), 'Shoes', 'Accessories']))
 
   const [form, setForm] = useState<FormState>(() => emptyForm())
   const [confirmingDelete, setConfirmingDelete] = useState(false)
