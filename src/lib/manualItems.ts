@@ -319,10 +319,11 @@ export function findManualItemsForOpenItem(
 }
 
 // After a manual item is deleted or edited, some previously-resolved
-// OpenItems may no longer be justified. An OpenItem stays resolved only
-// as long as at least one manual item both (a) explicitly claims credit
-// for it via relatedOpenItemId — set when the traveler taps "Mark
-// resolved" or checks its checklist box — and (b) still qualifies under
+// booking-linked OpenItems may no longer be justified. Explicit manual
+// checkoffs are left alone until the traveler reopens them. A linked
+// suggestion stays resolved only as long as at least one manual item
+// both (a) claims credit via relatedOpenItemId when the traveler accepts
+// the booking suggestion and (b) still qualifies under
 // the same category+date-range check used to offer that button in the
 // first place. A `requiresRoundTrip` OpenItem additionally needs its
 // linked items to still form a round trip (see hasRoundTripPair) — losing
@@ -334,11 +335,12 @@ export function findManualItemsForOpenItem(
 export function findOpenItemsToUnresolve(
   trip: Trip,
   manualItems: ManualTripItem[],
-  resolvedOpenItemIds: Record<string, boolean>
+  resolvedOpenItemIds: Record<string, boolean>,
+  manuallyCompletedOpenItemIds: Record<string, boolean> = {}
 ): string[] {
   const tripManualItems = manualItems.filter((i) => i.tripId === trip.meta.id)
   return trip.openItems
-    .filter((oi) => resolvedOpenItemIds[`${trip.meta.id}:${oi.id}`])
+    .filter((oi) => resolvedOpenItemIds[`${trip.meta.id}:${oi.id}`] && !manuallyCompletedOpenItemIds[`${trip.meta.id}:${oi.id}`])
     .filter((oi) => {
       const linkedAndQualifying = tripManualItems.filter(
         (i) => i.relatedOpenItemId === oi.id && manualItemQualifiesForOpenItem(trip, i, oi)

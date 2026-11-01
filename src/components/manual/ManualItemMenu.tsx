@@ -26,6 +26,7 @@ export function ManualItemMenu({
   const menuRef = useRef<HTMLDivElement>(null)
   const manualItems = useAppStore((s) => s.manualItems)
   const resolvedOpenItemIds = useAppStore((s) => s.resolvedOpenItemIds)
+  const manuallyCompletedOpenItemIds = useAppStore((s) => s.manuallyCompletedOpenItemIds)
   const deleteManualItem = useAppStore((s) => s.deleteManualItem)
   const unresolveOpenItem = useAppStore((s) => s.unresolveOpenItem)
   const openEdit = useManualItemUiStore((s) => s.openEdit)
@@ -52,7 +53,7 @@ export function ManualItemMenu({
     // the list with it removed and flip any now-unjustified ones back
     // to open, rather than leaving a stale "resolved" behind.
     const remaining = manualItems.filter((i) => i.id !== item.id)
-    for (const openItemId of findOpenItemsToUnresolve(trip, remaining, resolvedOpenItemIds)) {
+    for (const openItemId of findOpenItemsToUnresolve(trip, remaining, resolvedOpenItemIds, manuallyCompletedOpenItemIds)) {
       unresolveOpenItem(trip.meta.id, openItemId)
     }
     setOpen(false)

@@ -1,7 +1,6 @@
 import { CheckCircle2, Circle } from 'lucide-react'
 import type { OpenItem, Trip } from '../../types/trip'
 import { useAppStore } from '../../store/useAppStore'
-import { findManualItemsForOpenItem } from '../../lib/manualItems'
 
 // The single tappable control behind every "Still open"/"Still needed"
 // row across Bookings and Today — turns an OpenItem into a real checklist
@@ -10,13 +9,8 @@ import { findManualItemsForOpenItem } from '../../lib/manualItems'
 // "Still open" list, Today's readiness card, and any other page all read
 // the same state with no separate checklist system.
 //
-// Resolving here works whether or not a manual booking already qualifies
-// for this OpenItem (manual and booking-linked resolution coexist, see
-// lib/manualItems.ts) — when one does qualify, it's linked via
-// relatedOpenItemId exactly as the save-flow's "This looks like it
-// covers" suggestion already does, so deleting or editing that booking
-// later can still auto-reopen this item (lib/manualItems.ts
-// findOpenItemsToUnresolve).
+// Checking this control is an explicit decision, independent of any booking.
+// Booking-linked suggestions in AddItemSheet retain their own reconciliation.
 export function OpenItemToggle({
   trip,
   item,
@@ -27,10 +21,8 @@ export function OpenItemToggle({
   size?: number
 }) {
   const shareMode = useAppStore((s) => s.shareMode)
-  const manualItems = useAppStore((s) => s.manualItems)
   const resolveOpenItem = useAppStore((s) => s.resolveOpenItem)
   const unresolveOpenItem = useAppStore((s) => s.unresolveOpenItem)
-  const updateManualItem = useAppStore((s) => s.updateManualItem)
 
   const resolved = item.status === 'done'
   const Icon = resolved ? CheckCircle2 : Circle
@@ -48,10 +40,7 @@ export function OpenItemToggle({
       unresolveOpenItem(trip.meta.id, item.id)
       return
     }
-    resolveOpenItem(trip.meta.id, item.id)
-    findManualItemsForOpenItem(trip, manualItems, item).forEach((mi) =>
-      updateManualItem(mi.id, { relatedOpenItemId: item.id })
-    )
+    resolveOpenItem(trip.meta.id, item.id, true)
   }
 
   return (

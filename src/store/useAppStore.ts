@@ -42,6 +42,8 @@ interface AppState {
   // Kept separate from the trip's own (static, imported) OpenItem array
   // rather than mutating it.
   resolvedOpenItemIds: Record<string, boolean>
+  // Explicit checklist decisions survive unrelated booking edits/deletions.
+  manuallyCompletedOpenItemIds: Record<string, boolean>
   // Traveler-uploaded visual boards (see types/trip.ts VisualBoard). Same
   // shape of storage as manualItems — a flat array across all trips,
   // filtered by tripId at read time — and the same split as manual
@@ -127,7 +129,7 @@ interface AppState {
   addManualItem: (item: ManualTripItem) => void
   updateManualItem: (id: string, patch: Partial<ManualTripItem>) => void
   deleteManualItem: (id: string) => void
-  resolveOpenItem: (tripId: string, openItemId: string) => void
+  resolveOpenItem: (tripId: string, openItemId: string, manual?: boolean) => void
   unresolveOpenItem: (tripId: string, openItemId: string) => void
   addVisualBoard: (board: VisualBoard) => void
   updateVisualBoard: (id: string, patch: Partial<VisualBoard>) => void
@@ -177,6 +179,7 @@ export const useAppStore = create<AppState>()(
       packedItems: {},
       manualItems: [],
       resolvedOpenItemIds: {},
+      manuallyCompletedOpenItemIds: {},
       visualBoards: [],
       outfits: [],
       wardrobeVisualLinks: {},
@@ -218,9 +221,10 @@ export const useAppStore = create<AppState>()(
         })),
       deleteManualItem: (id) =>
         set((s) => ({ manualItems: s.manualItems.filter((i) => i.id !== id) })),
-      resolveOpenItem: (tripId, openItemId) =>
+      resolveOpenItem: (tripId, openItemId, manual = false) =>
         set((s) => ({
           resolvedOpenItemIds: { ...s.resolvedOpenItemIds, [`${tripId}:${openItemId}`]: true },
+          ...(manual ? { manuallyCompletedOpenItemIds: { ...s.manuallyCompletedOpenItemIds, [`${tripId}:${openItemId}`]: true } } : {}),
         })),
       // Explicitly records "the traveler reopened this" rather than just
       // deleting the override — an OpenItem can start already resolved in
@@ -231,6 +235,7 @@ export const useAppStore = create<AppState>()(
       unresolveOpenItem: (tripId, openItemId) =>
         set((s) => ({
           resolvedOpenItemIds: { ...s.resolvedOpenItemIds, [`${tripId}:${openItemId}`]: false },
+          manuallyCompletedOpenItemIds: { ...s.manuallyCompletedOpenItemIds, [`${tripId}:${openItemId}`]: false },
         })),
       addVisualBoard: (board) => set((s) => ({ visualBoards: [...s.visualBoards, board] })),
       updateVisualBoard: (id, patch) =>
@@ -307,10 +312,27 @@ export const useAppStore = create<AppState>()(
       // future field rename would silently drop the old data on rehydrate
       // with no way to detect or repair it. Bump this and add a `migrate`
       // when the persisted shape changes; every field so far has been
-      // additive. Version 4 adds sharing controls; Zustand merges migrated
-      // legacy state onto the defaults without replacing existing data.
-      version: 4,
-      migrate: (state) => state as AppState,
+      // additive. Version 5 distinguishes manual checkoffs from booking-linked
+      // resolutions and records Cecilia's completed Peru planning tasks once.
+      version: 5,
+      migrate: (state, version) => {
+        const saved = state as Partial<AppState>
+        const resolved = { ...saved.resolvedOpenItemIds }
+        const manual = { ...saved.manuallyCompletedOpenItemIds }
+        if (version < 5) {
+          // Keep existing standalone checkoffs; linked suggestions retain their
+          // auto-reopen behavior when the supporting booking is removed.
+          for (const [key, done] of Object.entries(resolved)) {
+            if (done && !(saved.manualItems ?? []).some(item => key === `${item.tripId}:${item.relatedOpenItemId}`)) manual[key] = true
+          }
+          for (const id of ['peru-transfers', 'peru-plans']) {
+            const key = `peru-2026:${id}`
+            resolved[key] = true
+            manual[key] = true
+          }
+        }
+        return { ...saved, resolvedOpenItemIds: resolved, manuallyCompletedOpenItemIds: manual } as AppState
+      },
     }
   )
 )
