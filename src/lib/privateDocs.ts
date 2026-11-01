@@ -1,11 +1,7 @@
-// Device-local storage for a traveler's private documents (reservation
-// confirmations, order receipts, QR-code tickets). Trip OS has no backend
-// and no login by design, so there is no way to serve a "private" file
-// from a server or a static host — anything under public/ or bundled into
-// the JS is downloadable by anyone with the deployed URL. Instead, each
-// traveler adds their own documents straight from their phone: the file
-// goes into this browser's IndexedDB and never leaves the device, never
-// touches git, and is never part of the deployed site.
+// Originals stay in device-local IndexedDB. Nothing is bundled into the
+// deployed site or Git. The owner can explicitly select individual files
+// when creating a family sharing link; only those copies are uploaded to
+// revocable sharing storage (see revocableSharing.ts).
 //
 // Keys are shared across a Booking/Transport/ScheduleItem trio that all
 // represent the same physical document (see LinkActions.privateDocumentKey

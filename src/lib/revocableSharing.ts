@@ -2,11 +2,33 @@ import { useEffect, useState } from 'react'
 import type { Trip } from '../types/trip'
 import { useAppStore } from '../store/useAppStore'
 import { publicTripSnapshot } from './tripSharing'
+import { getPrivateDoc } from './privateDocs'
+import { buildWalletDocEntries } from './walletDocs'
+import { CONFIRMATION_TYPES, MAX_CONFIRMATION_BYTES, MAX_CONFIRMATIONS_TOTAL_BYTES, MAX_CONFIRMATIONS, type ConfirmationUpload } from './sharedConfirmations'
 
 const API = '/.netlify/functions/trip-share'
 export const sharedViewId = (id: string) => `received-${id}`
-export async function createSharingLink(trip: Trip): Promise<{ id: string; manageToken: string; createdAt: string; expiresAt: string }> {
-  const response = await fetch(API, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ trip: publicTripSnapshot(trip) }), cache: 'no-store' })
+export async function createSharingLink(trip: Trip, selectedKeys: string[] = []): Promise<{ id: string; manageToken: string; createdAt: string; expiresAt: string }> {
+  if (selectedKeys.length > MAX_CONFIRMATIONS) throw new Error('Choose up to 10 confirmations per link.')
+  const entries = buildWalletDocEntries(trip)
+  const confirmations: ConfirmationUpload[] = []
+  let total = 0
+  for (const key of new Set(selectedKeys)) {
+    const entry = entries.find(e => e.privateDocumentKey === key)
+    const doc = entry && await getPrivateDoc(key)
+    if (!entry || !doc) throw new Error('A selected confirmation is no longer saved on this device. Review your selection.')
+    if (!CONFIRMATION_TYPES.includes(doc.blob.type)) throw new Error(`${entry.title}: use a PDF, PNG, JPEG, or WebP file.`)
+    total += doc.blob.size
+    if (doc.blob.size > MAX_CONFIRMATION_BYTES || total > MAX_CONFIRMATIONS_TOTAL_BYTES) throw new Error('Confirmations must be under 2 MB each and 3 MB together. Choose fewer or smaller files.')
+    const base64 = await new Promise<string>((resolve, reject) => {
+      const reader = new FileReader()
+      reader.onload = () => resolve(String(reader.result).split(',')[1])
+      reader.onerror = () => reject(new Error('Unable to read a selected confirmation.'))
+      reader.readAsDataURL(doc.blob)
+    })
+    confirmations.push({ title: entry.title, date: entry.date, name: doc.name, type: doc.blob.type, base64 })
+  }
+  const response = await fetch(API, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ trip: publicTripSnapshot(trip), confirmations }), cache: 'no-store' })
   const result = await response.json()
   if (!response.ok) throw new Error(result.error ?? 'Unable to create sharing link.')
   return result
@@ -20,6 +42,7 @@ export async function readSharingLink(id: string, signal?: AbortSignal): Promise
   if (!response.ok) throw new Error(response.status === 410 || response.status === 404 ? 'This trip is no longer shared, or its link has expired.' : 'Unable to verify access. Reconnect to view this shared itinerary.')
   const data = await response.json()
   const trip = publicTripSnapshot(data.trip)
+  trip.sharedConfirmations = Array.isArray(data.confirmations) ? data.confirmations : []
   trip.meta.id = sharedViewId(id)
   trip.meta.sharedLinkId = id
   trip.meta.sharedSnapshotAt = data.createdAt

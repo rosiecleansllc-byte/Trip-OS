@@ -8,7 +8,8 @@ export default async (request: Request, context: Context) => {
   try {
     const store = getStore({ name, consistency: 'strong' })
     return await createShareHandler(store as ShareStore)(request)
-  } catch {
+  } catch (error) {
+    console.error('Trip sharing storage unavailable', error instanceof Error ? error.name : 'UnknownError')
     return Response.json({ error: 'Sharing storage is temporarily unavailable.' }, { status: 503, headers: { 'Cache-Control': 'no-store' } })
   }
 }

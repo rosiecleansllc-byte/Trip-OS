@@ -3,21 +3,26 @@ import { Share2 } from 'lucide-react'
 import type { Trip } from '../../types/trip'
 import { useAppStore } from '../../store/useAppStore'
 import { createSharingLink, stopSharingLink } from '../../lib/revocableSharing'
+import { buildWalletDocEntries, sortWalletEntries, usePrivateDocKeySet } from '../../lib/walletDocs'
 
 export function ShareTripButton({ trip }: { trip: Trip }) {
+  const shareMode = useAppStore(s => s.shareMode)
   const links = useAppStore(s => s.ownedTripShares[trip.meta.id])
   const addLink = useAppStore(s => s.addOwnedTripShare)
   const removeLink = useAppStore(s => s.removeOwnedTripShare)
+  const { keys } = usePrivateDocKeySet()
+  const [selected, setSelected] = useState<string[]>([])
+  const documents = sortWalletEntries(buildWalletDocEntries(trip))
   const [label, setLabel] = useState('')
   const [busy, setBusy] = useState(false)
   const [message, setMessage] = useState('')
-  if (trip.meta.sharedLinkId) return null
+  if (shareMode || trip.meta.sharedLinkId) return null
   async function create() {
     setBusy(true); setMessage('')
     try {
-      const created = await createSharingLink(trip)
-      addLink(trip.meta.id, { id: created.id, manageToken: created.manageToken, createdAt: created.createdAt, label: label.trim() || 'Shared link' })
-      setLabel(''); setMessage('Link ready. Use Send link below. You can stop each link separately.')
+      const created = await createSharingLink(trip, selected)
+      addLink(trip.meta.id, { id: created.id, manageToken: created.manageToken, createdAt: created.createdAt, label: label.trim() || 'Shared link', confirmationCount: selected.length })
+      setSelected([]); setLabel(''); setMessage('Link ready. Use Send link below. You can stop each link separately.')
     } catch (e) { setMessage(e instanceof Error ? e.message : 'Unable to create link.') }
     finally { setBusy(false) }
   }
@@ -37,11 +42,22 @@ export function ShareTripButton({ trip }: { trip: Trip }) {
   }
   return <section className="space-y-3 rounded-2xl border border-line bg-surface p-4" aria-label="Share trip">
     <h2 className="font-display text-lg text-ink">Share trip</h2>
-    <p className="text-xs text-ink-soft">Anyone with a link can view the itinerary and booking costs until you stop sharing. Links expire 90 days after creation. Private notes, codes, photos, and wallet documents are excluded.</p>
+    <p className="text-xs text-ink-soft">Anyone with a link can view the itinerary and booking costs until you stop sharing. Links expire 90 days after creation. Private notes, codes, and photos stay private. Only confirmations you select below are included.</p>
+    <fieldset disabled={busy} className="space-y-2">
+      <legend className="text-sm font-medium text-ink">Share selected confirmations with family</legend>
+      <p className="text-xs text-ink-soft">Choose files for this new link. Anyone with the link can view or save the selected files, including any names or booking codes inside. PDF, PNG, JPEG, or WebP; 2 MB per file, 3 MB total, up to 10 files.</p>
+      {documents.length === 0 && <p className="text-xs text-ink-soft">Save confirmations to your bookings or Wallet on this device to select them here.</p>}
+      {documents.map(doc => <label key={doc.id} className="flex items-start gap-2 rounded-xl border border-line p-3 text-sm text-ink">
+        <input type="checkbox" className="mt-1" disabled={!keys.has(doc.id)} checked={selected.includes(doc.id)} onChange={e => setSelected(current => e.target.checked ? [...current, doc.id] : current.filter(id => id !== doc.id))} />
+        <span>{doc.title}<span className="block text-xs text-ink-soft">{doc.date}{!keys.has(doc.id) ? ' · File not saved on this device' : ''}{doc.cancelled ? ' · Cancelled' : ''}</span></span>
+      </label>)}
+      <p className="text-xs text-ink-soft">{selected.length} confirmation{selected.length === 1 ? '' : 's'} selected</p>
+    </fieldset>
     <label className="block text-xs text-ink-soft">Link label (optional, e.g. Maria)<input maxLength={80} value={label} onChange={e => setLabel(e.target.value)} className="mt-1 w-full rounded-xl border border-line px-3 py-2 text-sm text-ink" /></label>
     <button type="button" onClick={create} disabled={busy} className="flex w-full items-center justify-center gap-2 rounded-full border border-line px-4 py-3 text-sm font-medium text-ink disabled:opacity-50"><Share2 size={16} />{busy ? 'Working…' : 'Create sharing link'}</button>
     {(links ?? []).map(link => <div key={link.id} className="space-y-2 rounded-xl border border-line p-3">
       <p className="break-words text-sm font-medium text-ink">{link.label}</p>
+      <p className="text-xs text-ink-soft">{link.confirmationCount ?? 0} shared confirmations</p>
       <p className="text-[11px] text-ink-soft">Expires {new Date(Date.parse(link.createdAt) + 90 * 86400000).toLocaleDateString()}</p>
       <a href={`/shared/${link.id}`} target="_blank" rel="noopener noreferrer" className="block break-all text-xs text-blue underline">Preview shared itinerary</a>
       <div className="flex flex-wrap gap-2">

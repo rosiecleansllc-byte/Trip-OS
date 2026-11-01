@@ -48,8 +48,86 @@ async function run() {
   data.get(second.id).expiresAt = '2000-01-01T00:00:00Z'
   assert.equal((await handler(request('GET', second.id))).status, 410)
   assert.equal((await handler(request('POST', null, { trip: { bad: true } }))).status, 400)
-  assert.equal((await handler(request('POST', null, { trip: source, junk: 'x'.repeat(256 * 1024) }))).status, 413)
+  assert.equal((await handler(request('POST', null, { trip: source, junk: 'x'.repeat(4500 * 1024) }))).status, 413)
   assert.equal((await handler(new Request('https://example.com/.netlify/functions/trip-share', { method: 'POST', headers: { 'Content-Type': 'application/json', Origin: 'https://attacker.test' }, body: JSON.stringify({ trip: source }) }))).status, 403)
-  console.log('PASS: custom itinerary transfer, Unicode, private-field exclusion, unsafe URL removal, create/read/revoke lifecycle, unauthorized revocation denied, separate-link isolation, expiry, no-cache headers, input bounds, source preservation')
+  // Synthetic selected document only: no device files or production storage.
+  const pdf = { title: 'Dinner confirmation', date: '2026-11-10', name: 'dinner.pdf', type: 'application/pdf', base64: Buffer.from('%PDF-1.7\nSELECTED_CONFIRMATION').toString('base64') }
+  const withDocsResponse = await handler(request('POST', null, { trip: source, confirmations: [pdf] }))
+  assert.equal(withDocsResponse.status, 201)
+  const withDocs = await withDocsResponse.json()
+  const documentRequest = (id, doc) => new Request(`https://example.com/.netlify/functions/trip-share?id=${id}&document=${doc}`)
+  const metadata = await (await handler(request('GET', withDocs.id))).json()
+  assert.equal(metadata.confirmations.length, 1)
+  assert.equal(metadata.confirmations[0].title, pdf.title)
+  assert(!JSON.stringify(metadata).includes('SELECTED_CONFIRMATION'))
+  assert(!JSON.stringify(metadata).includes('base64'))
+  assert(!JSON.stringify(metadata).includes('PRIVATE_'))
+  const docId = metadata.confirmations[0].id
+  const file = await handler(documentRequest(withDocs.id, docId))
+  assert.equal(file.status, 200)
+  assert.equal(file.headers.get('Content-Type'), 'application/pdf')
+  assert(file.headers.get('Cache-Control').includes('no-store'))
+  assert(file.headers.get('Content-Security-Policy').includes('sandbox'))
+  assert.equal(await file.text(), Buffer.from(pdf.base64, 'base64').toString())
+  const other = await (await handler(request('POST', null, { trip: source }))).json()
+  assert.equal((await handler(documentRequest(other.id, docId))).status, 404)
+  assert.equal((await handler(documentRequest(withDocs.id, '../anything'))).status, 404)
+  assert.equal((await handler(request('DELETE', withDocs.id, null, withDocs.manageToken))).status, 200)
+  assert.equal((await handler(documentRequest(withDocs.id, docId))).status, 410)
+  assert(!data.has(withDocs.id)) // revocation removes selected bytes too
+  assert.equal((await handler(request('POST', null, { trip: source, confirmations: [{ ...pdf, type: 'text/html' }] }))).status, 400)
+  assert.equal((await handler(request('POST', null, { trip: source, confirmations: [{ ...pdf, base64: Buffer.from('<html>fake PDF</html>').toString('base64') }] }))).status, 400)
+  assert.equal((await handler(request('POST', null, { trip: source, confirmations: [{ ...pdf, base64: '!!!!' }] }))).status, 400)
+  assert.equal((await handler(request('POST', null, { trip: source, confirmations: Array(11).fill(pdf) }))).status, 400)
+  const oversized = { ...pdf, base64: Buffer.from('%PDF-' + 'x'.repeat(2 * 1024 * 1024)).toString('base64') }
+  assert.equal((await handler(request('POST', null, { trip: source, confirmations: [oversized] }))).status, 400)
+  const large = { ...pdf, base64: Buffer.from('%PDF-' + 'x'.repeat(1600 * 1024)).toString('base64') }
+  assert.equal((await handler(request('POST', null, { trip: source, confirmations: [large, large] }))).status, 400)
+  const expiring = await (await handler(request('POST', null, { trip: source, confirmations: [pdf] }))).json()
+  const expiringDoc = data.get(expiring.id).confirmations[0].id
+  data.get(expiring.id).expiresAt = '2000-01-01T00:00:00Z'
+  assert.equal((await handler(documentRequest(expiring.id, expiringDoc))).status, 410)
+  assert.equal((await handler(request('POST', null, null))).status, 400)
+  // Exercise the owner-to-recipient client path with a synthetic device file.
+  const privateDocs = require('../src/lib/privateDocs.ts')
+  const originalRead = privateDocs.getPrivateDoc
+  const originalFetch = global.fetch
+  const originalReader = global.FileReader
+  const reads = []
+  privateDocs.getPrivateDoc = async key => {
+    reads.push(key)
+    return { blob: new Blob(['%PDF-1.7\nCLIENT_SELECTED_ONLY'], { type: 'application/pdf' }), name: 'synthetic.pdf' }
+  }
+  global.FileReader = class {
+    readAsDataURL(blob) { blob.arrayBuffer().then(bytes => { this.result = `data:${blob.type};base64,${Buffer.from(bytes).toString('base64')}`; this.onload() }) }
+  }
+  let submitted
+  global.fetch = async (url, options) => {
+    submitted = options.body ? JSON.parse(options.body) : submitted
+    return handler(new Request('https://example.com' + url, options))
+  }
+  try {
+    const { createSharingLink, readSharingLink } = require('../src/lib/revocableSharing.ts')
+    source.bookings.push({ ...source.bookings[0], id: 'unselected', privateDocumentKey: 'UNSELECTED_DOC' })
+    const clientLink = await createSharingLink(source, ['PRIVATE_DOC'])
+    assert.deepEqual(reads, ['PRIVATE_DOC'])
+    assert.equal(submitted.confirmations.length, 1)
+    assert(!JSON.stringify(submitted).includes('PRIVATE_DOC'))
+    assert(!JSON.stringify(submitted).includes('UNSELECTED_DOC'))
+    const received = await readSharingLink(clientLink.id)
+    assert.equal(received.sharedConfirmations.length, 1)
+    assert.equal(received.meta.sharedLinkId, clientLink.id)
+    assert(!JSON.stringify(received).includes('base64'))
+    reads.length = 0
+    await createSharingLink(source)
+    assert.deepEqual(reads, [])
+    assert.deepEqual(submitted.confirmations, [])
+    await assert.rejects(createSharingLink(source, ['missing']), /no longer saved/)
+  } finally {
+    privateDocs.getPrivateDoc = originalRead
+    global.fetch = originalFetch
+    global.FileReader = originalReader
+  }
+  console.log('PASS: selected confirmation delivery, metadata-only listing, file format/size validation, document isolation/revocation/expiry, custom itinerary transfer, Unicode, private-field exclusion, unsafe URL removal, create/read/revoke lifecycle, unauthorized revocation denied, separate-link isolation, expiry, no-cache headers, input bounds, source preservation')
 }
 run().catch(e => { console.error(e); process.exitCode = 1 })
