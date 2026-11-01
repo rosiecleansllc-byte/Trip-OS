@@ -204,8 +204,7 @@ export function getEffectiveTrip(
 
   const days = trip.days.map((day) => {
     const extra = scheduleByDate.get(day.date)
-    if (!extra || extra.length === 0) return day
-    const merged = [...day.scheduleItems, ...extra]
+    const merged = [...day.scheduleItems, ...(extra ?? [])]
       .map((item, index) => ({ item, index }))
       .sort((a, b) => scheduleSortValue(a.item) - scheduleSortValue(b.item) || a.index - b.index)
       .map(({ item }) => item)
