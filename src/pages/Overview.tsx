@@ -12,6 +12,7 @@ import { getWeatherLocationForDay, isWithinForecastRange, useWeather } from '../
 import { useAppStore } from '../store/useAppStore'
 import { ShareTripButton } from '../components/trip/ShareTripButton'
 import { TripTitleEditor } from '../components/trip/TripTitleEditor'
+import { SharedConfirmations } from '../components/trip/SharedConfirmations'
 import { MobilityPreferencesCard } from '../components/trip/MobilityPreferencesCard'
 
 const PHASE_LABEL: Record<'pre' | 'active' | 'post', string> = {
@@ -111,7 +112,8 @@ export function Overview({ trip }: { trip: Trip }) {
           {primaryActionLabel}
         </button>
 
-        <ShareTripButton trip={effectiveTrip} />
+        <SharedConfirmations trip={trip} />
+        <ShareTripButton key={trip.meta.id} trip={effectiveTrip} />
 
         <MobilityPreferencesCard />
 

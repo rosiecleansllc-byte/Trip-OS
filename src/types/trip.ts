@@ -560,6 +560,7 @@ export interface Outfit {
 }
 
 export interface Trip {
+  sharedConfirmations?: import('../lib/sharedConfirmations').SharedConfirmation[]
   meta: TripMeta
   legs: Leg[]
   days: DayPlan[]

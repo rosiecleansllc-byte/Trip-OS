@@ -5,6 +5,7 @@ import type { Booking, Transport, Trip } from '../types/trip'
 import { Card } from '../components/ui/Card'
 import { SectionHeader } from '../components/ui/SectionHeader'
 import { BookingCurrencies, CurrencyTools } from '../components/wallet/CurrencyTools'
+import { SharedConfirmations } from '../components/trip/SharedConfirmations'
 import { WalletDocCard } from '../components/wallet/WalletDocCard'
 import { formatMoney } from '../lib/money'
 import { useAppStore } from '../store/useAppStore'
@@ -260,6 +261,8 @@ export function WalletPage({ trip }: { trip: Trip }) {
         <h1 className="font-display text-2xl text-ink">Wallet</h1>
       </div>
 
+      <SharedConfirmations trip={trip} />
+
       {tabs.length > 1 && (
         <div className="flex gap-1 rounded-full border border-line bg-surface p-1">
           {tabs.map((key) => (
@@ -281,7 +284,7 @@ export function WalletPage({ trip }: { trip: Trip }) {
         <div className="flex items-start gap-2.5 rounded-2xl border border-line bg-surface p-3.5">
           <EyeOff className="mt-0.5 shrink-0 text-blue" size={15} />
           <p className="text-xs text-ink-soft">
-            Stored confirmations and tickets stay private in Share mode. Costs and payment status are shown.
+            Unselected confirmations and tickets stay private. Any confirmations included with this family link appear above. Costs and payment status are shown.
           </p>
         </div>
       )}

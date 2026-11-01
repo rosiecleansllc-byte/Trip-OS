@@ -8,7 +8,7 @@ import type { CapsuleItemOverride } from '../lib/wardrobeOutfits'
 // rather than duplicating the key string.
 export const APP_STATE_STORAGE_KEY = 'trip-os-app-state'
 
-export interface OwnedTripShare { id: string; manageToken: string; label: string; createdAt: string }
+export interface OwnedTripShare { confirmationCount?: number; id: string; manageToken: string; label: string; createdAt: string }
 export interface ReceivedTripShare { id: string; name: string; destination: string }
 
 interface AppState {
