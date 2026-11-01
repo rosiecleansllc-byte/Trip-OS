@@ -31,6 +31,9 @@ jobs:
       - name: Sharing privacy and revocation checks
         run: npm run test:sharing
 
+      - name: Task completion persistence checks
+        run: node qa/open-item-persistence.cjs
+
       - name: Currency arithmetic and persistence checks
         run: node qa/currency.cjs
 

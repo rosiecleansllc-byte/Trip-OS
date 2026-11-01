@@ -167,6 +167,7 @@ export function AddItemSheet({ trip }: { trip: Trip }) {
 
   const manualItems = useAppStore((s) => s.manualItems)
   const resolvedOpenItemIds = useAppStore((s) => s.resolvedOpenItemIds)
+  const manuallyCompletedOpenItemIds = useAppStore((s) => s.manuallyCompletedOpenItemIds)
   const addManualItem = useAppStore((s) => s.addManualItem)
   const updateManualItem = useAppStore((s) => s.updateManualItem)
   const resolveOpenItem = useAppStore((s) => s.resolveOpenItem)
@@ -396,7 +397,7 @@ export function AddItemSheet({ trip }: { trip: Trip }) {
       // reconcile against the list with the edit already applied and flip
       // anything now-unjustified back to open.
       nextManualItems = manualItems.map((i) => (i.id === saved.id ? saved : i))
-      for (const openItemId of findOpenItemsToUnresolve(trip, nextManualItems, resolvedOpenItemIds)) {
+      for (const openItemId of findOpenItemsToUnresolve(trip, nextManualItems, resolvedOpenItemIds, manuallyCompletedOpenItemIds)) {
         unresolveOpenItem(trip.meta.id, openItemId)
         delete effectiveResolvedIds[`${trip.meta.id}:${openItemId}`]
       }
