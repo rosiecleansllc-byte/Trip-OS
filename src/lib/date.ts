@@ -77,6 +77,20 @@ export function scheduleSortValue(item: ScheduleItem): number {
     return h * 60 + m
   }
   if (item.sortOrder != null) return item.sortOrder
+  // Imported plans retain their section heading in notes, including entries
+  // already saved on a traveler's device. Use it only as an ordering hint;
+  // keep the actual time blank until the traveler chooses one.
+  const section = item.notes?.match(/^([^.]*)\. Imported plan;/i)?.[1].trim().toUpperCase()
+  if (section) {
+    if (/^BREAKFAST\b/.test(section)) return 9 * 60
+    if (/^(MORNING|DAYTIME|EXPLORE|ACTIVITIES)\b/.test(section)) return 10 * 60
+    if (/^LUNCH\b/.test(section)) return 13 * 60
+    if (/^AFTERNOON\b/.test(section)) return 14 * 60
+    if (/^DESSERT\b/.test(section)) return 16 * 60
+    if (/^EARLY DINNER\b/.test(section)) return 17 * 60
+    if (/^(DINNER|ALTERNATIVE DINNER)\b/.test(section)) return 19 * 60
+    if (/^BAR\b/.test(section)) return 21 * 60
+  }
   return Number.POSITIVE_INFINITY
 }
 

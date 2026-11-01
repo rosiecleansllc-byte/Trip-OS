@@ -15,3 +15,17 @@ assert.equal(validateItineraryRow({...rows[0],date:'2026-02-31'}),false)
 assert.equal(validateItineraryRow({...rows[0],date:''}),false)
 assert.equal(itineraryKey({date:'2026-11-09',title:'Tour!'}),itineraryKey({date:'2026-11-09',title:'tour'}))
 console.log('PASS: date headings, separate entries, blank unspecified times, alternatives, explicit times, validation, duplicate keys and planned status')
+const { scheduleSortValue } = require('../src/lib/date.ts')
+const { getEffectiveTrip } = require('../src/lib/manualItems.ts')
+const plan = (id, section, time) => ({id, label:id, type:'activity', time, notes:`${section}. Imported plan; booking and times need review.`})
+const unsorted = [plan('dinner','DINNER','19:00'), plan('fountains','8:15 PM','20:15'), plan('breakfast','BREAKFAST'), plan('museum','DAYTIME'), plan('park','DAYTIME'), plan('early','EARLY DINNER'), plan('bar','BAR'), plan('paragliding','ACTIVITIES','13:00')]
+const trip = {meta:{id:'test'},days:[{date:'2026-11-10',scheduleItems:unsorted}],bookings:[],transport:[],openItems:[]}
+const ordered = getEffectiveTrip(trip,[],{}).days[0].scheduleItems
+assert.deepEqual(ordered.map(i=>i.id),['breakfast','museum','park','paragliding','early','dinner','fountains','bar'])
+assert.equal(ordered[0].time,undefined)
+assert.equal(unsorted[0].id,'dinner')
+assert.equal(scheduleSortValue({...plan('x','BREAKFAST'),time:'14:30'}),870)
+assert.equal(scheduleSortValue({...plan('x','BREAKFAST'),sortOrder:500}),500)
+assert.equal(scheduleSortValue({id:'unknown',label:'Unknown',type:'free'}),Infinity)
+assert.equal(scheduleSortValue({id:'note',label:'Note',type:'free',notes:'Dinner ideas for later'}),Infinity)
+console.log('PASS: imported day parts interleave with real times, preserve blanks and stable ties, respect explicit ordering, and sort without manual additions')
