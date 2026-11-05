@@ -15,8 +15,9 @@ import { useAppStore } from '../../store/useAppStore'
 // because one piece hasn't been photographed yet. No match yet → a
 // plain placeholder chip with the item's name, same as any other
 // not-uploaded-yet state elsewhere in Pack.
-function ItemChip({ itemName, match, onOpen }: { itemName: string; match: VisualBoard | undefined; onOpen: (src: string, alt: string) => void }) {
-  const { url } = useVisualBoardImage(match?.imageKey)
+function ItemChip({ itemName, match, imageUrl, onOpen }: { itemName: string; match: VisualBoard | undefined; imageUrl?: string; onOpen: (src: string, alt: string) => void }) {
+  const { url: uploadedUrl } = useVisualBoardImage(match?.imageKey)
+  const url = uploadedUrl ?? imageUrl
   if (url) {
     return (
       <button
@@ -25,7 +26,7 @@ function ItemChip({ itemName, match, onOpen }: { itemName: string; match: Visual
         className="flex shrink-0 flex-col items-center gap-1"
       >
         <span className="block h-16 w-16 overflow-hidden rounded-xl bg-bg-soft">
-          <img src={url} alt={itemName} className="h-full w-full object-cover" />
+          <img src={url} alt={itemName} className="h-full w-full object-contain" />
         </span>
         <span className="max-w-[68px] truncate text-[10px] text-ink-soft">{itemName}</span>
       </button>
@@ -84,7 +85,7 @@ export function OutfitBoardLookCard({
             complete once a whole-outfit photo is showing above. */}
         <div className="mt-3 flex gap-2.5 overflow-x-auto pb-1">
           {board.itemNames.map((name) => (
-            <ItemChip key={name} itemName={name} match={matchVisualBoardForItemName(tripVisualBoards, name)} onOpen={onOpen} />
+            <ItemChip key={name} itemName={name} match={matchVisualBoardForItemName(tripVisualBoards, name)} imageUrl={board.itemImageUrls?.[name]} onOpen={onOpen} />
           ))}
         </div>
       </div>
