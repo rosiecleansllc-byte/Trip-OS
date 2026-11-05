@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { ChevronDown, CloudSun, Image as ImageIcon } from 'lucide-react'
 import { clsx } from 'clsx'
-import type { Outfit, Trip, VisualBoard } from '../types/trip'
+import type { Outfit, OutfitBoard, Trip, VisualBoard } from '../types/trip'
 import { ActionRow } from '../components/ui/ActionRow'
 import { Card } from '../components/ui/Card'
 import { EventSessionSchedule } from '../components/ui/EventSessionSchedule'
@@ -47,6 +47,24 @@ function DayOutfitThumb({ board }: { board: VisualBoard }) {
         </span>
       </button>
       {open && <Lightbox src={url} alt={board.title} onClose={() => setOpen(false)} />}
+    </>
+  )
+}
+
+function SeededOutfitThumb({ board }: { board: OutfitBoard }) {
+  const [open, setOpen] = useState(false)
+  const label = board.label ?? 'Daily outfit'
+  return (
+    <>
+      <button
+        type="button"
+        onClick={() => setOpen(true)}
+        className="mt-3 flex items-center gap-3 rounded-xl border border-line bg-bg-soft p-2 text-left"
+      >
+        <img src={board.imageUrl} alt={label} className="h-24 w-24 shrink-0 rounded-lg object-contain" loading="lazy" />
+        <span className="text-xs font-medium text-blue">View outfit · {label}</span>
+      </button>
+      {open && board.imageUrl && <Lightbox src={board.imageUrl} alt={label} onClose={() => setOpen(false)} />}
     </>
   )
 }
@@ -248,13 +266,18 @@ export function TripPage({ trip }: { trip: Trip }) {
                         ))}
                       </div>
                     ) : seededDayLooks.length > 0 ? (
-                      <Link
-                        to="/pack"
-                        className="mt-3 inline-flex items-center gap-1.5 rounded-full border border-blue/30 bg-blue-tint px-3 py-1.5 text-xs font-medium text-blue"
-                      >
-                        <ImageIcon size={12} />
-                        {seededDayLooks.length > 1 ? `${seededDayLooks.length} outfit looks` : 'View outfit'}
-                      </Link>
+                      <div>
+                        {seededDayLooks.filter(board => board.imageUrl).map(board => (
+                          <SeededOutfitThumb key={board.id} board={board} />
+                        ))}
+                        <Link
+                          to="/pack"
+                          className="mt-3 inline-flex items-center gap-1.5 rounded-full border border-blue/30 bg-blue-tint px-3 py-1.5 text-xs font-medium text-blue"
+                        >
+                          <ImageIcon size={12} />
+                          All outfits in Pack
+                        </Link>
+                      </div>
                     ) : (
                       dayOutfitBoard && <DayOutfitThumb board={dayOutfitBoard} />
                     )}
