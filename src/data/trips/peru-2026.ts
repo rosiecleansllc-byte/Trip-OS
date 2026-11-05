@@ -28,3 +28,83 @@ peruTrip.openItems = [
 // Keep the existing confirmation item's ID so its saved check still applies.
 peruTrip.checklist = peruTrip.checklist!.filter(item => item.id !== 'chk-res-flight')
 peruTrip.checklist.push({ id: 'peru-flight-doc', category: 'Reservations', label: 'Save updated flight confirmation', linkedDocumentKey: 'peru-2026-flights' })
+
+// Cecilia's approved November 5–16 lookbook. The illustrations are public
+// outfit flat lays; personal try-on photos are never bundled with the app.
+const dailyOutfits = [
+  {
+    label: 'Travel to Lima',
+    note: 'White tee + denim jeans + black zip layer + white knit sneakers.',
+    items: ['White tee', 'Denim jeans', 'Black zip layer', 'White knit sneakers'],
+  },
+  {
+    label: 'Barranco',
+    note: 'Pink skirt + pale-blue button-down tied at the waist + multicolor flat sandals. Alternative top: multicolor striped blouse.',
+    items: ['Pink skirt', 'Pale-blue button-down', 'Multicolor flat sandals', 'Striped blouse'],
+  },
+  {
+    label: 'Day and dinner out',
+    note: 'Day: neon coral shift dress + multicolor flat sandals. Evening: white textured tie-strap top + silver sequin midi skirt + silver ankle-strap pumps.',
+    items: ['Neon coral shift dress', 'Multicolor flat sandals', 'White tie-strap top', 'Silver sequin midi skirt', 'Silver ankle-strap pumps'],
+  },
+  {
+    label: 'Birthday and Osaka',
+    note: 'Birthday day, November 8: white lace dress or mustard chevron midi + multicolor flat sandals. Evening at Osaka: emerald tonal-paisley midi + silver ankle-strap pumps. Optional layer: cream cropped cardigan with three-quarter sleeves or neon-yellow scarf.',
+    items: ['White lace dress', 'Mustard chevron midi', 'Multicolor flat sandals', 'Emerald paisley midi', 'Silver ankle-strap pumps', 'Cream cropped cardigan', 'Neon-yellow scarf'],
+  },
+  {
+    label: 'Paracas',
+    note: 'White tee + black Girlfriend Collective yoga pants + black zip layer + white knit lace-up sneakers.',
+    items: ['White tee', 'Black yoga pants', 'Black zip layer', 'White knit sneakers'],
+  },
+  {
+    label: 'Paragliding and Quipas',
+    note: 'Paragliding: white tee + black Girlfriend Collective yoga pants + white knit lace-up sneakers; bring the black zip layer. Evening: pale-blue tied button-down + black wide-leg trousers + red flats.',
+    items: ['White tee', 'Black yoga pants', 'White knit sneakers', 'Black zip layer', 'Pale-blue button-down', 'Black wide-leg trousers', 'Red flats'],
+  },
+  {
+    label: 'Casual Lima',
+    note: 'Ivory sleeveless embroidered blouse with scalloped eyelet trim + orange-pink printed drawstring shorts + multicolor flat sandals.',
+    items: ['Ivory embroidered blouse', 'Orange-pink printed shorts', 'Multicolor flat sandals'],
+  },
+  {
+    label: 'Day and Amador',
+    note: 'Day: neon-yellow shoulder-cutout shift dress + multicolor flat sandals. Evening for La Carreta / Amador: navy silk slip midi + silver ankle-strap pumps. Optional layer: cream cropped cardigan with three-quarter sleeves or neon-yellow scarf.',
+    items: ['Neon-yellow shift dress', 'Multicolor flat sandals', 'Navy silk slip midi', 'Silver ankle-strap pumps', 'Cream cropped cardigan', 'Neon-yellow scarf'],
+  },
+  {
+    label: 'Day and Carnaval',
+    note: 'Day: sleeveless botanical-print ruffled blouse + denim jeans + multicolor flat sandals. Evening at Carnaval: peach floral satin midi + silver ankle-strap pumps.',
+    items: ['Sleeveless botanical blouse', 'Denim jeans', 'Multicolor flat sandals', 'Peach floral satin midi', 'Silver ankle-strap pumps'],
+  },
+  {
+    label: 'Lima lunch',
+    note: 'White lace-inset dress + chunky translucent necklace + multicolor flat sandals. Optional layer: cream cropped cardigan with three-quarter sleeves; red flats for an evening shoe swap.',
+    items: ['White lace dress', 'Translucent necklace', 'Multicolor flat sandals', 'Cream cropped cardigan', 'Red flats'],
+  },
+  {
+    label: 'Relaxed Lima',
+    note: 'Mustard chevron midi dress + multicolor flat sandals + optional cream cropped cardigan with three-quarter sleeves. The neon-yellow scarf is another dress layer.',
+    items: ['Mustard chevron midi', 'Multicolor flat sandals', 'Cream cropped cardigan', 'Neon-yellow scarf'],
+  },
+  {
+    label: 'Flight home',
+    note: 'White tee + denim jeans + black zip layer + white knit sneakers.',
+    items: ['White tee', 'Denim jeans', 'Black zip layer', 'White knit sneakers'],
+  },
+]
+
+peruTrip.outfitBoards = peruTrip.days.map((day, index) => {
+  const outfit = dailyOutfits[index]
+  const id = `${day.id}-outfit`
+  day.outfitNote = outfit.note
+  day.outfitBoardId = id
+  return {
+    id,
+    dayId: day.id,
+    label: outfit.label,
+    note: outfit.note,
+    itemNames: outfit.items,
+    imageUrl: `/images/outfits/peru-2026/nov-${day.date.slice(-2)}.webp`,
+  }
+})
