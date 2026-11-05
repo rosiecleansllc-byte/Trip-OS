@@ -375,6 +375,9 @@ export interface OutfitBoard {
   itemNames: string[]
   note: string
   imageUrl?: string
+  // Public garment flats keyed by the displayed item name. Private uploads
+  // can override these without depending on filename/title matching.
+  itemImageUrls?: Record<string, string>
   // Distinguishes multiple looks on the same day (e.g. "Travel Day to
   // Austin" vs "Franklin's BBQ") — see DayPlan.outfitBoardIds. Optional
   // since a single-look day (the common case, e.g. every France day)

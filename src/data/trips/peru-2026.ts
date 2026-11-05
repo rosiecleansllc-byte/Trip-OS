@@ -94,6 +94,35 @@ const dailyOutfits = [
   },
 ]
 
+const itemFlats: Record<string, string> = {
+  "White tee": "white-travel-tee",
+  "Denim jeans": "denim-jeans",
+  "Black zip layer": "black-zip-layer",
+  "White knit sneakers": "white-knit-sneakers",
+  "Pink skirt": "pink-skirt",
+  "Pale-blue button-down": "blue-tied-button-down",
+  "Multicolor flat sandals": "multicolor-flat-sandals",
+  "Striped blouse": "striped-blouse",
+  "Neon coral shift dress": "coral-neon-dress",
+  "White tie-strap top": "white-tie-strap-top",
+  "Silver sequin midi skirt": "silver-sequin-skirt",
+  "Silver ankle-strap pumps": "silver-ankle-strap-pumps",
+  "White lace dress": "white-lace-dress",
+  "Mustard chevron midi": "mustard-chevron-dress",
+  "Emerald paisley midi": "emerald-paisley-dress",
+  "Cream cropped cardigan": "cream-cropped-cardigan",
+  "Neon-yellow scarf": "neon-yellow-scarf",
+  "Black yoga pants": "black-yoga-pants",
+  "Black wide-leg trousers": "black-wide-leg-trousers",
+  "Red flats": "red-ballet-flats",
+  "Ivory embroidered blouse": "embroidered-sleeveless-top",
+  "Orange-pink printed shorts": "printed-shorts",
+  "Neon-yellow shift dress": "neon-yellow-dress",
+  "Navy silk slip midi": "navy-silk-slip-dress",
+  "Sleeveless botanical blouse": "botanical-blouse",
+  "Peach floral satin midi": "peach-floral-satin-dress"
+}
+
 peruTrip.outfitBoards = peruTrip.days.map((day, index) => {
   const outfit = dailyOutfits[index]
   const id = `${day.id}-outfit`
@@ -105,6 +134,7 @@ peruTrip.outfitBoards = peruTrip.days.map((day, index) => {
     label: outfit.label,
     note: outfit.note,
     itemNames: outfit.items,
+    itemImageUrls: Object.fromEntries(outfit.items.filter(name => itemFlats[name]).map(name => [name, `/images/outfits/peru-2026/items/${itemFlats[name]}.webp`])),
     imageUrl: `/images/outfits/peru-2026/nov-${day.date.slice(-2)}.webp`,
   }
 })
