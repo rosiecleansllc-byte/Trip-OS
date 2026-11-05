@@ -56,13 +56,15 @@ export function Pack({ trip }: { trip: Trip }) {
   // entirely in Share mode, same as every other private-upload surface.
   const uploadedWardrobeItems = shareMode ? [] : uploadedWardrobeItemsForTrip(visualBoards, trip.meta.id)
   const hasWardrobeTab = effectiveCapsule.length > 0 || uploadedWardrobeItems.length > 0
+  const hasOutfitsTab = hasWardrobeTab || trip.outfitBoards.length > 0
   // "Visuals"/Boards is always present outside Share mode — Austin has no
   // seeded capsule/outfit data at all, and every trip (seeded or not)
   // should still be able to hold traveler-uploaded boards. Hidden
   // entirely in Share mode, same as the per-board Add/Edit/Replace/Delete
   // controls it hosts.
   const tabs: PackTab[] = [
-    ...(hasWardrobeTab ? (['capsule', 'outfits'] as const) : []),
+    ...(hasWardrobeTab ? (['capsule'] as const) : []),
+    ...(hasOutfitsTab ? (['outfits'] as const) : []),
     ...(hasChecklist ? (['checklist'] as const) : []),
     ...(shareMode ? [] : (['visuals'] as const)),
   ]
